@@ -1445,10 +1445,27 @@ export function createApp() {
   admin.get('/support', (_req, res) => {
     res.json({
       mailbox: config.supportEmail,
-      messages: all(`SELECT id, user_id AS userId, email, name, subject, message, context, created_at AS createdAt
+      messages: all(`SELECT id, user_id AS userId, email, name, subject, message, context, created_at AS createdAt, replied_at AS repliedAt
                      FROM support_messages ORDER BY created_at DESC LIMIT 200`),
     });
   });
+
+  // Réponse écrite dans le panel : part de l'adresse d'ONIRIQUE, avec le message d'origine cité en dessous.
+  admin.post('/support/:id/reply', wrap(async (req, res) => {
+    const m = get('SELECT * FROM support_messages WHERE id = ?', int(req.params.id, 0));
+    if (!m) throw new HttpError(404, 'Message introuvable.');
+    if (!mailEnabled) throw new HttpError(503, "Aucun serveur de messagerie n'est relié au serveur.");
+    const text = str(req.body.text, 20_000);
+    if (!text) throw new HttpError(400, 'Écrivez une réponse.');
+    const quoted = m.message.split('\n').map((line) => `> ${line}`).join('\n');
+    await mailbox.send(req.user, {
+      to: m.email,
+      subject: /^re\s*:/i.test(m.subject) ? m.subject : `Re : ${m.subject}`,
+      text: `${text}\n\n—\nVotre message du ${new Date(m.created_at).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })} :\n${quoted}`,
+    });
+    run('UPDATE support_messages SET replied_at = ? WHERE id = ?', now(), m.id);
+    res.json({ ok: true });
+  }));
 
   admin.delete('/support/:id', (req, res) => {
     const { changes } = run('DELETE FROM support_messages WHERE id = ?', int(req.params.id, 0));

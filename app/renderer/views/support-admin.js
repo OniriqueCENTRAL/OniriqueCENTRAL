@@ -1,8 +1,8 @@
-import { h, eyebrow, pill, button, attempt, confirm } from '../ui.js';
+import { h, eyebrow, pill, button, attempt, confirm, modal, field } from '../ui.js';
 import { call, render } from '../app.js';
 
 // Le panel support des admins : les mêmes demandes, et les mêmes gestes, que sur la page d'administration du site.
-const api = (method, route) => call('api', method, `/api/admin${route}`);
+const api = (method, route, body) => call('api', method, `/api/admin${route}`, body);
 const view = { data: null, loadedAt: 0, loading: false, error: null };
 
 async function load() {
@@ -20,6 +20,19 @@ async function load() {
 
 const when = (ms) => new Date(ms).toLocaleString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+// La réponse s'écrit ici et part du serveur, depuis l'adresse d'ONIRIQUE : pas besoin de messagerie sur ce PC.
+function reply(m) {
+  const text = h('textarea', { rows: 10, maxLength: 20000, placeholder: 'Bonjour,\n\n' });
+  modal(`Répondre à ${m.email}`, [
+    h('p', { class: 'muted', style: { 'white-space': 'pre-wrap', 'max-height': '140px', overflow: 'auto' } }, h('strong', null, m.subject), '\n', m.message),
+    field('Votre réponse (le message d\'origine est cité en dessous)', text),
+  ], [{ label: 'Envoyer', run: async () => {
+    if (!text.value.trim()) return false;
+    if (!await attempt(() => api('POST', `/support/${m.id}/reply`, { text: text.value }), 'Réponse envoyée.')) return false;
+    await load();
+  } }], 'Support');
+}
+
 function messageRow(m) {
   return h('tr', null,
     h('td', { class: 'muted', style: { 'white-space': 'nowrap' } }, when(m.createdAt)),
@@ -27,8 +40,8 @@ function messageRow(m) {
       h('div', { class: 'muted', style: { 'font-size': '12px' } }, [m.name, m.userId ? `compte n° ${m.userId}` : 'sans compte', m.context].filter(Boolean).join(' · '))),
     h('td', { class: 'selectable', style: { 'white-space': 'pre-wrap', 'overflow-wrap': 'anywhere' } }, h('strong', { style: { display: 'block' } }, m.subject), m.message),
     h('td', { class: 'actions' },
-      // Répondre ouvre la messagerie de ce PC, avec le destinataire et le sujet déjà remplis.
-      button('Répondre', () => attempt(() => call('open:mail', m.email, m.subject)), 'small'),
+      button(m.repliedAt ? 'Répondre encore' : 'Répondre', () => reply(m), 'small'),
+      m.repliedAt ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, `Répondu le ${when(m.repliedAt)}`) : null,
       button('Copier l\'e-mail', () => attempt(() => call('clipboard', m.email), 'Adresse copiée.'), 'small quiet'),
       button('Supprimer', () => confirm('Supprimer ce message ?', 'Il disparaît de cette liste. L\'e-mail reçu dans la boîte de support n\'est pas touché.',
         'Supprimer', async () => { if (await attempt(() => api('DELETE', `/support/${m.id}`), 'Message supprimé.')) await load(); }, 'danger'), 'small quiet danger')));

@@ -529,6 +529,8 @@ if (!hasColumn('social_accounts', 'alt_id')) db.exec(`ALTER TABLE social_account
 if (!hasColumn('social_automations', 'post_at')) db.exec('ALTER TABLE social_automations ADD COLUMN post_at INTEGER');
 // TikTok retiré : son like ne sert plus, ni ses comptes et automations.
 if (hasColumn('social_automations', 'like_comment')) db.exec('ALTER TABLE social_automations DROP COLUMN like_comment');
+// Date de la dernière réponse envoyée depuis le panel support.
+if (!hasColumn('support_messages', 'replied_at')) db.exec('ALTER TABLE support_messages ADD COLUMN replied_at INTEGER');
 db.exec(`DELETE FROM social_automations WHERE platform = 'tiktok'; DELETE FROM social_accounts WHERE platform = 'tiktok';`);
 
 export const now = () => Date.now();
