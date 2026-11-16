@@ -7,6 +7,11 @@
 - Un webhook par créateur : `/api/stripe/webhook/<créateur>`.
 - Les abonnements (All Access, à la carte) sont encaissés par ONIRIQUE et ne couvrent que les plugins ONIRIQUE ;
   ceux des partenaires s'achètent à l'unité. Aucun argent ne circule entre marques.
+- Prix du 16 nov. 2026 (table `plans`) : ESSENTIAL 14,99 €/mois ou 129 €/an, ALL ACCESS 29,99 €/mois ou 249 €/an,
+  tous deux avec ONIRIQUE CLOUD inclus (`TOOLS_ACTIVE`, `auth.js`) ; CLOUD seul 1,99 €/mois ou 19,99 €/an (`TOOLS`).
+- Paiement en 10 fois (`LEASE`, `payments.js`) : prix du plugin (soldé s'il l'est, 30 € au moins) en 10 mensualités,
+  licence `lease:<abonnement>` au mois puis définitive à la dixième ; les mensualités sont comptées chez Stripe
+  (`invoice.paid`, ajouté aux webhooks au démarrage par `syncStripeHooks`).
 - Restent à faire côté légal : identité de l'éditeur dans les mentions légales, médiateur, achat réel d'essai.
 
 ## Packs de prods (ONIRIQUE CLOUD, `sound_projects.kind = 'pack'`)
