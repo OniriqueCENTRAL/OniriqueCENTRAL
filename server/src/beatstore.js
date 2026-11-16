@@ -79,10 +79,10 @@ export function askPayout(user) {
   run('UPDATE sound_sellers SET payout_asked_at = ? WHERE user_id = ?', now(), user.id);
   const who = get('SELECT name, email FROM users WHERE id = ?', user.id), name = who.name || who.email, amount = eurosFr(b.due);
   for (const f of all(`SELECT id, email FROM users WHERE role = 'founder'`)) {
-    push(f.id, { title: 'Demande de versement', body: `${name} demande ${amount} (ventes encaissées par ONIRIQUE).`, url: `${config.siteUrl}/mes-sons` });
+    push(f.id, { title: 'Demande de versement', body: `${name} demande ${amount} (ventes encaissées par ONIRIQUE).`, url: `${config.siteUrl}/admin#versements` });
     sendMail(f.email, `Demande de versement : ${amount} pour ${name}`, [
       'Bonjour,', '', `${name} (${who.email}) demande le versement de ${amount} : ses ventes (prods et visuels) encaissées par ONIRIQUE.`, '',
-      'Une fois le virement fait, note-le dans ONIRIQUE CLOUD : panneau Ventes d\'un pack, partie « Versements aux beatmakers ».',
+      `Une fois le virement fait, note-le dans l'administration, onglet Versements : ${config.siteUrl}/admin#versements`,
     ].join('\n')).catch(() => {});
   }
   return balanceOf(user.id);
@@ -409,9 +409,21 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
   const founderOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.'); requireTwoFactor(req.user); };
   const duesView = () => all(`SELECT DISTINCT o.seller_id, u.name, u.email FROM sound_orders o JOIN users u ON u.id = o.seller_id
       WHERE o.provider = 'onirique' AND o.status = 'paid' AND o.sandbox = 0`)
-    .map((r) => ({ sellerId: r.seller_id, name: r.name || r.email, email: r.email, ...balanceOf(r.seller_id) })).filter((x) => x.due > 0)
+    .map((r) => ({ sellerId: r.seller_id, name: r.name || r.email, email: r.email, ...balanceOf(r.seller_id),
+      // la part de la vitrine (visuels) dans ce qu'ONIRIQUE a encaissé ; le reste vient des packs de prods
+      visuals: get(`SELECT COALESCE(SUM(amount), 0) AS t FROM sound_orders WHERE seller_id = ? AND provider = 'onirique' AND status = 'paid' AND sandbox = 0 AND visual_id IS NOT NULL`, r.seller_id).t }))
+    .filter((x) => x.due > 0)
     .sort((a, b) => (b.askedAt || 0) - (a.askedAt || 0) || b.due - a.due);
   app.get('/api/me/sounds/store/payouts', ...me, (req, res) => { founderOnly(req); res.json(duesView()); });
+  // Onglet « Versements » de l'administration : tout ce qu'ONIRIQUE a encaissé pour les vendeurs (packs de prods et
+  // vitrine), ce qui a déjà été versé et ce qui reste dû, puis chaque vendeur qui a un solde.
+  app.get('/api/admin/payouts', ...me, (req, res) => {
+    founderOnly(req);
+    const sum = (where) => get(`SELECT COALESCE(SUM(amount), 0) AS t FROM sound_orders WHERE provider = 'onirique' AND status = 'paid' AND sandbox = 0 AND ${where}`).t;
+    const prods = sum('visual_id IS NULL'), visuals = sum('visual_id IS NOT NULL');
+    const paidOut = get('SELECT COALESCE(SUM(amount), 0) AS t FROM sound_payouts').t;
+    res.json({ prods, visuals, paidOut, due: prods + visuals - paidOut, sellers: duesView() });
+  });
   app.post('/api/me/sounds/store/payouts', ...me, (req, res) => {
     founderOnly(req);
     const sellerId = id(req.body.sellerId), due = balanceOf(sellerId).due;

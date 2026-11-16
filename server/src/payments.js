@@ -631,6 +631,54 @@ export async function cancelToolsSubscription(userId) {
   run('UPDATE tool_subscriptions SET cancel_at_period_end = 1, updated_at = ? WHERE user_id = ?', now(), userId);
 }
 
+/** Annule une résiliation pas encore arrivée à terme : l'abonnement (aux plugins, ou aux outils) sera de nouveau reconduit. */
+export async function resumeSubscription(userId, tools = false) {
+  const table = tools ? 'tool_subscriptions' : 'subscriptions';
+  const sub = get(`SELECT * FROM ${table} WHERE user_id = ?`, userId);
+  if (!sub || sub.status !== 'active' || sub.current_period_end <= now()) throw new HttpError(404, 'Aucun abonnement en cours.');
+  if (sub.stripe_subscription) {
+    const platform = stripeAccount('onirique');
+    // Chez Lemon Squeezy, la résiliation a supprimé l'abonnement : il ne se reprend pas d'ici.
+    if (paymentsMode() === 'lemon' || !platform) throw new HttpError(409, "Cet abonnement ne peut pas reprendre d'ici : écris au support.");
+    await stripe('POST', `/subscriptions/${sub.stripe_subscription}`, { cancel_at_period_end: false }, platform.key);
+  }
+  run(`UPDATE ${table} SET cancel_at_period_end = 0, updated_at = ? WHERE user_id = ?`, now(), userId);
+}
+
+/**
+ * Passe l'abonnement aux plugins en cours à une autre formule (d'ESSENTIAL ou d'à la carte vers ALL ACCESS, du mois à
+ * l'année…). Stripe facture tout de suite la différence au prorata ; si ce paiement échoue, rien ne change.
+ */
+export async function changeSubscription(userId, plan) {
+  const sub = get('SELECT * FROM subscriptions WHERE user_id = ?', userId);
+  if (!sub || sub.status !== 'active' || sub.current_period_end <= now()) throw new HttpError(404, 'Aucun abonnement en cours.');
+  if (sub.plan_id === plan.id) throw new HttpError(409, 'Tu as déjà cette formule.');
+  const mode = paymentsMode();
+  if (mode === 'demo' && !sub.stripe_subscription) return setSubscription(userId, plan.id, { status: 'active', periodEnd: sub.current_period_end });
+  const platform = stripeAccount('onirique');
+  // Un abonnement offert (sans paiement) ou passé par Lemon Squeezy ne change pas de formule d'ici.
+  if (mode !== 'stripe' || !sub.stripe_subscription || !platform) throw new HttpError(409, "Cet abonnement ne peut pas changer de formule d'ici : écris au support.");
+  const current = await stripe('GET', `/subscriptions/${sub.stripe_subscription}`, undefined, platform.key);
+  const product = await stripe('POST', '/products', { name: plan.name, tax_code: 'txcd_10103100' }, platform.key);
+  const updated = await stripe('POST', `/subscriptions/${sub.stripe_subscription}`, {
+    items: { 0: { id: current.items.data[0].id, price_data: { currency: 'eur', unit_amount: plan.price_cents, recurring: { interval: plan.interval },
+      tax_behavior: 'inclusive', product: product.id } } },
+    proration_behavior: 'always_invoice', payment_behavior: 'pending_if_incomplete',
+  }, platform.key);
+  if (updated.pending_update) throw new HttpError(402, "Le paiement de la différence n'est pas passé : ta formule ne change pas. Vérifie ta carte (Paiement et factures).");
+  // Ce paramètre ne s'envoie pas avec pending_if_incomplete : la formule et la reprise suivent, une fois le paiement passé.
+  applyStripeSubscription(await stripe('POST', `/subscriptions/${sub.stripe_subscription}`, {
+    cancel_at_period_end: false, metadata: { user_id: userId, plan_id: plan.id, product_ids: '' },
+  }, platform.key));
+}
+
+/** La page Stripe du client : carte bancaire, factures. Seulement pour un compte qui a déjà payé chez ONIRIQUE. */
+export async function billingPortal(user) {
+  const platform = stripeAccount('onirique');
+  if (paymentsMode() !== 'stripe' || !platform || !user.stripe_customer) throw new HttpError(404, 'Aucun paiement enregistré sur ce compte.');
+  return (await stripe('POST', '/billing_portal/sessions', { customer: user.stripe_customer, return_url: `${config.siteUrl}/abonnement` }, platform.key)).url;
+}
+
 /** Résilie un plugin au mois (sa licence) : plus de prélèvement, la licence va jusqu'au bout du mois payé. */
 export async function cancelMonthly(userId, licenseId) {
   const license = get(`SELECT l.*, p.creator FROM licenses l JOIN products p ON p.id = l.product_id

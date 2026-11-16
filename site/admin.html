@@ -59,6 +59,7 @@ a.act:hover { border-color: var(--ember); color: var(--mist); }
 tr.detail td { background: var(--deep); }
 .key { font: 500 13px var(--f-mono); color: var(--bone); word-break: break-all; }
 .notice { padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); }
+.payouts-asked, tr.asked td { border-color: var(--ember); background: rgba(255,90,60,.08); }
 .error { color: #FF7A85; }
 .products { display: grid; gap: 14px; margin-top: 14px; }
 .order { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; max-width: 620px; counter-reset: rang; }
@@ -387,6 +388,19 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     </div>
     </section>
 
+    <!-- Réservé aux fondateurs : l'argent encaissé par ONIRIQUE pour les vendeurs, et les versements à faire -->
+    <section class="tab" id="tab-payouts" data-label="Versements" hidden>
+    <div class="tiles" id="payouts-tiles"><div class="tile"><b>…</b><span>Solde à verser</span></div></div>
+    <p class="notice payouts-asked" id="payouts-notice" role="status" hidden></p>
+    <div class="bar"><h2>Soldes des vendeurs</h2><button class="act" id="payouts-reload" type="button">Actualiser</button></div>
+    <p class="sub">Chaque vendeur à qui ONIRIQUE doit de l'argent : ses ventes de packs de prods et de visuels (vitrine) encaissées par ONIRIQUE, ce qui lui a déjà été versé et ce qui reste dû. Une demande de versement s'affiche ici en tête. Fais le virement, puis « Versement fait » : le vendeur reçoit un e-mail.</p>
+    <p class="error" id="payouts-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Vendeur</th><th>Packs de prods</th><th>Vitrine</th><th>Déjà versé</th><th>Dû</th><th>Demande</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="payouts"><tr><td colspan="7" class="sub">Chargement des soldes…</td></tr></tbody>
+    </table></div>
+    </section>
+
     <!-- Réservé aux fondateurs : les potards dessinés d'après le logo -->
     <section class="tab" id="tab-knob" data-label="KNOB" hidden>
     <iframe class="knobs" id="knobs" title="Les potards ONIRIQUE"></iframe>
@@ -400,7 +414,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 </main>
 
 <script src="assets/cropper.js"></script>
-<script src="assets/account.js?v=18"></script>
+<script src="assets/account.js?v=19"></script>
 <script src="assets/site-nav.js?v=25"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
@@ -1524,9 +1538,45 @@ async function loadMailings(first = false) {
   if (info.mailings.some((m) => m.status === "sending")) mailPoll = setTimeout(() => loadMailings().catch(() => {}), 5000);
 }
 
+//------------------------------------------------------------------------------ Versements (fondateurs)
+// Ce qu'ONIRIQUE a encaissé pour les vendeurs (packs de prods, vitrine) et ce qu'il leur doit ; une demande de versement
+// met un badge sur l'onglet et un bandeau en tête. Relu chaque minute tant que la page est ouverte.
+async function loadPayouts() {
+  if (me.role !== "founder") return;
+  let p;
+  try { p = await api("GET", "/admin/payouts"); $("payouts-error").textContent = ""; }
+  catch (error) { $("payouts-error").textContent = error.message; return; }
+  $("payouts-tiles").replaceChildren(...[["Encaissé · packs de prods", p.prods], ["Encaissé · vitrine", p.visuals], ["Déjà versé", p.paidOut], ["Solde à verser", p.due]]
+    .map(([label, cents]) => el("div", { className: "tile" }, el("b", { textContent: money(cents) }), el("span", { textContent: label }))));
+  const asked = p.sellers.filter((x) => x.askedAt);
+  markTab("tab-payouts", asked.length ? String(asked.length) : "");
+  $("payouts-notice").hidden = !asked.length;
+  $("payouts-notice").textContent = asked.length === 1
+    ? `Demande de versement : ${asked[0].name} attend ${money(asked[0].due)} (demandé le ${date(asked[0].askedAt)}).`
+    : `${asked.length} demandes de versement en attente : ${asked.map((x) => `${x.name} (${money(x.due)})`).join(", ")}.`;
+  $("payouts").replaceChildren(...(p.sellers.length ? p.sellers.map((x) => {
+    const done = el("button", { className: "act", type: "button", textContent: "Versement fait" });
+    done.onclick = async () => {
+      if (!confirm(`Noter le versement de ${money(x.due)} à ${x.name} ? Fais d'abord le virement : il reçoit un e-mail.`)) return;
+      done.disabled = true;
+      try { await api("POST", "/me/sounds/store/payouts", { sellerId: x.sellerId }); await loadPayouts(); }
+      catch (error) { done.disabled = false; $("payouts-error").textContent = error.message; }
+    };
+    const row = el("tr", { className: x.askedAt ? "asked" : "" },
+      el("td", {}, el("strong", { textContent: x.name }), el("div", { className: "sub", textContent: `${x.email} · ${x.sales} vente${x.sales > 1 ? "s" : ""}` })),
+      el("td", { textContent: money(x.held - x.visuals) }), el("td", { textContent: money(x.visuals) }),
+      el("td", { textContent: money(x.paidOut) + (x.payouts.length ? ` (dernier le ${date(x.payouts[0].at)})` : "") }),
+      el("td", {}, el("strong", { textContent: money(x.due) })),
+      el("td", { textContent: x.askedAt ? "Demandé le " + date(x.askedAt) : "Pas encore demandé" }),
+      el("td", {}, done));
+    return row;
+  }) : [el("tr", {}, el("td", { colSpan: 7, className: "sub", textContent: "Aucun versement à faire : personne n'a de solde." }))]));
+}
+$("payouts-reload").onclick = loadPayouts;
+
 //------------------------------------------------------------------------------ Rubriques
 // Une barre d'onglets : la rubrique choisie est gardée dans l'adresse (#boutique…) et sur l'appareil.
-const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site", "tab-knob": "knob", "tab-da": "da" };
+const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site", "tab-payouts": "versements", "tab-knob": "knob", "tab-da": "da" };
 function markTab(id, badge) {
   const button = document.querySelector(`#tabs [aria-controls="${id}"]`);
   if (!button) return;
@@ -1625,13 +1675,15 @@ function showDisk(disk) {
         .then((r) => (r.ok ? r.text() : Promise.reject())).then((html) => { da.srcdoc = html; })
         .catch(() => { $("tab-da").replaceChildren(el("p", { className: "error", textContent: "La DA n'a pas pu être chargée : rechargez la page." })); });
       $("tab-da").hidden = false;
+      $("tab-payouts").hidden = false;
+      setInterval(loadPayouts, 60_000);
     }
     setupTabs();
     $("gate").hidden = true;
     $("panel").hidden = false;
     // Chaque partie se charge de son côté : une lente (boîte mail, réseaux) ne retient plus toute la page.
     const parts = [loadUsers, loadSupport, loadOrders, loadPlans, loadPacks, loadLive, loadProducts, loadPromos, loadMailbox, loadBrandKit,
-      loadSounds, loadRights, loadSocials, loadReferral, () => loadMailings(true), loadCredits];
+      loadSounds, loadRights, loadSocials, loadReferral, () => loadMailings(true), loadCredits, loadPayouts];
     const failed = (await Promise.allSettled(parts.map((load) => load()))).filter((r) => r.status === "rejected");
     if (failed.some((r) => r.reason && r.reason.status === 401)) return gate("Session expirée.", "Se reconnecter");
     if (failed.length) $("error").textContent = failed.length + (failed.length > 1 ? " parties n'ont" : " partie n'a") + " pas pu être chargée(s) : " + failed[0].reason.message;
