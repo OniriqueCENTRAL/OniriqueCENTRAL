@@ -157,20 +157,18 @@ sealed partial class Navigateur
     async void MenuExtensions()
     {
         await MajExtensions();
-        var m = NouveauMenu();
         var liste = await ListeExtensions();
-        if (liste.Count == 0) m.Items.Add(Element("Aucune extension pour l'instant", () => { }, false));
-        foreach (var e in liste)
+        Volet.Ouvrir(boutonExtensions, "Extensions", () =>
         {
-            var el = Element(e.Name, () => OuvrirExtension(e.Id));
-            el.Checked = e.IsEnabled;
-            el.ToolTipText = e.IsEnabled ? "Ouvrir" : "Désactivée";
-            m.Items.Add(el);
-        }
-        m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(Element("Afficher plus", () => OuvrirInterne(PageParametres + "#extensions")));
-        m.Items.Add(Element("Chrome Web Store", () => _ = Ouvrir("https://chromewebstore.google.com/", Actif == null ? -1 : Onglets.IndexOf(Actif) + 1)));
-        m.Show(boutonExtensions, new Point(0, boutonExtensions.Height));
+            var l = new List<Ligne>();
+            if (liste.Count == 0) l.Add(new Ligne { Titre = "Aucune extension pour l'instant", Sous = "Ajoute-en depuis le Chrome Web Store.", Glyphe = "", Actif = false });
+            foreach (var e in liste)
+                l.Add(new Ligne { Titre = e.Name, Sous = e.IsEnabled ? "Active · cliquer pour l'ouvrir" : "Désactivée", Glyphe = "", Actif = e.IsEnabled, Faire = () => OuvrirExtension(e.Id) });
+            l.Add(new Ligne { Filet = true });
+            l.Add(new Ligne { Titre = "Chrome Web Store", Lien = true, Faire = () => _ = Ouvrir("https://chromewebstore.google.com/", Actif == null ? -1 : Onglets.IndexOf(Actif) + 1) });
+            l.Add(new Ligne { Titre = "Afficher plus", Lien = true, Faire = () => OuvrirInterne(PageParametres + "#extensions") });
+            return l;
+        });
     }
 
     /// <summary>La fenêtre de l'extension (son « popup »), ou sa page d'options, dans une petite fenêtre sous le bouton.</summary>

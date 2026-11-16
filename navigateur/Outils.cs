@@ -21,17 +21,19 @@ sealed partial class Navigateur
     void MenuOutils()
     {
         if (Actif is not { } o) return;
-        var m = NouveauMenu();
         bool video = Video.IsMatch(o.Url);
-        m.Items.Add(Element("Télécharger la prod en MP3 (BPM et tonalité dans le nom)", () => _ = TelechargerProd(o, "mp3:320", true), video));
-        m.Items.Add(Element("Télécharger la prod en WAV (BPM et tonalité dans le nom)", () => _ = TelechargerProd(o, "wav:0", true), video));
-        m.Items.Add(Element("Télécharger la vidéo en MP4", () => _ = TelechargerProd(o, "mp4:0", false), video));
-        if (!video) m.Items.Add(Element("Ouvre une vidéo YouTube ou TikTok pour la télécharger", () => { }, false));
-        m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(Element("BPM et tonalité d'un fichier…", () => _ = Ouvrir("https://onirique.store/bpm-tonalite", Onglets.IndexOf(o) + 1)));
-        m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(new ToolStripMenuItem("Accélération matérielle pour cet onglet", null, (_, _) => _ = BasculerGpu(o)) { Checked = !o.SansGpu });
-        m.Show(boutonOutils, new Point(0, boutonOutils.Height));
+        string attente = video ? "" : "Ouvre une vidéo YouTube ou TikTok";
+        Volet.Ouvrir(boutonOutils, "Outils ONIRIQUE", () => new List<Ligne>
+        {
+            new() { Titre = "Cette vidéo", Rubrique = true },
+            new() { Titre = "Prod en MP3", Sous = video ? "320 kbit/s, BPM et tonalité dans le nom" : attente, Badge = "mp3", Actif = video, Faire = () => _ = TelechargerProd(o, "mp3:320", true) },
+            new() { Titre = "Prod en WAV", Sous = video ? "BPM et tonalité dans le nom" : attente, Badge = "wav", Actif = video, Faire = () => _ = TelechargerProd(o, "wav:0", true) },
+            new() { Titre = "Vidéo en MP4", Sous = video ? "La vidéo en HD" : attente, Badge = "mp4", Actif = video, Faire = () => _ = TelechargerProd(o, "mp4:0", false) },
+            new() { Titre = "Cet onglet", Rubrique = true },
+            new() { Titre = "Accélération matérielle", Sous = "À couper pour partager Netflix en stream", Glyphe = "", Interrupteur = !o.SansGpu, Faire = () => _ = BasculerGpu(o) },
+            new() { Filet = true },
+            new() { Titre = "BPM et tonalité d'un fichier", Lien = true, Faire = () => _ = Ouvrir("https://onirique.store/bpm-tonalite", Onglets.IndexOf(o) + 1) },
+        }, vivant: true);
     }
 
     /// <summary>Le Downloader du site, ouvert à côté sur le lien de la page : il lance seul le téléchargement.</summary>
