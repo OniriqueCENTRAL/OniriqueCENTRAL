@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=2cd9bc9c"></script>
+<script src="assets/i18n.js?v=ddac0a51"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -689,6 +689,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <div class="fx" data-fx="flash"><label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label><div class="fx-opts"><label>Force du flash<input type="range" id="flashAmt" min="10" max="300" step="10"></label></div></div>
               <div class="fx" data-fx="retro"><label class="check"><input type="checkbox" id="retro"> Look rétro <small>pixels et grain</small></label></div>
               <div class="fx" data-fx="photoMove"><label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement <small>sinon une photo reste fixe</small></label></div>
+              <div class="fx" data-fx="smoothClips"><label class="check"><input type="checkbox" id="smoothClips"> Fluidifier les clips <small>ralentis ou filmés à moins de 30 images/s : plus d’à-coups à l’export</small></label></div>
             </div>
         </div>
         <div class="stack">
@@ -1065,7 +1066,7 @@ const VARIED = [2, 2, 2, 1, 1, 4, 2, 2, 1, 1, 1, 1, 4];
 
 // Les réglages qu’on retrouve d’une fois sur l’autre ; le son et les clips, eux, restent sur l’appareil le temps de la page.
 // Les effets vidéo, à zéro (aucun effet).
-const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 100, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false };
+const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 100, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false, smoothClips: true };
 // Les options de films : réplique d’ouverture, volumes, ralenti.
 // Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
@@ -3208,7 +3209,23 @@ const settle = (v) => new Promise((resolve) => {
 /** Dessine l’image du temps t une fois chaque vidéo calée sur la bonne image. */
 const exportVideos = () => [introVideo, ...pool, ...overlays.map((o) => o.video)].filter(Boolean);
 let clipFrames = null, framesModule = null; // assets/clip-frames.js, chargé au premier besoin
-const framesLib = () => framesModule || (framesModule = import("./assets/clip-frames.js").catch(() => null));
+const framesLib = () => framesModule || (framesModule = import("./assets/clip-frames.js?v=2").catch(() => null));
+/** Fluidifier les clips : un clip ralenti, ou filmé à moins de 30 images par seconde, n'a pas une image neuve à chaque image de
+ *  la vidéo. Plutôt que de répéter la même (le fond avance alors par à-coups, et le texte, lui fluide, semble décrocher),
+ *  l'image de la vidéo mélange l'image du clip et la prochaine vraiment différente, au prorata du temps (assets/clip-frames.js,
+ *  smoothAt ; jamais à travers un changement de plan). Seulement à l'export, image par image. */
+function blendFrame(v, b, rate) {
+  const frame = b.frame;
+  if (!b.next || b.gap / rate <= 1.2 / 30 || b.mix < .02) return frame;
+  const w = frame.displayWidth, h = frame.displayHeight;
+  const c = v.__blend || (v.__blend = document.createElement("canvas"));
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const x = c.getContext("2d");
+  x.globalAlpha = 1; x.drawImage(frame, 0, 0, w, h);
+  x.globalAlpha = b.mix; x.drawImage(b.next, 0, 0, w, h);
+  x.globalAlpha = 1;
+  return c;
+}
 async function drawAt(t) {
   for (let tries = 0; ; tries++) {
     let drawn = draw(t, false) !== false;
@@ -3220,7 +3237,9 @@ async function drawAt(t) {
           if (v.__reader) v.__reader.close();
           v.__reader = await clipFrames(decoded.get(v.src)); v.__readerSrc = v.src; v.__rot = v.__reader.rotation;
         }
-        v.__frame = await v.__reader.frameAt(v.__want); v.__at = v.__want; v.__want = null;
+        // Fluidifier : l'image du clip mélangée à la prochaine image vraiment différente (voir blendFrame).
+        v.__frame = prefs.smoothClips ? blendFrame(v, await v.__reader.smoothAt(v.__want), pool.includes(v) ? slow() : 1) : await v.__reader.frameAt(v.__want);
+        v.__at = v.__want; v.__want = null;
       }
       drawn = draw(t, false) !== false;
     }
@@ -3265,7 +3284,7 @@ async function encodeExact(codec, progress) {
     if (failed) throw failed;
   } finally {
     exact = false;
-    for (const v of exportVideos()) { if (v.__reader) v.__reader.close(); delete v.__reader; delete v.__readerSrc; delete v.__frame; delete v.__want; }
+    for (const v of exportVideos()) { if (v.__reader) v.__reader.close(); delete v.__reader; delete v.__readerSrc; delete v.__frame; delete v.__want; delete v.__blend; }
     decoded.clear(); shown = -1;
     if (encoder.state !== "closed") encoder.close();
   }
