@@ -33,7 +33,7 @@ install -o central -g root -m 600 "$NEW" "$FILE"
 echo "Essai sur une vidéo publique…"
 if runuser -u central -- "$YTDLP" --js-runtimes node --remote-components ejs:github --cookies "$FILE" \
      --no-warnings --simulate -O '%(title)s' -- 'https://www.youtube.com/watch?v=jNQXAC9IVRw' >/dev/null 2>&1; then
-  echo "C'est bon : le Downloader passe par le compte de secours."
+  echo "C'est bon : le Downloader et le /play du bot Discord passent par le compte de secours."
 else
   stop "Les cookies sont posés mais YouTube refuse encore : refais l'export (fenêtre privée fermée sans se déconnecter)."
 fi

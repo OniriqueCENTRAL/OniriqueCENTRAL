@@ -2,7 +2,7 @@
 import { spawn } from 'node:child_process';
 import { PassThrough } from 'node:stream';
 import { createAudioResource, StreamType } from '@discordjs/voice';
-import { YTDLP } from './tracks.js';
+import { YTDLP, ytdlpBase } from './tracks.js';
 
 // Un programme absent ou qui plante ne doit pas faire tomber le bot (un 'error' sans écouteur arrête Node).
 const run = (cmd, args, stdio) => {
@@ -17,7 +17,7 @@ const OUT = ['-vn', '-c:a', 'libopus', '-b:a', '128k', '-ar', '48000', '-ac', '2
 export function resourceOf(track) {
   let ff, yt;
   if (track.yt) {
-    yt = run(YTDLP, ['--js-runtimes', 'node', '-f', 'bestaudio/best', '--no-playlist', '--no-warnings', '-q', '-o', '-', track.url], ['ignore', 'pipe', 'inherit']);
+    yt = run(YTDLP, [...ytdlpBase(), '-f', 'bestaudio/best', '--no-playlist', '--no-warnings', '-q', '-o', '-', track.url], ['ignore', 'pipe', 'inherit']);
     ff = run('ffmpeg', ['-i', 'pipe:0', ...OUT], ['pipe', 'pipe', 'inherit']);
     yt.stdout.on('error', () => {});
     ff.stdin.on('error', () => {}); // ffmpeg arrêté : yt-dlp écrit dans le vide
