@@ -1,6 +1,6 @@
 // Le bot musique ONIRIQUE sur Discord : /play joue un son cherché par son nom ou un lien YouTube / SoundCloud (yt-dlp),
 // un lien d'écoute ONIRIQUE (un titre, un projet ou un pack entier) ou l'adresse d'un fichier audio, dans le salon
-// vocal de la personne. Une file par serveur Discord.
+// vocal de la personne. Une file par serveur Discord. /mute et /ban : votes de modération (votes.js).
 // Tourne sur le VPS à côté de l'API (service onirique-discord-bot, réglé par deploy/onirique-discord).
 import { Client, GatewayIntentBits, EmbedBuilder, MessageFlags } from 'discord.js';
 import {
@@ -9,6 +9,7 @@ import {
 } from '@discordjs/voice';
 import { tracksOf } from './tracks.js';
 import { resourceOf } from './audio.js';
+import { VOTE_COMMANDS, startVote, watchMutes } from './votes.js';
 
 const API = (process.env.ONIRIQUE_API || 'http://127.0.0.1:4850').replace(/\/+$/, '');
 const COLOR = 0xE23444;
@@ -24,6 +25,7 @@ const COMMANDS = [
   { name: 'pause', description: 'Met en pause ou reprend la lecture' },
   { name: 'stop', description: 'Arrête la musique et quitte le salon' },
   { name: 'file', description: 'Montre le titre en cours et ce qui suit' },
+  ...VOTE_COMMANDS,
 ];
 
 const embed = (title, description) => new EmbedBuilder().setColor(COLOR).setTitle(title).setDescription(description || null);
@@ -144,6 +146,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 
 client.once('clientReady', async () => {
   await client.application.commands.set(COMMANDS);
+  watchMutes(client);
   console.log(`Connecté en tant que ${client.user.tag} sur ${client.guilds.cache.size} serveur(s).`);
 });
 
@@ -153,6 +156,7 @@ client.on('interactionCreate', async (i) => {
   const private_ = (content) => i.reply({ content, flags: MessageFlags.Ephemeral });
   try {
     if (i.commandName === 'play') return await play(i);
+    if (i.commandName === 'mute' || i.commandName === 'ban') return await startVote(i);
     if (i.commandName === 'file') {
       if (!q?.current) return private_('La file est vide.');
       const rest = q.tracks.slice(0, 10).map((t, n) => `${n + 1}. ${line(t)}`).join('\n');
