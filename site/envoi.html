@@ -1,19 +1,19 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=cba51916"></script>
+<script src="assets/i18n.js?v=ef3f70e8"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Envoi de fichiers lourds par un lien — ONIRIQUE</title>
-<meta name="description" content="Envoie stems, sessions et clips jusqu’à 4 Go par un lien qui expire, avec mot de passe si tu veux. Avec ton compte ou ta seule adresse e-mail ; le destinataire télécharge sans compte.">
+<meta name="description" content="Envoie stems, sessions et clips jusqu’à 10 Go par un lien qui expire, avec mot de passe si tu veux. Avec ton compte ou ta seule adresse e-mail ; le destinataire télécharge sans compte.">
 <link rel="canonical" href="https://onirique.store/envoi">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Envoi de fichiers lourds par un lien — ONIRIQUE">
-<meta property="og:description" content="Stems, sessions et clips jusqu’à 4 Go, par un lien qui expire. Le destinataire télécharge sans compte.">
+<meta property="og:description" content="Stems, sessions et clips jusqu’à 10 Go, par un lien qui expire. Le destinataire télécharge sans compte.">
 <meta property="og:url" content="https://onirique.store/envoi">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -147,12 +147,12 @@
   <section class="hero" id="send" hidden>
     <p class="eyebrow rise">Envoi de fichiers</p>
     <h1 class="rise">Tes fichiers lourds, <em>par un lien</em></h1>
-    <p class="lede rise">Stems, sessions, clips : jusqu’à 4 Go par envoi. Le lien expire quand tu veux, et ton destinataire télécharge sans compte.</p>
+    <p class="lede rise">Stems, sessions, clips : jusqu’à 10 Go par envoi. Le lien expire quand tu veux, et ton destinataire télécharge sans compte.</p>
     <div class="rise">
       <button class="drop" id="drop" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
         <strong>Dépose tes fichiers ici</strong>
-        <span>ou clique pour les choisir · jusqu’à 4 Go par envoi</span>
+        <span>ou clique pour les choisir · jusqu’à 10 Go par envoi</span>
       </button>
       <input id="file" type="file" multiple hidden>
 
@@ -284,8 +284,8 @@ function drawFiles() {
   $("s-files").replaceChildren(...files.map((f) => fileRow(f, { removable: true })));
   const t = total();
   $("s-total").textContent = !files.length ? "" : files.length + (files.length > 1 ? " fichiers · " : " fichier · ") + size(t)
-    + (t > 4e9 ? " : plus que 4 Go" : "");
-  $("s-go").disabled = !files.length || t > 4e9;
+    + (t > 10e9 ? " : plus que 10 Go" : "");
+  $("s-go").disabled = !files.length || t > 10e9;
 }
 const add = (list) => { files.push(...[...list].filter((f) => f.size > 0)); drawFiles(); };
 $("drop").onclick = () => $("file").click();

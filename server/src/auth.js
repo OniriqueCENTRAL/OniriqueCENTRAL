@@ -91,6 +91,9 @@ export const PARTNERS = ['abrasion', 'relic'];
 /** Beta-Testeur et Beta-Testeuse : exactement les droits du rôle ONIRIQUE (vip), qui les entraîne partout. */
 export const BETA = ['beta', 'betaf'];
 export const ROLES = ['user', 'vip', ...BETA, ...PARTNERS, 'admin', 'founder'];
+/** Un plugin réservé (fondateurs seulement, ou beta-testeurs seulement) est-il fermé à ce rôle ? Les fondateurs voient les deux. */
+export const reservedAway = (product, role) => (!!product.founders_only && role !== 'founder')
+  || (!!product.beta_only && ![...BETA, 'founder'].includes(role));
 // Les droits réglables par les fondateurs, rôle par rôle (panel admin, « Droits des rôles »). Les valeurs par défaut
 // sont celles d'avant le réglage. Les fondateurs ont toujours tous ces droits, sauf « plugins » : eux s'accordent leurs
 // licences par le réglage « Mes licences », comme les admins et les partenaires.

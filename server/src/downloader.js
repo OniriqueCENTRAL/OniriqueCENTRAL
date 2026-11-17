@@ -85,7 +85,7 @@ const run = (bin, args, options = {}) => new Promise((resolve, reject) => execFi
 const YTDLP = path.join(config.dataDir, 'yt-dlp');
 const YTDLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
 // YouTube refuse l'adresse du serveur (« Sign in to confirm you're not a bot ») : il passe donc par un compte YouTube
-// de secours, jamais un compte personnel, dont les cookies (format Netscape) sont posés à la main dans ce fichier.
+// de secours, jamais un compte personnel, dont les cookies (format Netscape) sont posés par onirique-youtube-cookies.
 // yt-dlp les rafraîchit lui-même. Sans le fichier, rien ne change.
 const YOUTUBE_COOKIES = path.join(config.dataDir, 'youtube-cookies.txt');
 let updating = null;

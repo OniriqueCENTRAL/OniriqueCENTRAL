@@ -4,8 +4,13 @@
 //    est tiré au moment de le jouer (les adresses de YouTube expirent) ;
 //  - une autre adresse http(s) est prise telle quelle, comme un fichier audio.
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
 export const YTDLP = process.env.YTDLP || '/opt/yt-dlp/bin/yt-dlp';
+// YouTube refuse l'adresse du VPS (« Sign in to confirm you're not a bot ») : le bot passe, comme le Downloader, par le
+// compte YouTube de secours posé par onirique-youtube-cookies (même utilisateur « central »). Sans le fichier, sans compte.
+const COOKIES = process.env.YOUTUBE_COOKIES || '/var/lib/onirique-central/youtube-cookies.txt';
+export const ytdlpBase = () => ['--js-runtimes', 'node', ...(existsSync(COOKIES) ? ['--cookies', COOKIES] : [])];
 const YTDLP_SITES = /^(www\.|m\.|music\.|on\.)?(youtube\.com|youtu\.be|soundcloud\.com)$/;
 // Ces plateformes ne donnent pas leur son : on demande le nom, cherché ensuite sur YouTube.
 const CLOSED = /(^|\.)(spotify\.com|deezer\.com|deezer\.page\.link|music\.apple\.com|tidal\.com|music\.amazon\.[a-z.]+)$/;
@@ -13,9 +18,13 @@ const CLOSED = /(^|\.)(spotify\.com|deezer\.com|deezer\.page\.link|music\.apple\
 // Une ligne JSON par vidéo ; --flat-playlist : la liste seule, sans ouvrir chaque vidéo (rapide).
 function ytdlpList(target) {
   return new Promise((resolve, reject) => {
-    execFile(YTDLP, ['--js-runtimes', 'node', '--flat-playlist', '--playlist-end', '50', '--no-warnings', '--print', '%(.{id,title,url,webpage_url,channel,uploader})j', target],
-      { timeout: 30000, maxBuffer: 4 << 20 }, (error, stdout) => {
-        if (error && !stdout) return reject(new Error('YouTube ne répond pas, réessaie dans un instant.'));
+    execFile(YTDLP, [...ytdlpBase(), '--flat-playlist', '--playlist-end', '50', '--no-warnings', '--print', '%(.{id,title,url,webpage_url,channel,uploader})j', target],
+      { timeout: 30000, maxBuffer: 4 << 20 }, (error, stdout, stderr) => {
+        if (error && !stdout) {
+          console.error('yt-dlp :', String(stderr || error.message).trim().split('\n').pop());
+          return reject(new Error(/confirm you.re not a bot/.test(stderr) ? 'YouTube bloque le bot pour l’instant : colle plutôt un lien d’écoute ONIRIQUE ou SoundCloud.'
+            : 'YouTube ne répond pas, réessaie dans un instant.'));
+        }
         resolve(stdout.split('\n').filter(Boolean).map((line) => JSON.parse(line)));
       });
   });

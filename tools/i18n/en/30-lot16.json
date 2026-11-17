@@ -63,7 +63,7 @@
   "Tes fichiers sont en ligne. Voici le lien à partager :": "Your files are online. Here is the link to share:",
   "Ton envoi est prêt{} — ONIRIQUE": "Your transfer is ready{} — ONIRIQUE",
   "Trop d'essais : demande un nouveau code.": "Too many attempts: request a new code.",
-  "Un envoi fait 4 Go au plus.": "A transfer is 4 GB at most.",
+  "Un envoi fait 10 Go au plus.": "A transfer is 10 GB at most.",
   "Un membre ONIRIQUE": "An ONIRIQUE member",
   "Voici ton code pour envoyer tes fichiers : {}": "Here is your code to send your files: {}",
   "4 échantillons de latence seulement (aucune à 96 kHz), léger sur le processeur, Windows et Mac (VST3 et AU).": "Only 4 samples of latency (none at 96 kHz), light on the processor, Windows and Mac (VST3 and AU).",

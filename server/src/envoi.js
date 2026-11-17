@@ -65,9 +65,9 @@ COMMIT;`);
 // Fichiers envoyés en morceaux par la page (avant : un fichier par requête, donc missing = 0 par défaut).
 if (!all('PRAGMA table_info(envoi_files)').some((c) => c.name === 'missing')) db.exec('ALTER TABLE envoi_files ADD COLUMN missing INTEGER NOT NULL DEFAULT 0');
 
-// Par envoi : l'archive .zip (sans ZIP64) tient sous 4 Go. Un fichier envoyé d'un bloc est limité à 2 Go par nginx ;
-// en morceaux (CHUNK au plus chacun), il peut faire jusqu'à 4 Go.
-export const ENVOI_MAX = 4e9;
+// Par envoi : 10 Go (le .zip passe en ZIP64 au-delà de 4 Go). Un fichier envoyé d'un bloc est limité à 2 Go par nginx ;
+// en morceaux (CHUNK au plus chacun), il peut faire jusqu'à 10 Go.
+export const ENVOI_MAX = 10e9;
 export const CHUNK = 32 * 1024 ** 2;
 export const ENVOI_FILES = 100;
 export const ENVOI_DAYS = [1, 7, 14, 30];
@@ -105,11 +105,11 @@ export function mountEnvoi(app, { requireVerified, receiveFile, wrap }) {
     return e;
   };
   const filesOf = (id) => all('SELECT id, name, size, stored_as, missing FROM envoi_files WHERE envoi_id = ? ORDER BY id', id);
-  // La place pour un fichier de plus : nombre de fichiers, 4 Go par envoi, disque du serveur. Rend la place déjà prise.
+  // La place pour un fichier de plus : nombre de fichiers, 10 Go par envoi, disque du serveur. Rend la place déjà prise.
   const room = (e, length) => {
     const files = filesOf(e.id), used = files.reduce((s, f) => s + f.size, 0);
     if (files.length >= ENVOI_FILES) throw new HttpError(413, `${ENVOI_FILES} fichiers au plus par envoi.`);
-    if (used + length > ENVOI_MAX) throw new HttpError(413, 'Un envoi fait 4 Go au plus.');
+    if (used + length > ENVOI_MAX) throw new HttpError(413, 'Un envoi fait 10 Go au plus.');
     const disk = fs.statfsSync(config.dataDir), total = disk.blocks * disk.bsize, taken = total - disk.bavail * disk.bsize;
     if ((taken + length) / total > setting('sounds_disk_max', 0.8)) throw new HttpError(507, "Le disque du serveur est presque plein : réessaie plus tard.");
     return used;

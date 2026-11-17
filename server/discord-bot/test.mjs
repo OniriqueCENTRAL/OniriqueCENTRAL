@@ -52,4 +52,24 @@ assert.equal(msg.components[0].components[0].url, 'https://open.spotify.com/albu
 assert.equal(duration(3_725_000), '1 h 02');
 assert.deepEqual(albumIdsOf('<a href="/album/2QFhpFWnxp6hIMHowmb8VG">x</a><a href="/album/2QFhpFWnxp6hIMHowmb8VG">'), ['2QFhpFWnxp6hIMHowmb8VG']);
 
+// Votes /mute et /ban : durées, décompte, liste des mutes.
+const { parseDuration, formatDuration, tally, loadMutes, saveMutes, VOTE_COMMANDS } = await import('./vote-rules.js');
+assert.equal(parseDuration('10m'), 600_000);
+assert.equal(parseDuration(' 1j 30min '), 86_400_000 + 1_800_000);
+assert.equal(parseDuration('90'), 5_400_000);
+assert.throws(() => parseDuration('30s'), /minimale/);
+assert.throws(() => parseDuration('29j'), /maximale/);
+assert.throws(() => parseDuration('10x'), /illisible/);
+assert.throws(() => parseDuration('10m abc'), /illisible/);
+assert.equal(formatDuration(86_400_000 + 3_600_000 + 600_000), '1 j 1 h 10 min');
+assert.deepEqual(tally(new Map([['a', true], ['b', true], ['c', true]]), 3), { yes: 3, no: 0, passed: true });
+assert.equal(tally(new Map([['a', true], ['b', true]]), 3).passed, false); // pas assez de voix
+assert.equal(tally(new Map([['a', true], ['b', true], ['c', true], ['d', false], ['e', false], ['f', false]]), 3).passed, false); // égalité
+assert.deepEqual(VOTE_COMMANDS.map((c) => c.name), ['mute', 'ban']);
+const { mkdtempSync } = await import('node:fs');
+const mutesFile = `${mkdtempSync(`${(await import('node:os')).tmpdir()}/mutes-`)}/mutes.json`;
+assert.deepEqual(loadMutes(mutesFile), []);
+saveMutes([{ guildId: 'g', userId: 'u', until: 1000 }], mutesFile);
+assert.deepEqual(loadMutes(mutesFile), [{ guildId: 'g', userId: 'u', until: 1000 }]);
+
 console.log('discord-bot : ok');

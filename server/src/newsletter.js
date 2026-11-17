@@ -123,7 +123,7 @@ function personal(c, user, service) {
   const blocks = [];
   if (c.image) blocks.push({ image: c.image, alt: c.title || c.subject, url: c.buttonUrl || undefined });
   // Les plugins choisis, avec leur prix soldé (et l'ancien barré) pendant les soldes.
-  const products = () => c.productIds.map((id) => get('SELECT * FROM products WHERE id = ? AND published = 1 AND founders_only = 0', id)).filter(Boolean)
+  const products = () => c.productIds.map((id) => get('SELECT * FROM products WHERE id = ? AND published = 1 AND founders_only = 0 AND beta_only = 0', id)).filter(Boolean)
     .map((p) => ({ product: { slug: p.slug, name: p.name, tagline: p.tagline, priceCents: saleOf(p)?.priceCents ?? p.price_cents,
       wasCents: saleOf(p) ? p.price_cents : null, image: p.image ? `/api/media/${p.image}` : null, creatorLabel: CREATOR_LABELS[p.creator] } }));
   // Dans le texte : « ![légende](adresse) » seul sur sa ligne met une image à cet endroit, « [plugins] » les plugins choisis.
@@ -202,7 +202,7 @@ export function announceVersions(at = now()) {
                      GROUP BY v.product_id, v.version HAVING MAX(v.created_at) <= ?`, at - UPDATE_DELAY);
   for (const { product_id: productId, version } of fresh) {
     const p = get('SELECT * FROM products WHERE id = ?', productId);
-    const users = !p || !p.published || p.founders_only ? [] : all(
+    const users = !p || !p.published || p.founders_only || p.beta_only ? [] : all(
       `SELECT u.id, u.email FROM users u WHERE u.email_verified != 0 AND u.marketing != -1
          AND (EXISTS (SELECT 1 FROM licenses l WHERE l.user_id = u.id AND l.product_id = ? AND l.type != 'trial' AND l.status = 'active')
               OR EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id))`, productId)

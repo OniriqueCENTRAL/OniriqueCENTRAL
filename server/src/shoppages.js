@@ -10,7 +10,7 @@ import { all, get } from './db.js';
 const esc = (s) => String(s ?? '').replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c]);
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length <= n ? t : t.slice(0, n - 1).replace(/\s+\S*$/, '') + '…'; };
 const readSite = (name) => fs.readFileSync(path.join(config.siteDir, name), 'utf8');
-const visible = () => all('SELECT * FROM products WHERE published = 1 AND founders_only = 0 ORDER BY position, created_at');
+const visible = () => all('SELECT * FROM products WHERE published = 1 AND founders_only = 0 AND beta_only = 0 ORDER BY position, created_at');
 
 /** La page d'un plugin : boutique.html avec sa propre tête (titre, description, canonique, aperçu, JSON-LD). */
 export function productPage(p, html = readSite('boutique.html')) {
@@ -56,7 +56,7 @@ export function sitemap(base = readSite('sitemap.xml')) {
 
 export function mountShopPages(app, { wrap }) {
   app.get('/boutique/:slug', wrap(async (req, res) => {
-    const p = get('SELECT * FROM products WHERE slug = ? AND published = 1 AND founders_only = 0', String(req.params.slug));
+    const p = get('SELECT * FROM products WHERE slug = ? AND published = 1 AND founders_only = 0 AND beta_only = 0', String(req.params.slug));
     if (!p) return res.status(404).type('html').send(`<!doctype html><meta charset="utf-8"><title>Plugin introuvable — ONIRIQUE</title><p>Ce plugin n'existe pas ou n'est plus en vente. <a href="/boutique">Voir tous les plugins</a></p>`);
     res.set('Cache-Control', 'no-cache').type('html').send(productPage(p));
   }));

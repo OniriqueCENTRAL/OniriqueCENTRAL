@@ -9,7 +9,7 @@ import { all, get, run, now, transaction, grantFounders, setting, setSetting } f
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
-  ROLES, PARTNERS, isStaff, partnerOf, canSelfLicense, RIGHTS, EDITABLE_ROLES, rolesWith, can, rightsOf,
+  ROLES, PARTNERS, isStaff, partnerOf, canSelfLicense, reservedAway, RIGHTS, EDITABLE_ROLES, rolesWith, can, rightsOf,
   createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm, requireTwoFactor, DECOY_HASH,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
@@ -157,7 +157,7 @@ function productView(p, platform) {
     creator: p.creator, // "onirique" ou un partenaire ("abrasion", "relic")
     // le fondateur à l'origine du plugin (db.js), ou null
     founder: (() => { const u = p.founder_id && get('SELECT id, engineer_name, name, instagram, engineer_avatar FROM users WHERE id = ?', p.founder_id); return u ? personView(u) : null; })(),
-    priceCents: p.price_cents, monthlyCents: p.monthly_cents || 0, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published, foundersOnly: !!p.founders_only,
+    priceCents: p.price_cents, monthlyCents: p.monthly_cents || 0, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published, foundersOnly: !!p.founders_only, betaOnly: !!p.beta_only,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     // imageManual : l'image a été choisie par un admin. demoOff : la démo a été retirée à la main, l'application ne la refabrique pas.
     imageManual: !!p.image_manual, demoOff: !!p.demo_off,
@@ -243,7 +243,7 @@ const licenseView = (l) => ({
 });
 
 /** Ce qu'un compte (ou un visiteur : null) ne voit pas : un produit hors ligne, ou réservé aux fondateurs. */
-const hiddenFrom = (product, user) => !product.published || (!!product.founders_only && user?.role !== 'founder');
+const hiddenFrom = (product, user) => !product.published || reservedAway(product, user?.role);
 
 function findProduct(id) {
   const product = get('SELECT * FROM products WHERE id = ?', int(id, 0));
@@ -1424,12 +1424,42 @@ export function createApp() {
     res.json({ ok: true });
   });
 
-  admin.get('/support', (_req, res) => {
+  admin.get('/support', (req, res) => {
     res.json({
       mailbox: config.supportEmail,
-      messages: all(`SELECT id, user_id AS userId, email, name, subject, message, context, created_at AS createdAt, replied_at AS repliedAt
-                     FROM support_messages ORDER BY created_at DESC LIMIT 200`),
+      me: req.user.id,
+      messages: all(`SELECT m.id, m.user_id AS userId, m.email, m.name, m.subject, m.message, m.context, m.created_at AS createdAt,
+                            m.replied_at AS repliedAt, m.archived_at AS archivedAt, m.claimed_at AS claimedAt,
+                            m.claimed_by AS claimedBy, COALESCE(NULLIF(u.name, ''), u.email) AS claimedByName
+                     FROM support_messages m LEFT JOIN users u ON u.id = m.claimed_by
+                     ORDER BY m.archived_at IS NOT NULL, m.created_at DESC LIMIT 300`),
     });
+  });
+
+  const supportMessage = (id) => {
+    const m = get('SELECT * FROM support_messages WHERE id = ?', int(id, 0));
+    if (!m) throw new HttpError(404, 'Message introuvable.');
+    return m;
+  };
+
+  // « Je m'en occupe » : la demande porte le nom de l'admin qui la traite. Reprendre celle d'un autre demande force: true.
+  admin.post('/support/:id/claim', (req, res) => {
+    const m = supportMessage(req.params.id);
+    if (req.body.take === false) {
+      if (m.claimed_by && m.claimed_by !== req.user.id && !req.body.force) throw new HttpError(409, "Quelqu'un d'autre s'occupe de cette demande.");
+      run('UPDATE support_messages SET claimed_by = NULL, claimed_at = NULL WHERE id = ?', m.id);
+    } else {
+      if (m.claimed_by && m.claimed_by !== req.user.id && !req.body.force) throw new HttpError(409, "Quelqu'un d'autre s'occupe déjà de cette demande.");
+      run('UPDATE support_messages SET claimed_by = ?, claimed_at = ? WHERE id = ?', req.user.id, now(), m.id);
+    }
+    res.json({ ok: true });
+  });
+
+  // Archiver range une demande réglée sans la supprimer ; archived: false la remet dans la liste.
+  admin.post('/support/:id/archive', (req, res) => {
+    const m = supportMessage(req.params.id);
+    run('UPDATE support_messages SET archived_at = ? WHERE id = ?', req.body.archived === false ? null : now(), m.id);
+    res.json({ ok: true });
   });
 
   // Réponse écrite dans le panel : part de l'adresse d'ONIRIQUE, avec le message d'origine cité en dessous.
@@ -1445,7 +1475,9 @@ export function createApp() {
       subject: /^re\s*:/i.test(m.subject) ? m.subject : `Re : ${m.subject}`,
       text: `${text}\n\n—\nVotre message du ${new Date(m.created_at).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })} :\n${quoted}`,
     });
-    run('UPDATE support_messages SET replied_at = ? WHERE id = ?', now(), m.id);
+    // Répondre à une demande libre la prend en charge.
+    run(`UPDATE support_messages SET replied_at = ?, claimed_at = COALESCE(claimed_at, ?), claimed_by = COALESCE(claimed_by, ?) WHERE id = ?`,
+      now(), now(), req.user.id, m.id);
     res.json({ ok: true });
   }));
 
@@ -1464,7 +1496,7 @@ export function createApp() {
       subscribers: count(`SELECT COUNT(*) AS n FROM subscriptions WHERE status = 'active' AND current_period_end > ?`, now()),
       activations: count('SELECT COUNT(*) AS n FROM activations'),
       revenueCents: count(`SELECT COALESCE(SUM(amount_cents), 0) AS n FROM orders WHERE provider IN ('stripe', 'lemon')`),
-      supportMessages: count('SELECT COUNT(*) AS n FROM support_messages'),
+      supportMessages: count('SELECT COUNT(*) AS n FROM support_messages WHERE archived_at IS NULL'),
       paymentsMode: paymentsMode(),
       disk: diskSpace(),
     });
@@ -1509,20 +1541,21 @@ export function createApp() {
       description: body.description !== undefined ? str(body.description, 4000) : existing.description ?? '',
       published: body.published !== undefined ? (body.published ? 1 : 0) : existing.published ?? 1,
       foundersOnly: body.foundersOnly !== undefined ? (body.foundersOnly ? 1 : 0) : existing.founders_only ?? 0,
+      betaOnly: body.betaOnly !== undefined ? (body.betaOnly ? 1 : 0) : existing.beta_only ?? 0,
     };
   }
 
   admin.post('/products', (req, res) => {
     const f = productFields(req.body);
-    if (f.foundersOnly && req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur réserve un plugin aux fondateurs.');
+    if ((f.foundersOnly || f.betaOnly) && req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur réserve un plugin aux fondateurs ou aux beta-testeurs.');
     const slug = (str(req.body.slug, 40) || f.name).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) throw new HttpError(400, 'Identifiant invalide.');
     if (get('SELECT id FROM products WHERE slug = ?', slug)) throw new HttpError(409, 'Un produit porte déjà cet identifiant.');
     // Un partenaire ne crée que des plugins à son nom.
     const { lastInsertRowid } = run(
-      `INSERT INTO products (slug, name, tagline, description, accent, price_cents, monthly_cents, published, created_at, creator, category, founders_only, position)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))`, // un nouveau plugin se range à la fin
-      slug, f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, now(), req.creator ?? f.creator, f.category, f.foundersOnly);
+      `INSERT INTO products (slug, name, tagline, description, accent, price_cents, monthly_cents, published, created_at, creator, category, founders_only, beta_only, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))`, // un nouveau plugin se range à la fin
+      slug, f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, now(), req.creator ?? f.creator, f.category, f.foundersOnly, f.betaOnly);
     res.status(201).json(productView(findProduct(lastInsertRowid)));
     translateMissing(); // sa fiche en anglais, sans attendre le prochain passage
   });
@@ -1540,9 +1573,9 @@ export function createApp() {
   admin.patch('/products/:id', (req, res) => {
     const product = ownProduct(req, req.params.id);
     const f = productFields(req.body, product);
-    if (f.foundersOnly !== product.founders_only && req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur réserve un plugin aux fondateurs.');
-    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, monthly_cents = ?, published = ?, creator = ?, category = ?, founders_only = ? WHERE id = ?',
-      f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, req.creator ?? f.creator, f.category, f.foundersOnly, product.id);
+    if ((f.foundersOnly !== product.founders_only || f.betaOnly !== product.beta_only) && req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur réserve un plugin aux fondateurs ou aux beta-testeurs.');
+    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, monthly_cents = ?, published = ?, creator = ?, category = ?, founders_only = ?, beta_only = ? WHERE id = ?',
+      f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, req.creator ?? f.creator, f.category, f.foundersOnly, f.betaOnly, product.id);
     res.json(productView(findProduct(product.id)));
     translateMissing();
   });
@@ -1686,7 +1719,7 @@ export function createApp() {
     // (pour un partenaire : chacun de ses plugins).
     const everything = req.body.productId === 'all';
     const products = everything
-      ? all('SELECT * FROM products WHERE (? IS NULL OR creator = ?) AND founders_only = 0 ORDER BY created_at', req.creator, req.creator)
+      ? all('SELECT * FROM products WHERE (? IS NULL OR creator = ?) AND founders_only = 0 AND beta_only = 0 ORDER BY created_at', req.creator, req.creator)
       : [ownProduct(req, req.body.productId)];
     if (!products.length) throw new HttpError(400, 'Aucun plugin à mettre dans la licence.');
     const type = LICENSE_TYPES.includes(req.body.type) ? req.body.type : 'perpetual';

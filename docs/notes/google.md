@@ -12,6 +12,10 @@ Si « ça ne publie pas » ou « accès bloqué » : regarder les réglages Goog
   consentement, testeurs ajoutés tant que le projet n'est pas vérifié.
 - Pinterest : `server/src/pinterest.js`, réglé par `onirique-pinterest`. L'API ne donne ni le fil d'accueil
   ni la recherche globale.
+- Downloader (`server/src/downloader.js`) : YouTube bloque l'adresse du VPS ; il passe par les cookies d'un compte
+  de secours, posés par `onirique-youtube-cookies`.
 
 ## Pièges
 - `redirect_uri_mismatch` = URI non déclarée dans le client OAuth, pas un bug du code.
+- « YouTube bloque le serveur » au Downloader = cookies du compte de secours sans `LOGIN_INFO` / `SAPISID`
+  (export hors connexion) ou périmés : refaire l'export en fenêtre privée, la fermer sans se déconnecter.
