@@ -57,6 +57,7 @@
   retrouve le dossier du dépôt (demandé au premier lancement) et y lance l'app, qui suit donc `git pull`. Rien de secret dedans : il passe par la clé SSH du PC et les scripts de `deploy/`.
 
 ## Pièges
+- CLIPS (`app/main/clips.js`) : un MP4 de MediaRecorder pris en cours d'enregistrement annonce une durée fausse et ne se coupe pas ; garder le WebM. Dans l'application, une boucle `requestAnimationFrame` s'arrête quand la fenêtre est cachée : utiliser un minuteur.
 - Un `backdrop-filter` sur l'en-tête en fait un calque à part : sans `z-index`, les titres animés de la page passent devant ses menus (réglé dans `da.css`). Changer `da.css` impose de monter son `?v=` dans toutes les pages (cache d'un an).
 - Navigateur sans barre de titre : dans `WM_NCCALCSIZE`, tester `IsZoomed` et pas `WindowState` (pas encore à jour
   pendant l'agrandissement) ; une fenêtre agrandie déplacée garde sa mauvaise place, d'où le recalage dans `WM_WINDOWPOSCHANGING`.
