@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { all, get, run, now, setting } from './db.js';
-import { HttpError, canSelfLicense, rolesWith } from './auth.js';
+import { HttpError, canSelfLicense, reservedAway, rolesWith } from './auth.js';
 
 //==============================================================================
 //  Clé de signature : la clé privée ne quitte jamais le serveur. Les plugins
@@ -110,9 +110,9 @@ export function pickPlan() {
 
 /** Ce qui donne à l'utilisateur le droit d'utiliser ce produit, ou null. */
 export function entitlement(userId, productId) {
-  // Un plugin réservé aux fondateurs n'est à personne d'autre, quelle que soit la licence ou l'abonnement.
-  if (get('SELECT founders_only FROM products WHERE id = ?', productId)?.founders_only
-      && get('SELECT role FROM users WHERE id = ?', userId)?.role !== 'founder') return null;
+  // Un plugin réservé (fondateurs, beta-testeurs) n'est à personne d'autre, quelle que soit la licence ou l'abonnement.
+  const reserved = get('SELECT founders_only, beta_only FROM products WHERE id = ?', productId);
+  if (reserved && reservedAway(reserved, get('SELECT role FROM users WHERE id = ?', userId)?.role)) return null;
   const license = get(
     `SELECT * FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active'
        AND (expires_at IS NULL OR expires_at > ?)

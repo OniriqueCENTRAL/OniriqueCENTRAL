@@ -282,6 +282,8 @@ if (!hasColumn('products', 'demo_off')) db.exec('ALTER TABLE products ADD COLUMN
 // L'abonnement mensuel à un seul plugin, à côté de l'achat à vie : son prix par mois (0 : pas proposé).
 // Un plugin « fondateurs seulement » : en développement ou en test, seuls les fondateurs le voient, l'installent et l'activent.
 if (!hasColumn('products', 'founders_only')) db.exec('ALTER TABLE products ADD COLUMN founders_only INTEGER NOT NULL DEFAULT 0');
+// Pareil pour « beta-testeurs seulement » : seuls les rôles beta, betaf et les fondateurs le voient, l'installent et l'activent.
+if (!hasColumn('products', 'beta_only')) db.exec('ALTER TABLE products ADD COLUMN beta_only INTEGER NOT NULL DEFAULT 0');
 if (!hasColumn('products', 'monthly_cents')) db.exec('ALTER TABLE products ADD COLUMN monthly_cents INTEGER NOT NULL DEFAULT 0');
 // L'ordre de la boutique et de l'application, choisi par l'équipe dans le panel. Au départ : l'ordre d'ajout.
 if (!hasColumn('products', 'position')) {

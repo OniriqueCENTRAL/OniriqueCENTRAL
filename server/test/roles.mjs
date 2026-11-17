@@ -516,6 +516,30 @@ try {
     await call('GET', `/api/download/${version.id}`, { token: admin.token });
   });
 
+  await step('plugin réservé aux beta-testeurs : seuls beta, betaf et les fondateurs le voient', async () => {
+    await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'ONIRIQUE BETA', betaOnly: true }, expect: 403 });
+    const test = await call('POST', '/api/admin/products', { token: founder.token, body: { name: 'ONIRIQUE BETA', priceCents: 1000, betaOnly: true }, expect: 201 });
+    assert.equal(test.betaOnly, true);
+    const version = await upload(founder.token, test.id, '1.0.0');
+    const ids = async (token) => (await call('GET', '/api/catalog', { token })).products.map((p) => p.id);
+    assert.ok(!(await ids()).includes(test.id));
+    for (const who of [admin, vip, user, partner]) {
+      assert.ok(!(await ids(who.token)).includes(test.id));
+      await call('GET', `/api/download/${version.id}`, { token: who.token, expect: 404 });
+    }
+    await call('PATCH', `/api/admin/products/${test.id}`, { token: admin.token, body: { name: 'VU' }, expect: 404 });
+    for (const role of ['beta', 'betaf']) {
+      run('UPDATE users SET role = ? WHERE id = ?', role, vip.id);
+      assert.ok((await ids(vip.token)).includes(test.id));
+      assert.deepEqual(await call('GET', `/api/download/${version.id}`, { token: vip.token }), binary);
+      assert.ok((await call('GET', '/api/me', { token: vip.token })).entitlements?.[test.id]); // droits ONIRIQUE : le plugin offert
+    }
+    run(`UPDATE users SET role = 'vip' WHERE id = ?`, vip.id);
+    assert.ok((await ids(founder.token)).includes(test.id));
+    await call('PATCH', `/api/admin/products/${test.id}`, { token: founder.token, body: { betaOnly: false } });
+    assert.ok((await ids()).includes(test.id));
+  });
+
   await step('en production, l\'équipe sans double authentification n\'ouvre pas le panel admin', async () => {
     process.env.NODE_ENV = 'production';
     try {
