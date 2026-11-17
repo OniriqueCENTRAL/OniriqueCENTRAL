@@ -547,6 +547,10 @@ if (!hasColumn('social_automations', 'post_at')) db.exec('ALTER TABLE social_aut
 if (hasColumn('social_automations', 'like_comment')) db.exec('ALTER TABLE social_automations DROP COLUMN like_comment');
 // Date de la dernière réponse envoyée depuis le panel support.
 if (!hasColumn('support_messages', 'replied_at')) db.exec('ALTER TABLE support_messages ADD COLUMN replied_at INTEGER');
+// Panel support : qui s'occupe d'une demande (et depuis quand), et les demandes réglées rangées dans les archives.
+if (!hasColumn('support_messages', 'claimed_by')) db.exec('ALTER TABLE support_messages ADD COLUMN claimed_by INTEGER REFERENCES users(id) ON DELETE SET NULL');
+if (!hasColumn('support_messages', 'claimed_at')) db.exec('ALTER TABLE support_messages ADD COLUMN claimed_at INTEGER');
+if (!hasColumn('support_messages', 'archived_at')) db.exec('ALTER TABLE support_messages ADD COLUMN archived_at INTEGER');
 db.exec(`DELETE FROM social_automations WHERE platform = 'tiktok'; DELETE FROM social_accounts WHERE platform = 'tiktok';`);
 
 export const now = () => Date.now();

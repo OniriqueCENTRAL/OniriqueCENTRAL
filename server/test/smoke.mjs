@@ -28,7 +28,7 @@ const popularitySource = http.createServer((req, res) => {
 process.env.POPULARITY_SOURCE = `http://127.0.0.1:${popularitySource.address().port}/`;
 
 const { createApp } = await import('../src/app.js');
-const { run, now, db } = await import('../src/db.js');
+const { run, get, now, db } = await import('../src/db.js');
 const { hashPassword } = await import('../src/auth.js');
 const { publicKeyPem } = await import('../src/licensing.js');
 const { outbox } = await import('../src/mail.js');
@@ -485,7 +485,25 @@ try {
     await call('POST', `/api/admin/support/${muet.id}/reply`, { token: admin, body: { text: 'Bonjour, réinstallez le plugin.' } });
     assert.deepEqual([outbox.at(-1).to, outbox.at(-1).subject], [['voix@test.local'], 'Re : Plugin muet']);
     assert.match(outbox.at(-1).text, /réinstallez le plugin\.[\s\S]*> Le plugin ne sort aucun son\./);
-    assert.ok((await call('GET', '/api/admin/support', { token: admin })).messages.find((m) => m.id === muet.id).repliedAt);
+    const answered = (await call('GET', '/api/admin/support', { token: admin })).messages.find((m) => m.id === muet.id);
+    assert.ok(answered.repliedAt);
+    assert.ok(answered.claimedBy && answered.claimedByName, 'répondre prend la demande en charge');
+
+    // Je m'en occupe / archiver
+    const other = inbox.messages.find((m) => m.id !== muet.id);
+    await call('POST', `/api/admin/support/${other.id}/claim`, { token: user, body: {}, expect: 403 });
+    await call('POST', `/api/admin/support/${other.id}/claim`, { token: admin, body: {} });
+    run('UPDATE support_messages SET claimed_by = ? WHERE id = ?', get('SELECT id FROM users WHERE id <> ? LIMIT 1', answered.claimedBy).id, other.id);
+    await call('POST', `/api/admin/support/${other.id}/claim`, { token: admin, body: {}, expect: 409 });
+    await call('POST', `/api/admin/support/${other.id}/claim`, { token: admin, body: { take: false }, expect: 409 });
+    await call('POST', `/api/admin/support/${other.id}/claim`, { token: admin, body: { force: true } });
+    await call('POST', `/api/admin/support/${other.id}/claim`, { token: admin, body: { take: false } });
+    assert.equal((await call('GET', '/api/admin/support', { token: admin })).messages.find((m) => m.id === other.id).claimedBy, null);
+    await call('POST', `/api/admin/support/${other.id}/archive`, { token: admin, body: {} });
+    let list = (await call('GET', '/api/admin/support', { token: admin })).messages;
+    assert.ok(list.at(-1).id === other.id && list.at(-1).archivedAt, 'les archives viennent après les demandes ouvertes');
+    await call('POST', `/api/admin/support/${other.id}/archive`, { token: admin, body: { archived: false } });
+    assert.equal((await call('GET', '/api/admin/support', { token: admin })).messages.find((m) => m.id === other.id).archivedAt, null);
     await call('DELETE', `/api/admin/support/${inbox.messages[0].id}`, { token: admin });
     assert.equal((await call('GET', '/api/admin/support', { token: admin })).messages.length, 1);
   });

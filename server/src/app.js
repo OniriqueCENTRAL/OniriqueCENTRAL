@@ -1424,12 +1424,42 @@ export function createApp() {
     res.json({ ok: true });
   });
 
-  admin.get('/support', (_req, res) => {
+  admin.get('/support', (req, res) => {
     res.json({
       mailbox: config.supportEmail,
-      messages: all(`SELECT id, user_id AS userId, email, name, subject, message, context, created_at AS createdAt, replied_at AS repliedAt
-                     FROM support_messages ORDER BY created_at DESC LIMIT 200`),
+      me: req.user.id,
+      messages: all(`SELECT m.id, m.user_id AS userId, m.email, m.name, m.subject, m.message, m.context, m.created_at AS createdAt,
+                            m.replied_at AS repliedAt, m.archived_at AS archivedAt, m.claimed_at AS claimedAt,
+                            m.claimed_by AS claimedBy, COALESCE(NULLIF(u.name, ''), u.email) AS claimedByName
+                     FROM support_messages m LEFT JOIN users u ON u.id = m.claimed_by
+                     ORDER BY m.archived_at IS NOT NULL, m.created_at DESC LIMIT 300`),
     });
+  });
+
+  const supportMessage = (id) => {
+    const m = get('SELECT * FROM support_messages WHERE id = ?', int(id, 0));
+    if (!m) throw new HttpError(404, 'Message introuvable.');
+    return m;
+  };
+
+  // « Je m'en occupe » : la demande porte le nom de l'admin qui la traite. Reprendre celle d'un autre demande force: true.
+  admin.post('/support/:id/claim', (req, res) => {
+    const m = supportMessage(req.params.id);
+    if (req.body.take === false) {
+      if (m.claimed_by && m.claimed_by !== req.user.id && !req.body.force) throw new HttpError(409, "Quelqu'un d'autre s'occupe de cette demande.");
+      run('UPDATE support_messages SET claimed_by = NULL, claimed_at = NULL WHERE id = ?', m.id);
+    } else {
+      if (m.claimed_by && m.claimed_by !== req.user.id && !req.body.force) throw new HttpError(409, "Quelqu'un d'autre s'occupe déjà de cette demande.");
+      run('UPDATE support_messages SET claimed_by = ?, claimed_at = ? WHERE id = ?', req.user.id, now(), m.id);
+    }
+    res.json({ ok: true });
+  });
+
+  // Archiver range une demande réglée sans la supprimer ; archived: false la remet dans la liste.
+  admin.post('/support/:id/archive', (req, res) => {
+    const m = supportMessage(req.params.id);
+    run('UPDATE support_messages SET archived_at = ? WHERE id = ?', req.body.archived === false ? null : now(), m.id);
+    res.json({ ok: true });
   });
 
   // Réponse écrite dans le panel : part de l'adresse d'ONIRIQUE, avec le message d'origine cité en dessous.
@@ -1445,7 +1475,9 @@ export function createApp() {
       subject: /^re\s*:/i.test(m.subject) ? m.subject : `Re : ${m.subject}`,
       text: `${text}\n\n—\nVotre message du ${new Date(m.created_at).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })} :\n${quoted}`,
     });
-    run('UPDATE support_messages SET replied_at = ? WHERE id = ?', now(), m.id);
+    // Répondre à une demande libre la prend en charge.
+    run(`UPDATE support_messages SET replied_at = ?, claimed_at = COALESCE(claimed_at, ?), claimed_by = COALESCE(claimed_by, ?) WHERE id = ?`,
+      now(), now(), req.user.id, m.id);
     res.json({ ok: true });
   }));
 
@@ -1464,7 +1496,7 @@ export function createApp() {
       subscribers: count(`SELECT COUNT(*) AS n FROM subscriptions WHERE status = 'active' AND current_period_end > ?`, now()),
       activations: count('SELECT COUNT(*) AS n FROM activations'),
       revenueCents: count(`SELECT COALESCE(SUM(amount_cents), 0) AS n FROM orders WHERE provider IN ('stripe', 'lemon')`),
-      supportMessages: count('SELECT COUNT(*) AS n FROM support_messages'),
+      supportMessages: count('SELECT COUNT(*) AS n FROM support_messages WHERE archived_at IS NULL'),
       paymentsMode: paymentsMode(),
       disk: diskSpace(),
     });
