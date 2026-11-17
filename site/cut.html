@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ddac0a51"></script>
+<script src="assets/i18n.js?v=2cd9bc9c"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -689,7 +689,6 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <div class="fx" data-fx="flash"><label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label><div class="fx-opts"><label>Force du flash<input type="range" id="flashAmt" min="10" max="300" step="10"></label></div></div>
               <div class="fx" data-fx="retro"><label class="check"><input type="checkbox" id="retro"> Look rétro <small>pixels et grain</small></label></div>
               <div class="fx" data-fx="photoMove"><label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement <small>sinon une photo reste fixe</small></label></div>
-              <div class="fx" data-fx="smoothClips"><label class="check"><input type="checkbox" id="smoothClips"> Fluidifier les clips <small>ralentis ou filmés à moins de 30 images/s : plus d’à-coups à l’export</small></label></div>
             </div>
         </div>
         <div class="stack">
@@ -1066,7 +1065,7 @@ const VARIED = [2, 2, 2, 1, 1, 4, 2, 2, 1, 1, 1, 1, 4];
 
 // Les réglages qu’on retrouve d’une fois sur l’autre ; le son et les clips, eux, restent sur l’appareil le temps de la page.
 // Les effets vidéo, à zéro (aucun effet).
-const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 100, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false, smoothClips: true };
+const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 100, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false };
 // Les options de films : réplique d’ouverture, volumes, ralenti.
 // Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
@@ -1840,6 +1839,58 @@ async function offerClips() {
   $("clips-restore").onclick = () => restoreSet(set, false);
 }
 let syncAll = () => {}; // remet chaque réglage affiché à jour (défini dans start)
+
+// ——— Rééditer une vidéo du cloud CUT : la recette de son montage est gardée avec elle à l’export (le son, le passage, les
+// réglages, les clips, les coupes retouchées). Les clips eux-mêmes restent sur cet appareil (montages gardés ci-dessus). ———
+/** La recette du montage en cours. */
+function editRecipe() {
+  const snapshot = Object.fromEntries(Object.entries(prefs).filter(([k]) => !["previewVol", "mute", "keepCloud"].includes(k)));
+  return { v: 1, title: $("title").value || sound.name, start: sound.start, bpm: sound.bpm, prefs: snapshot,
+    cloudTrack: cloud ? cloud.trackId : null, sound: !cloud && sound.file ? fileKey(sound.file) : null, lyrics: cloud ? null : $("lyrics").value,
+    clips: clips.map((c) => ({ key: c.file ? fileKey(c.file) : null, name: c.name, zone: c.zone || null })),
+    manual: manual ? manual.map((x) => ({ t0: x.t0, t1: x.t1, clip: x.clip, from: x.from || 0 })) : null, focus };
+}
+/** Retire tous les clips du montage en cours (avant d’en reprendre un autre). */
+function dropClips() {
+  stop(); manual = null; overlays = [];
+  for (const c of clips) { URL.revokeObjectURL(c.url); if (framesModule) framesModule.then((m) => m && m.forget(c.file)); }
+  clips.length = 0; focus = 0;
+}
+/** Rouvre le montage d’une vidéo du cloud CUT : sa recette, ou, pour une vidéo plus ancienne, le dernier montage gardé sur
+ *  cet appareil pour ce son (retrouvé par son titre). On corrige, puis on réexporte. */
+async function reopenEdit(v) {
+  let edit = null;
+  const response = await fetch("/api/cut/library/" + v.id + "/edit", { headers: { Authorization: "Bearer " + TOKEN } }).catch(() => null);
+  if (response && response.ok) edit = await response.json();
+  else {
+    const clean = (t) => String(t || "").replace(/[\\/:*?"<>|]+/g, "").slice(0, 60);
+    const sets = (await KEEP.all("sets").catch(() => [])).filter((x) => x && x.key && x.title && v.name.startsWith(clean(x.title))).sort((a, b) => b.at - a.at);
+    if (!sets.length) return alert("Le montage de « " + v.name + " » n’est pas gardé sur cet appareil : ouvre le son et ses clips à la main pour le refaire.");
+    edit = { ...sets[0], clips: sets[0].clips.map((key) => ({ key, name: key.split("|")[0] })) };
+  }
+  $("cloud-page").hidden = true; document.body.style.overflow = "";
+  showTab("son"); scrollTo({ top: 0, behavior: "smooth" });
+  dropClips();
+  if (edit.cloudTrack) await loadCloudId(edit.cloudTrack, { start: edit.start, bpm: edit.bpm });
+  else { const file = edit.sound && await KEEP.get("files", edit.sound).catch(() => null); if (file) await loadSound(file, { start: edit.start, bpm: edit.bpm, title: edit.title }); }
+  if (!sound.buffer) return alert("Le son de ce montage n’est plus sur cet appareil : ouvre-le, puis réessaie « Rééditer ce montage ».");
+  dropClips(); // ouvrir le son peut reprendre d’autres clips : on repart de ceux de la vidéo
+  Object.assign(prefs, edit.prefs); savePrefs(); syncAll();
+  if (edit.lyrics != null && !cloud) { $("lyrics").value = edit.lyrics; readLyrics(); }
+  if (edit.title) $("title").value = edit.title;
+  const found = await Promise.all(edit.clips.map((c) => (c.key ? KEEP.get("files", c.key).catch(() => null) : null)));
+  await addClips(found.filter(Boolean));
+  // Les zones choisies dans chaque clip, et les coupes retouchées (seulement si tous les clips sont là, dans le même ordre).
+  const all = found.every(Boolean);
+  if (all) edit.clips.forEach((c, i) => { if (c.zone && clips[i]) clips[i].zone = c.zone; });
+  manual = all && edit.manual ? edit.manual.map((x) => ({ ...x })) : null;
+  focus = all ? edit.focus || 0 : 0;
+  sound.start = clampStart(edit.start); position = 0; refresh();
+  const missing = edit.clips.filter((_, i) => !found[i]).map((c) => c.name);
+  $("batch-help").textContent = missing.length
+    ? "Montage repris, mais " + missing.length + " clip(s) ne sont plus sur cet appareil : " + missing.join(", ") + ". Ajoute-les à nouveau."
+    : "Montage de « " + v.name + " » repris : corrige ce qu’il faut, puis exporte de nouveau.";
+}
 
 // ——— L’analyse des clips (assets/clip-frames.js) : leurs meilleurs moments pour le montage, et où est le sujet pour le recadrage ———
 let analyzing = Promise.resolve();
@@ -3209,23 +3260,7 @@ const settle = (v) => new Promise((resolve) => {
 /** Dessine l’image du temps t une fois chaque vidéo calée sur la bonne image. */
 const exportVideos = () => [introVideo, ...pool, ...overlays.map((o) => o.video)].filter(Boolean);
 let clipFrames = null, framesModule = null; // assets/clip-frames.js, chargé au premier besoin
-const framesLib = () => framesModule || (framesModule = import("./assets/clip-frames.js?v=2").catch(() => null));
-/** Fluidifier les clips : un clip ralenti, ou filmé à moins de 30 images par seconde, n'a pas une image neuve à chaque image de
- *  la vidéo. Plutôt que de répéter la même (le fond avance alors par à-coups, et le texte, lui fluide, semble décrocher),
- *  l'image de la vidéo mélange l'image du clip et la prochaine vraiment différente, au prorata du temps (assets/clip-frames.js,
- *  smoothAt ; jamais à travers un changement de plan). Seulement à l'export, image par image. */
-function blendFrame(v, b, rate) {
-  const frame = b.frame;
-  if (!b.next || b.gap / rate <= 1.2 / 30 || b.mix < .02) return frame;
-  const w = frame.displayWidth, h = frame.displayHeight;
-  const c = v.__blend || (v.__blend = document.createElement("canvas"));
-  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
-  const x = c.getContext("2d");
-  x.globalAlpha = 1; x.drawImage(frame, 0, 0, w, h);
-  x.globalAlpha = b.mix; x.drawImage(b.next, 0, 0, w, h);
-  x.globalAlpha = 1;
-  return c;
-}
+const framesLib = () => framesModule || (framesModule = import("./assets/clip-frames.js?v=3").catch(() => null));
 async function drawAt(t) {
   for (let tries = 0; ; tries++) {
     let drawn = draw(t, false) !== false;
@@ -3237,9 +3272,7 @@ async function drawAt(t) {
           if (v.__reader) v.__reader.close();
           v.__reader = await clipFrames(decoded.get(v.src)); v.__readerSrc = v.src; v.__rot = v.__reader.rotation;
         }
-        // Fluidifier : l'image du clip mélangée à la prochaine image vraiment différente (voir blendFrame).
-        v.__frame = prefs.smoothClips ? blendFrame(v, await v.__reader.smoothAt(v.__want), pool.includes(v) ? slow() : 1) : await v.__reader.frameAt(v.__want);
-        v.__at = v.__want; v.__want = null;
+        v.__frame = await v.__reader.frameAt(v.__want); v.__at = v.__want; v.__want = null;
       }
       drawn = draw(t, false) !== false;
     }
@@ -3251,9 +3284,12 @@ async function drawAt(t) {
 /** Toute la vidéo, image par image, en H.264 brut. */
 async function encodeExact(codec, progress) {
   const chunks = [];
-  let failed = null, wake = () => {};
+  let failed = null, wake = () => {}, latest = -1, reordered = false;
   const encoder = new VideoEncoder({
-    output: (chunk) => { const bytes = new Uint8Array(chunk.byteLength); chunk.copyTo(bytes); chunks.push(bytes); wake(); },
+    // Images rangées dans le désordre (images B, que font les encodeurs d’Apple) : le H.264 brut ne garde pas leur ordre
+    // d’affichage, le serveur doit alors le réencoder (sinon une image revient en arrière à chaque coupe sur iPhone et TikTok).
+    output: (chunk) => { if (chunk.timestamp < latest) reordered = true; latest = Math.max(latest, chunk.timestamp);
+      const bytes = new Uint8Array(chunk.byteLength); chunk.copyTo(bytes); chunks.push(bytes); wake(); },
     error: (error) => { failed = error; wake(); },
   });
   encoder.ondequeue = () => wake();
@@ -3284,11 +3320,11 @@ async function encodeExact(codec, progress) {
     if (failed) throw failed;
   } finally {
     exact = false;
-    for (const v of exportVideos()) { if (v.__reader) v.__reader.close(); delete v.__reader; delete v.__readerSrc; delete v.__frame; delete v.__want; delete v.__blend; }
+    for (const v of exportVideos()) { if (v.__reader) v.__reader.close(); delete v.__reader; delete v.__readerSrc; delete v.__frame; delete v.__want; }
     decoded.clear(); shown = -1;
     if (encoder.state !== "closed") encoder.close();
   }
-  return new Blob(chunks, { type: "video/h264" });
+  return Object.assign(new Blob(chunks, { type: "video/h264" }), { reordered });
 }
 const CEILING = 0.891; // −1 dBFS : la marge qui évite toute saturation à l’encodage AAC
 /** Le son du passage tel qu’il est dans le fichier (sans passer par l’enregistrement du navigateur), en WAV 24 bits, avec les
@@ -3365,6 +3401,9 @@ async function exportVideo(series = null) {
           const keptVideo = await upload("/api/cut/library?name=" + encodeURIComponent(name.replace(/\.mp4$/, "")) + "&duration=" + total().toFixed(2) + "&caption=" + encodeURIComponent(caption), blob, "json",
             (p) => setStatus(label + "Enregistrement dans ton cloud CUT…", (n + .92 + .08 * p) / list.length));
           savedToCloud++;
+          // La recette du montage, pour pouvoir le rééditer depuis « Mes vidéos CUT ».
+          fetch("/api/cut/library/" + keptVideo.id + "/edit", { method: "PUT", headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" },
+            body: JSON.stringify(editRecipe()) }).catch(() => {});
           if (prefs.ytAuto) { try { shorts.push(await scheduleShort(keptVideo, caption, montagePhrases())); } catch (error) { shortError = error.message; } }
           if (prefs.igAuto && reelsAllowed) { try { reels.push(await scheduleReel(keptVideo, caption)); } catch (error) { reelError = error.message; } }
         } catch { cloudFailed = true; }
@@ -3418,7 +3457,7 @@ async function exportOne(mime, wav, progress) {
     await Promise.all([introVideo, ...pool].map((v) => ((v.dataset.seg || (v === introVideo && introLen())) && v.readyState < 2 ? new Promise((r) => { v.onseeked = v.oncanplay = r; setTimeout(r, 3000); }) : null)));
     let raw = null, query = audioId ? "?audio=" + audioId : "";
     if (audioId && encoderCodec) raw = await encodeExact(encoderCodec, progress).catch(() => null);
-    if (raw) query += "&raw=h264";
+    if (raw) query += "&raw=h264" + (raw.reordered ? "&reorder=1" : "");
     else {
       ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
       const out = ctx.createMediaStreamDestination();
@@ -3909,12 +3948,13 @@ async function renderLibrary() {
         document.querySelectorAll(".vmenu").forEach((m) => m.remove());
         const svg = (d) => { const n = document.createElementNS("http://www.w3.org/2000/svg", "svg"); n.setAttribute("viewBox", "0 0 24 24"); n.innerHTML = d; return n; };
         const ICON = { play: '<path d="M8 5v14l11-7z"/>', yt: '<rect x="3" y="6" width="18" height="12" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>', ig: '<rect x="4" y="4" width="16" height="16" rx="4.5"/><circle cx="12" cy="12" r="3.6"/><circle cx="16.8" cy="7.2" r=".6"/>',
-          edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+          edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>', redo: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
           down: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', check: '<path d="M5 12l5 5 9-10"/>' };
         const item = (icon, label, on, extra = {}) => el("button", { type: "button", role: "menuitem", onclick: on, ...extra }, svg(ICON[icon]), el("span", { textContent: label }));
         const sep = () => el("hr");
         card.append(el("div", { className: "vmenu", role: "menu" },
           item("play", "Lire", () => { closeMenu(); play(); }),
+          item("redo", "Rééditer ce montage", () => { closeMenu(); reopenEdit(v).catch((error) => alert("Le montage n’a pas pu être repris : " + error.message)); }),
           sep(),
           ...(shortsAllowed ? [item(inShorts.has(v.id) ? "check" : "yt", inShorts.has(v.id) ? "Déjà programmée sur YouTube" : "Programmer sur YouTube (Short)", schedule(scheduleShort, "Short YouTube prévu"), { disabled: inShorts.has(v.id) })] : []),
           ...(reelsAllowed ? [item(inReels.has(v.id) ? "check" : "ig", inReels.has(v.id) ? "Déjà programmée sur Instagram" : "Programmer sur Instagram (Reel)", schedule(scheduleReel, "Reel Instagram prévu"), { disabled: inReels.has(v.id) })] : []),

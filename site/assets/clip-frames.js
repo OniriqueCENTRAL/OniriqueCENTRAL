@@ -91,7 +91,7 @@ export async function analyzeClip(file, duration) {
 }
 
 class Reader {
-  constructor(d) { this.d = d; this.rotation = d.rotation; this.decoder = null; this.frames = []; this.current = null; this.wake = () => {}; this.prints = new Map(); this.held = null; }
+  constructor(d) { this.d = d; this.rotation = d.rotation; this.decoder = null; this.frames = []; this.current = null; this.wake = () => {}; }
 
   /** Repart de l'image clé n° i (ordre de décodage). */
   reset(i) {
@@ -114,74 +114,21 @@ class Reader {
       if (this.failed) throw this.failed;
       while (this.frames.length && this.frames[0].timestamp <= target) { if (this.current) this.current.close(); this.current = this.frames.shift(); }
       if (this.frames.length || this.flushDone) break; // une image après t est arrivée : celle d'avant est la bonne
-      this.pump(3);
+      // Fin du clip : on vide le décodeur sans l'attendre ici, pour fermer à mesure les images qui en sortent (sinon il se bloque).
+      if (this.next >= samples.length && !this.flushed) {
+        const decoder = this.decoder;
+        this.flushed = true;
+        decoder.flush().then(() => { if (decoder === this.decoder) { this.flushDone = true; this.wake(); } },
+          (e) => { if (decoder === this.decoder) { this.failed = e; this.wake(); } });
+      }
+      // Peu d'images d'avance : le décodeur matériel a peu de place, et se bloque si on garde trop d'images non fermées.
+      while (this.next < samples.length && this.decoder.decodeQueueSize < 8 && this.frames.length < 3) {
+        const s = samples[this.next++];
+        this.decoder.decode(new EncodedVideoChunk({ type: s.is_sync ? "key" : "delta", timestamp: s.cts, duration: s.duration, data: s.data }));
+      }
       await new Promise((resolve) => { this.wake = resolve; });
     }
     return this.current || this.frames[0] || null;
-  }
-
-  /** Donne du travail au décodeur, sans dépasser `ahead` images d'avance. */
-  pump(ahead) {
-    const { samples } = this.d;
-    // Fin du clip : on vide le décodeur sans l'attendre ici, pour fermer à mesure les images qui en sortent (sinon il se bloque).
-    if (this.next >= samples.length && !this.flushed) {
-      const decoder = this.decoder;
-      this.flushed = true;
-      decoder.flush().then(() => { if (decoder === this.decoder) { this.flushDone = true; this.wake(); } },
-        (e) => { if (decoder === this.decoder) { this.failed = e; this.wake(); } });
-    }
-    // Peu d'images d'avance : le décodeur matériel a peu de place, et se bloque si on garde trop d'images non fermées.
-    while (this.next < samples.length && this.decoder.decodeQueueSize < 8 && this.frames.length < ahead) {
-      const s = samples[this.next++];
-      this.decoder.decode(new EncodedVideoChunk({ type: s.is_sync ? "key" : "delta", timestamp: s.cts, duration: s.duration, data: s.data }));
-    }
-  }
-
-  /** Décode jusqu'à avoir `ahead` images d'avance (ou la fin du clip). */
-  async fill(ahead) {
-    while (this.decoder && this.frames.length < ahead && !this.flushDone) {
-      if (this.failed) throw this.failed;
-      this.pump(ahead);
-      if (this.frames.length >= ahead || this.flushDone) break;
-      await new Promise((resolve) => { this.wake = resolve; });
-    }
-  }
-
-  /** L'empreinte d'une image (32 × 32, en gris), gardée pour reconnaître une image répétée. */
-  print(f) {
-    const known = this.prints.get(f.timestamp);
-    if (known) return known;
-    const c = this.printCanvas || (this.printCanvas = new OffscreenCanvas(32, 32)), x = c.getContext("2d", { willReadFrequently: true });
-    x.drawImage(f, 0, 0, 32, 32);
-    const px = x.getImageData(0, 0, 32, 32).data, y = new Float32Array(1024);
-    for (let k = 0; k < 1024; k++) y[k] = .299 * px[4 * k] + .587 * px[4 * k + 1] + .114 * px[4 * k + 2];
-    if (this.prints.size > 48) this.prints.delete(this.prints.keys().next().value);
-    this.prints.set(f.timestamp, y);
-    return y;
-  }
-  /** L'écart moyen entre deux empreintes (0 à 255). */
-  distance(a, b) { let s = 0; for (let k = 0; k < 1024; k++) s += Math.abs(a[k] - b[k]); return s / 1024; }
-  /** Deux images vraiment différentes (une image répétée, même recompressée, reste sous ce seuil). */
-  differ(a, b) { return this.distance(a, b) > .6; }
-
-  /**
-   * Pour fluidifier un clip ralenti ou à basse cadence : l'image du temps t, la prochaine image VRAIMENT différente (un
-   * téléphone qui filme à 15 ou 24 images par seconde dans un fichier à 30 répète des images), l'écart entre l'apparition
-   * de l'une et de l'autre (gap, secondes du clip) et où t tombe entre les deux (mix, de 0 à 1).
-   */
-  async smoothAt(t) {
-    const frame = await this.frameAt(t);
-    if (!frame || frame !== this.current) return { frame };
-    const { timescale, offset } = this.d, now = this.print(frame);
-    // L'image tenue : depuis quand elle est à l'écran (une image répétée ne la change pas).
-    if (!this.held || frame.timestamp < this.held.last || this.differ(now, this.held.print)) this.held = { since: frame.timestamp, print: now };
-    this.held.last = frame.timestamp;
-    await this.fill(4);
-    const next = this.frames.find((f) => this.differ(this.print(f), now));
-    // Pas d'image suivante, ou un vrai changement de plan dans le clip : on ne mélange pas (pas d'image fantôme).
-    if (!next || this.distance(this.print(next), now) > 28) return { frame };
-    const span = next.timestamp - this.held.since;
-    return { frame, next, gap: span / timescale, mix: Math.min(1, Math.max(0, ((t + offset) * timescale - this.held.since) / span)) };
   }
 
   close() {
@@ -190,6 +137,6 @@ class Reader {
     for (const f of this.frames) f.close();
     this.frames = [];
     if (this.current) this.current.close();
-    this.current = null; this.failed = null; this.held = null;
+    this.current = null; this.failed = null;
   }
 }

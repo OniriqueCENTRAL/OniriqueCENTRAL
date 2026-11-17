@@ -133,6 +133,9 @@ export function remindCut(at = now()) {
 if (!all('PRAGMA table_info(cut_videos)').some((c) => c.name === 'scheduled_day')) db.exec('ALTER TABLE cut_videos ADD COLUMN scheduled_day TEXT');
 // La description proposée par CUT (style TikTok), reprise par l'appweb et pour YouTube.
 if (!all('PRAGMA table_info(cut_videos)').some((c) => c.name === 'caption')) db.exec("ALTER TABLE cut_videos ADD COLUMN caption TEXT NOT NULL DEFAULT ''");
+// La recette du montage (le son, le passage, les réglages, les clips, les coupes retouchées), pour le rééditer plus tard.
+// Les clips eux-mêmes restent sur l'appareil du fondateur : seuls leurs noms et tailles sont ici.
+if (!all('PRAGMA table_info(cut_videos)').some((c) => c.name === 'edit')) db.exec('ALTER TABLE cut_videos ADD COLUMN edit TEXT');
 // La banque de fonds : les clips (vidéos, photos) qu'un fondateur garde pour les réutiliser d'un son à l'autre.
 db.exec(`CREATE TABLE IF NOT EXISTS cut_backgrounds (
   id         INTEGER PRIMARY KEY,
@@ -167,7 +170,7 @@ const videoUrl = (id, download = false) => { const e = now() + 6 * 3600_000, d =
 // L'image d'aperçu : le lien change une fois par jour, pour que le téléphone la garde en cache d'une visite à l'autre.
 const DAY = 86_400_000;
 const posterUrl = (id) => { const e = (Math.floor(now() / DAY) + 2) * DAY; return `/api/cut/poster/${id}?e=${e}&s=${sign(`cutposter.${id}.${e}`)}`; };
-const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, scheduledDay: v.scheduled_day || null, caption: v.caption || '',
+const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, scheduledDay: v.scheduled_day || null, caption: v.caption || '', hasEdit: !!v.edit,
   url: videoUrl(v.id), downloadUrl: videoUrl(v.id, true), poster: posterUrl(v.id) });
 const shortUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/short/${id}?e=${e}&s=${sign(`cutshort.${id}.${e}`)}`; };
 const reelUrl = (id, hours = 6) => { const e = now() + hours * 3600_000; return `/api/cut/reel/${id}?e=${e}&s=${sign(`cutreel.${id}.${e}`)}`; };
@@ -188,19 +191,23 @@ const AUDIO_TTL = 30 * 60_000; // un son envoyé sans vidéo derrière est effac
 // raw : la vidéo arrive en H.264 brut, encodée image par image par la page : gardée telle quelle à 30 images par seconde
 // exactes (aucun second encodage, donc aucune perte, et presque rien à faire pour le serveur). Sinon, l'enregistrement en
 // temps réel est réencodé en x264, réglé pour tenir dans la mémoire du serveur (1 cœur, moins de 2 Go).
-export const cutArgs = (input, output, audio = null, offset = 0, raw = false) => ['-y', '-hide_banner', '-loglevel', 'error',
+// reorder : le H.264 brut a des images rangées dans le désordre (images B, encodeurs d'Apple). Copié tel quel, il perdrait
+// leur ordre d'affichage (une image qui revient en arrière à chaque coupe sur iPhone) : il est alors décodé dans le bon
+// ordre et réencodé en x264, sans images B.
+export const cutArgs = (input, output, audio = null, offset = 0, raw = false, reorder = false) => ['-y', '-hide_banner', '-loglevel', 'error',
   ...(raw ? ['-r', '30', '-f', 'h264'] : []), '-i', input,
   ...(audio ? [...(offset > 0 ? ['-itsoffset', offset.toFixed(3)] : offset < 0 ? ['-ss', (-offset).toFixed(3)] : []), '-i', audio,
     // Pas de -shortest avec le H.264 brut copié : ffmpeg y perd tout le son (le son a déjà la durée exacte de la vidéo).
     '-map', '0:v:0', '-map', '1:a:0', ...(raw ? [] : ['-shortest'])] : []),
-  ...(raw ? ['-c:v', 'copy'] : ['-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,format=yuv420p',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-threads', '1', '-x264-params', 'rc-lookahead=20', '-profile:v', 'high', '-tune', 'film']),
+  ...(raw && !reorder ? ['-c:v', 'copy'] : ['-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,format=yuv420p',
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-threads', '1', '-x264-params', 'rc-lookahead=20', '-profile:v', 'high', '-tune', 'film',
+    ...(reorder ? ['-bf', '0'] : [])]),
   '-c:a', 'aac', '-b:a', '320k',
   '-movflags', '+faststart', output];
 
-function toMp4(input, output, audio, offset, raw) {
+function toMp4(input, output, audio, offset, raw, reorder = false) {
   if (testing) { fs.copyFileSync(input, output); return Promise.resolve(); } // pas de ffmpeg pendant les tests
-  return new Promise((resolve, reject) => execFile('ffmpeg', cutArgs(input, output, audio, offset, raw), { timeout: 10 * 60_000 }, (error, _out, stderr) =>
+  return new Promise((resolve, reject) => execFile('ffmpeg', cutArgs(input, output, audio, offset, raw, reorder), { timeout: 10 * 60_000 }, (error, _out, stderr) =>
     (error ? reject(new HttpError(500, 'La conversion en MP4 a échoué : ' + (String(stderr || error.message).trim().split('\n').pop().slice(0, 160) || 'ffmpeg'))) : resolve())));
 }
 
@@ -272,6 +279,20 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     fs.rmSync(path.join(libDir, v.stored_as), { force: true });
     fs.rmSync(path.join(libDir, v.stored_as + '.jpg'), { force: true });
     res.json({ ok: true });
+  });
+  // La recette du montage : gardée juste après l'export, relue par « Rééditer ce montage ».
+  app.put('/api/cut/library/:id/edit', requireUser, member, onirique, (req, res) => {
+    const v = ownVideo(req), body = req.body;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new HttpError(400, 'Montage attendu.');
+    const edit = JSON.stringify(body);
+    if (edit.length > 150_000) throw new HttpError(413, 'Ce montage est trop long à garder.');
+    run('UPDATE cut_videos SET edit = ? WHERE id = ?', edit, v.id);
+    res.json({ ok: true });
+  });
+  app.get('/api/cut/library/:id/edit', requireUser, member, onirique, (req, res) => {
+    const v = ownVideo(req);
+    if (!v.edit) throw new HttpError(404, "Cette vidéo a été faite avant que CUT ne garde ses montages.");
+    res.json(JSON.parse(v.edit));
   });
   // Le planning : le jour où la vidéo doit partir (null : pas de jour).
   app.patch('/api/cut/library/:id', requireUser, member, onirique, (req, res) => {
@@ -505,7 +526,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     const input = path.join(dir, file.storedAs), output = input + '.mp4';
     const clean = () => { fs.rmSync(input, { force: true }); fs.rmSync(output, { force: true }); };
     // Le son ne sert qu'une fois : effacé dès que le MP4 est fait (ou raté).
-    try { await toMp4(input, output, audio?.file, offset, req.query.raw === 'h264'); } catch (error) { clean(); throw error; } finally { if (audio) forget(audioId); }
+    try { await toMp4(input, output, audio?.file, offset, req.query.raw === 'h264', req.query.reorder === '1'); } catch (error) { clean(); throw error; } finally { if (audio) forget(audioId); }
     res.set({ 'Content-Type': 'video/mp4', 'Content-Length': fs.statSync(output).size, 'Cache-Control': 'no-store' });
     const stream = fs.createReadStream(output);
     stream.on('close', clean);
