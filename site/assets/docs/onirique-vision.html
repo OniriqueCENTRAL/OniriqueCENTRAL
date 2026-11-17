@@ -1,0 +1,83 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#vi-vue">Vue d’ensemble</a></li>
+  <li><a href="#vi-fenetre">La fenêtre animée</a></li>
+  <li><a href="#vi-current">CURRENT, DRIFT et LEAN</a></li>
+  <li><a href="#vi-saturation">Saturation et couleur</a></li>
+  <li><a href="#vi-surgical">SURGICAL et niveaux</a></li>
+  <li><a href="#vi-reglages">Tous les réglages</a></li>
+  <li><a href="#vi-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="vi-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE VISION est un processeur de <b>saturation multibande et de dimension stéréo</b>. Il sépare le son en quatre bandes, <b>FIRST</b>, <b>SECOND</b>, <b>THIRD</b> et <b>FOURTH</b>, et donne à chacune sa saturation, son mouvement et sa place dans l’espace : de la profondeur, de la largeur, de la densité et de la vie, sans rien perdre en mono.</p>
+<p>Subtil, il reste naturel ; poussé, il devient créatif. Sur une voix, des drums, une basse, un synthé, un bus ou le mix entier.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 945 310" role="img" aria-label="Chemin du son de VISION : entrée, filtres, séparation en quatre bandes, saturation, CURRENT, DRIFT et LEAN, couleur, sortie, DRY / WET"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="161" height="46" rx="6"/><text x="150.5" y="59" text-anchor="middle">IN</text><text x="150.5" y="75" text-anchor="middle" class="t2">HP · LP</text><rect class="b" x="261" y="40" width="161" height="46" rx="6"/><text x="341.5" y="59" text-anchor="middle">4 BANDES</text><text x="341.5" y="75" text-anchor="middle" class="t2">FIRST … FOURTH</text><path class="w" d="M231 63 H261" marker-end="url(#doc-arr)"/><rect class="b" x="452" y="40" width="161" height="46" rx="6"/><text x="532.5" y="59" text-anchor="middle">SATURATION</text><text x="532.5" y="75" text-anchor="middle" class="t2">TAPE · TUBE · TRANS</text><path class="w" d="M422 63 H452" marker-end="url(#doc-arr)"/><rect class="ba" x="643" y="40" width="161" height="46" rx="6"/><text x="723.5" y="59" text-anchor="middle" class="tb">CURRENT</text><text x="723.5" y="75" text-anchor="middle" class="t2">gauche ≠ droite</text><path class="w" d="M613 63 H643" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="150" width="161" height="46" rx="6"/><text x="150.5" y="169" text-anchor="middle">DRIFT · LEAN</text><text x="150.5" y="185" text-anchor="middle" class="t2">par bande</text><path class="w" d="M723.5 86 V118 H150.5 V150" marker-end="url(#doc-arr)"/><rect class="b" x="261" y="150" width="161" height="46" rx="6"/><text x="341.5" y="169" text-anchor="middle">COLOR</text><text x="341.5" y="185" text-anchor="middle" class="t2">INFRA · TERRA · SUPRA</text><path class="w" d="M231 173 H261" marker-end="url(#doc-arr)"/><rect class="b" x="452" y="150" width="161" height="46" rx="6"/><text x="532.5" y="169" text-anchor="middle">OUT</text><text x="532.5" y="185" text-anchor="middle" class="t2">HP · LP · GAIN</text><path class="w" d="M422 173 H452" marker-end="url(#doc-arr)"/><path class="w" d="M613 173 H641" marker-end="url(#doc-arr)"/><circle class="ba" cx="659" cy="173" r="18"/><text x="659" y="179" text-anchor="middle" class="tb">+</text><text x="659" y="147" text-anchor="middle" class="t2">DRY / WET</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V288 H659 V191" marker-end="url(#doc-arr)"/><text x="80" y="282" class="t2">le son d’origine</text><path class="w" d="M677 173 H717"/><circle class="w" cx="723" cy="173" r="6"/><text x="723" y="201" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>BOXY et HARSH se placent avant (PRE) ou après (POST) la saturation. Le son d’origine du DRY / WET reste en phase avec le traitement : doser à mi-chemin ne creuse rien.</figcaption>
+</figure>
+
+<h2 id="vi-fenetre">1. La fenêtre animée</h2>
+<ul>
+  <li><b>FIRST, SECOND, THIRD, FOURTH</b> : un clic met la bande en solo (plusieurs à la fois possible).</li>
+  <li>Les <b>ronds en haut</b> déplacent les trois séparations ; les <b>poignées</b> règlent le niveau de chaque bande (-18 à +12 dB, molette aussi, double-clic : 0 dB). VISION s’utilise ainsi comme un EQ à quatre bandes.</li>
+  <li>Les <b>deux traces</b>, la gauche en haut et la droite en bas, montrent ce que CURRENT, DRIFT et LEAN font à chaque canal en ce moment. Presque confondues sans CURRENT, elles s’écartent et crépitent quand on le pousse.</li>
+  <li><b>ON / OFF</b> sous chaque bande : son traitement en service ou non (son niveau reste). <b>HYPER MODE</b> : le double du drive.</li>
+</ul>
+
+<h2 id="vi-current">2. CURRENT, DRIFT et LEAN</h2>
+<ul>
+  <li><b>CURRENT</b> (0 à 200 %) : la réponse de la bande évolue sans arrêt, <b>différemment à gauche et à droite</b> (dérive spectrale aléatoire, en dual-mono). Le son prend du mouvement, de la largeur et de la profondeur, sans chorus et sans changer de caractère. Au-delà de 100 % : plus vif, plus expérimental. Sur une piste mono, le mouvement reste, sans la stéréo.</li>
+  <li><b>DRIFT</b> : le centre de la bande s’écarte, vers le haut à gauche et vers le bas à droite. Plus de largeur et de séparation, la somme mono ne bouge pas.</li>
+  <li><b>LEAN</b> (OFF, L, R) : la bande penche doucement d’un côté, sans sonner panoramiquée. Deux espaces un peu différents, idéal pour séparer des éléments.</li>
+</ul>
+<div class="tip"><p>DRIFT et LEAN ne changent rien à la somme mono : ce qu’ils ajoutent d’un côté, ils le retirent de l’autre.</p></div>
+
+<h2 id="vi-saturation">3. Saturation et couleur</h2>
+<ul>
+  <li><b>TAPE</b> : bande magnétique, compression progressive, transitoires arrondies, aigus adoucis.</li>
+  <li><b>TUBE</b> : lampe, harmoniques paires, chaleur, compression douce.</li>
+  <li><b>TRANS</b> : transformateur ; le grave sature d’abord, les attaques passent, le bas devient dense.</li>
+  <li><b>SATURATION</b> de chaque bande : la profondeur du drive. Le niveau moyen est rattrapé : on juge le caractère, pas le volume.</li>
+  <li><b>INFRA</b> : du poids dans le grave, un médium présent, l’ensemble assombri, le mud tenu. <b>TERRA</b> : une courbe hype équilibrée, grave et aigu relevés, le mud resserré. <b>SUPRA</b> : de l’air et de l’ouverture, sans harshness. Un second clic éteint la couleur.</li>
+</ul>
+
+<h2 id="vi-surgical">4. SURGICAL, filtres et niveaux</h2>
+<ul>
+  <li><b>BOXY</b> (200 - 700 Hz) et <b>HARSH</b> (2,5 - 4,5 kHz) : une fréquence et une coupe chacune (jusqu’à -12 dB), sur quatre faders. <b>PRE</b> : avant la saturation, <b>POST</b> : après.</li>
+  <li><b>HP</b> et <b>LP</b> en entrée (avant tout le circuit) et en sortie (après) ; tout au bout de leur course : OFF.</li>
+  <li><b>GAIN</b> d’entrée et de sortie. <b>GAIN LINK</b> : la sortie compense l’entrée, pour saturer plus fort à volume égal.</li>
+  <li><b>DRY / WET</b> : le son d’origine mêlé au son traité.</li>
+  <li><b>LINEAR PHASE</b> : les quatre bandes deviennent à phase linéaire (100 ms de latence, déclarée au DAW).</li>
+</ul>
+
+<h2 id="vi-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>Séparations</td><td>30 Hz – 16 kHz</td><td>Les limites des quatre bandes.</td></tr>
+  <tr><td>Niveau de bande</td><td>-18 à +12 dB</td><td>Les poignées de la fenêtre.</td></tr>
+  <tr><td>SATURATION</td><td>0 – 100 %</td><td>La profondeur du drive, par bande.</td></tr>
+  <tr><td>TAPE · TUBE · TRANS</td><td>choix</td><td>Le type de saturation, pour toutes les bandes.</td></tr>
+  <tr><td>HYPER MODE</td><td>marche / arrêt</td><td>Le double du drive.</td></tr>
+  <tr><td>CURRENT</td><td>0 – 200 %</td><td>Le mouvement de la bande, gauche et droite.</td></tr>
+  <tr><td>DRIFT</td><td>marche / arrêt</td><td>Le centre de la bande s’écarte.</td></tr>
+  <tr><td>LEAN</td><td>OFF · L · R</td><td>La bande penche d’un côté.</td></tr>
+  <tr><td>INFRA · TERRA · SUPRA</td><td>choix</td><td>La couleur du boîtier.</td></tr>
+  <tr><td>BOXY · HARSH</td><td>fréquence, coupe</td><td>Les coupes de SURGICAL, PRE ou POST.</td></tr>
+  <tr><td>HP · LP</td><td>entrée, sortie</td><td>Les filtres avant et après le circuit.</td></tr>
+  <tr><td>GAIN · GAIN LINK</td><td>en dB</td><td>Les niveaux, liés ou non.</td></tr>
+  <tr><td>DRY / WET</td><td>0 – 100 %</td><td>Le son d’origine et le son traité.</td></tr>
+  <tr><td>LINEAR PHASE</td><td>marche / arrêt</td><td>Les bandes à phase linéaire.</td></tr>
+</table></div>
+
+<h2 id="vi-conseils">Conseils</h2>
+<div class="tip"><p><b>Une voix plus large et plus vivante</b> : CURRENT entre 40 et 90 % sur THIRD et FOURTH, DRIFT sur FOURTH, SUPRA.</p></div>
+<div class="tip"><p><b>Des drums plus denses</b> : TAPE, SATURATION 30 à 40 % sur FIRST et SECOND, TERRA ; montez l’entrée avec GAIN LINK pour juger à volume égal.</p></div>
+<div class="tip"><p><b>Séparer deux guitares</b> : LEAN L sur une bande, LEAN R sur la suivante.</p></div>

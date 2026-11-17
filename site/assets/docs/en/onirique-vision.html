@@ -1,0 +1,83 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#vi-vue">Overview</a></li>
+  <li><a href="#vi-fenetre">The animation window</a></li>
+  <li><a href="#vi-current">CURRENT, DRIFT and LEAN</a></li>
+  <li><a href="#vi-saturation">Saturation and color</a></li>
+  <li><a href="#vi-surgical">SURGICAL and levels</a></li>
+  <li><a href="#vi-reglages">All the controls</a></li>
+  <li><a href="#vi-conseils">Tips</a></li>
+</ul>
+
+<h2 id="vi-vue">Overview</h2>
+<p>ONIRIQUE VISION is a <b>multiband saturation and stereo dimension</b> processor. It splits the sound into four bands, <b>FIRST</b>, <b>SECOND</b>, <b>THIRD</b> and <b>FOURTH</b>, and gives each its own saturation, movement and place in space: depth, width, density and life, without losing anything in mono.</p>
+<p>Subtle, it stays natural; pushed, it gets creative. On a vocal, drums, bass, a synth, a bus or the whole mix.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 945 310" role="img" aria-label="VISION signal path: input, filters, four-band split, saturation, CURRENT, DRIFT and LEAN, color, output, DRY / WET"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="161" height="46" rx="6"/><text x="150.5" y="59" text-anchor="middle">IN</text><text x="150.5" y="75" text-anchor="middle" class="t2">HP · LP</text><rect class="b" x="261" y="40" width="161" height="46" rx="6"/><text x="341.5" y="59" text-anchor="middle">4 BANDS</text><text x="341.5" y="75" text-anchor="middle" class="t2">FIRST … FOURTH</text><path class="w" d="M231 63 H261" marker-end="url(#doc-arr)"/><rect class="b" x="452" y="40" width="161" height="46" rx="6"/><text x="532.5" y="59" text-anchor="middle">SATURATION</text><text x="532.5" y="75" text-anchor="middle" class="t2">TAPE · TUBE · TRANS</text><path class="w" d="M422 63 H452" marker-end="url(#doc-arr)"/><rect class="ba" x="643" y="40" width="161" height="46" rx="6"/><text x="723.5" y="59" text-anchor="middle" class="tb">CURRENT</text><text x="723.5" y="75" text-anchor="middle" class="t2">left ≠ right</text><path class="w" d="M613 63 H643" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="150" width="161" height="46" rx="6"/><text x="150.5" y="169" text-anchor="middle">DRIFT · LEAN</text><text x="150.5" y="185" text-anchor="middle" class="t2">per band</text><path class="w" d="M723.5 86 V118 H150.5 V150" marker-end="url(#doc-arr)"/><rect class="b" x="261" y="150" width="161" height="46" rx="6"/><text x="341.5" y="169" text-anchor="middle">COLOR</text><text x="341.5" y="185" text-anchor="middle" class="t2">INFRA · TERRA · SUPRA</text><path class="w" d="M231 173 H261" marker-end="url(#doc-arr)"/><rect class="b" x="452" y="150" width="161" height="46" rx="6"/><text x="532.5" y="169" text-anchor="middle">OUT</text><text x="532.5" y="185" text-anchor="middle" class="t2">HP · LP · GAIN</text><path class="w" d="M422 173 H452" marker-end="url(#doc-arr)"/><path class="w" d="M613 173 H641" marker-end="url(#doc-arr)"/><circle class="ba" cx="659" cy="173" r="18"/><text x="659" y="179" text-anchor="middle" class="tb">+</text><text x="659" y="147" text-anchor="middle" class="t2">DRY / WET</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V288 H659 V191" marker-end="url(#doc-arr)"/><text x="80" y="282" class="t2">the original sound</text><path class="w" d="M677 173 H717"/><circle class="w" cx="723" cy="173" r="6"/><text x="723" y="201" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>BOXY and HARSH sit before (PRE) or after (POST) the saturation. The DRY / WET original stays in phase with the processing: halfway settings never comb.</figcaption>
+</figure>
+
+<h2 id="vi-fenetre">1. The animation window</h2>
+<ul>
+  <li><b>FIRST, SECOND, THIRD, FOURTH</b>: a click solos the band (several at once is fine).</li>
+  <li>The <b>dots at the top</b> move the three crossovers; the <b>handles</b> set each band’s level (-18 to +12 dB, mouse wheel too, double-click: 0 dB). VISION works like a four-band EQ.</li>
+  <li>The <b>two traces</b>, left on top and right below, show what CURRENT, DRIFT and LEAN are doing to each channel right now. Almost merged without CURRENT, they spread apart and crackle as you push it.</li>
+  <li><b>ON / OFF</b> under each band: its processing on or off (its level stays). <b>HYPER MODE</b>: double the drive.</li>
+</ul>
+
+<h2 id="vi-current">2. CURRENT, DRIFT and LEAN</h2>
+<ul>
+  <li><b>CURRENT</b> (0 to 200 %): the band’s response keeps evolving, <b>differently on the left and on the right</b> (random spectral drift, dual-mono). The sound gains movement, width and depth, with no chorus and no change of character. Above 100 %: livelier, more experimental. On a mono track, the movement stays, without the stereo.</li>
+  <li><b>DRIFT</b>: the band’s centre spreads apart, up on the left and down on the right. More width and separation; the mono sum doesn’t move.</li>
+  <li><b>LEAN</b> (OFF, L, R): the band gently favours one side without sounding panned. Two slightly different spaces, ideal for separating elements.</li>
+</ul>
+<div class="tip"><p>DRIFT and LEAN never change the mono sum: what they add on one side, they take from the other.</p></div>
+
+<h2 id="vi-saturation">3. Saturation and color</h2>
+<ul>
+  <li><b>TAPE</b>: magnetic tape, progressive compression, rounded transients, softened highs.</li>
+  <li><b>TUBE</b>: valve, even harmonics, warmth, gentle compression.</li>
+  <li><b>TRANS</b>: transformer; the lows saturate first, attacks get through, the low end gets dense.</li>
+  <li><b>SATURATION</b> of each band: the drive depth. The average level is made up: you judge the character, not the volume.</li>
+  <li><b>INFRA</b>: low-end weight, present mids, darker overall, mud kept in check. <b>TERRA</b>: a balanced hype curve, lows and highs lifted, mud tightened. <b>SUPRA</b>: air and openness, without harshness. A second click turns the color off.</li>
+</ul>
+
+<h2 id="vi-surgical">4. SURGICAL, filters and levels</h2>
+<ul>
+  <li><b>BOXY</b> (200 - 700 Hz) and <b>HARSH</b> (2.5 - 4.5 kHz): a frequency and a cut each (down to -12 dB), on four faders. <b>PRE</b>: before the saturation, <b>POST</b>: after.</li>
+  <li><b>HP</b> and <b>LP</b> at the input (before the whole circuit) and the output (after); at the end of their travel: OFF.</li>
+  <li>Input and output <b>GAIN</b>. <b>GAIN LINK</b>: the output compensates the input, to drive harder at equal volume.</li>
+  <li><b>DRY / WET</b>: the original sound blended with the processed sound.</li>
+  <li><b>LINEAR PHASE</b>: the four bands become linear-phase (100 ms of latency, reported to the DAW).</li>
+</ul>
+
+<h2 id="vi-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>Crossovers</td><td>30 Hz – 16 kHz</td><td>The limits of the four bands.</td></tr>
+  <tr><td>Band level</td><td>-18 to +12 dB</td><td>The handles in the window.</td></tr>
+  <tr><td>SATURATION</td><td>0 – 100 %</td><td>The drive depth, per band.</td></tr>
+  <tr><td>TAPE · TUBE · TRANS</td><td>choice</td><td>The saturation type, for all bands.</td></tr>
+  <tr><td>HYPER MODE</td><td>on / off</td><td>Double the drive.</td></tr>
+  <tr><td>CURRENT</td><td>0 – 200 %</td><td>The band’s movement, left and right.</td></tr>
+  <tr><td>DRIFT</td><td>on / off</td><td>The band’s centre spreads apart.</td></tr>
+  <tr><td>LEAN</td><td>OFF · L · R</td><td>The band favours one side.</td></tr>
+  <tr><td>INFRA · TERRA · SUPRA</td><td>choice</td><td>The box color.</td></tr>
+  <tr><td>BOXY · HARSH</td><td>frequency, cut</td><td>The SURGICAL cuts, PRE or POST.</td></tr>
+  <tr><td>HP · LP</td><td>input, output</td><td>The filters before and after the circuit.</td></tr>
+  <tr><td>GAIN · GAIN LINK</td><td>in dB</td><td>The levels, linked or not.</td></tr>
+  <tr><td>DRY / WET</td><td>0 – 100 %</td><td>Original and processed sound.</td></tr>
+  <tr><td>LINEAR PHASE</td><td>on / off</td><td>Linear-phase bands.</td></tr>
+</table></div>
+
+<h2 id="vi-conseils">Tips</h2>
+<div class="tip"><p><b>A wider, livelier vocal</b>: CURRENT between 40 and 90 % on THIRD and FOURTH, DRIFT on FOURTH, SUPRA.</p></div>
+<div class="tip"><p><b>Denser drums</b>: TAPE, SATURATION 30 to 40 % on FIRST and SECOND, TERRA; raise the input with GAIN LINK to judge at equal volume.</p></div>
+<div class="tip"><p><b>Separating two guitars</b>: LEAN L on one band, LEAN R on the next.</p></div>
