@@ -1010,22 +1010,25 @@ $("yt-files").onchange = async (event) => {
 let socialState = { accounts: {}, automations: [] };
 let draft = null; // le formulaire ouvert : { post, editing }
 
-function accountCard(account) {
+// purpose : "main" (les réponses automatiques) ou "reels" (le compte où partent les Reels programmés depuis ONIRIQUE CUT).
+function accountCard(account, purpose = "main") {
+  const reels = purpose === "reels", main = socialState.accounts.instagram;
   const card = el("div", "account");
   const text = el("div");
-  text.append(el("b", "", "Instagram"));
+  text.append(el("b", "", reels ? "Instagram des Reels (ONIRIQUE CUT)" : "Instagram"));
+  if (reels && !account.connected && account.configured) text.append(el("small", "", main?.connected ? "Facultatif. Sans lui, les Reels partent sur @" + main.username + "." : "Facultatif : un autre compte, rien que pour les Reels."));
   if (!account.configured) text.append(el("small", "", "Pas encore réglé sur le serveur."));
   else if (account.connected) text.append(el("small", account.error ? "error" : "", account.error || (account.username ? "@" + account.username : "Compte relié")));
-  else text.append(el("small", "", "Compte professionnel ou créateur"));
+  else if (!reels) text.append(el("small", "", "Compte professionnel ou créateur"));
   card.append(text);
   if (!account.configured) return card;
-  const button = el("button", account.connected ? "link" : "btn btn-ghost", account.connected ? "Déconnecter" : "Relier Instagram");
+  const button = el("button", account.connected ? "link" : "btn btn-ghost", account.connected ? "Déconnecter" : reels ? "Relier un compte pour les Reels" : "Relier Instagram");
   button.type = "button";
   button.onclick = async () => {
     try {
-      if (!account.connected) { location.href = (await api("POST", "/social/instagram/connect")).url; return; }
-      if (!confirm("Déconnecter Instagram ? Les automations s’arrêtent jusqu’à ce qu’il soit relié de nouveau.")) return;
-      await api("DELETE", "/social/instagram/account");
+      if (!account.connected) { location.href = (await api("POST", "/social/instagram/connect", { purpose })).url; return; }
+      if (!confirm(reels ? "Déconnecter le compte des Reels ? Les Reels programmés partiront sur le compte des réponses automatiques." : "Déconnecter Instagram ? Les automations s’arrêtent jusqu’à ce qu’il soit relié de nouveau.")) return;
+      await api("DELETE", "/social/instagram/account" + (reels ? "?purpose=reels" : ""));
       loadSocial();
     } catch (error) {
       say("so-notice", error.message, true);
@@ -1087,7 +1090,7 @@ const fieldsOf = (auto) => ({ keywords: auto.keywords, replyText: auto.replyText
 async function loadSocial() {
   try {
     socialState = await api("GET", "/social");
-    $("so-accounts").replaceChildren(accountCard(socialState.accounts.instagram));
+    $("so-accounts").replaceChildren(accountCard(socialState.accounts.instagram), ...(socialState.accounts.reels ? [accountCard(socialState.accounts.reels, "reels")] : []));
     $("so-new").hidden = !socialState.accounts.instagram.connected || !$("so-form").hidden;
     $("so-list").replaceChildren(...socialState.automations.map(automationCard));
   } catch (error) {

@@ -35,10 +35,15 @@ async function ig(url, options) {
 // Une demande de connexion en cours : Instagram la rend telle quelle au retour, elle dit de quel compte il s'agit.
 const pending = new Map();
 
-export function connectUrl(userId) {
+// Deux comptes possibles : celui des réponses automatiques ('instagram'), et, si on le veut, un autre réservé aux Reels
+// programmés depuis ONIRIQUE CUT ('instagram_reels'). Sans compte des Reels, les Reels partent sur le premier.
+const PLATFORMS = { main: 'instagram', reels: 'instagram_reels' };
+const platformOf = (purpose) => PLATFORMS[purpose] || PLATFORMS.main;
+
+export function connectUrl(userId, purpose = 'main') {
   for (const [state, entry] of pending) if (entry.expires < now()) pending.delete(state);
   const state = crypto.randomBytes(24).toString('base64url');
-  pending.set(state, { userId, expires: now() + 10 * 60_000 });
+  pending.set(state, { userId, platform: platformOf(purpose), expires: now() + 10 * 60_000 });
   return 'https://www.instagram.com/oauth/authorize?' + new URLSearchParams({
     client_id: config.instagramAppId, redirect_uri: redirectUri(), response_type: 'code', scope: IG_SCOPE, state, force_reauth: 'true',
   });
@@ -61,25 +66,27 @@ export async function finishConnect(state, code) {
   // Le compte a deux identifiants : le professionnel (user_id) et celui propre à l'application (id). Les deux sont
   // gardés : le webhook et les commentaires peuvent désigner le compte par l'un ou l'autre.
   run(`INSERT INTO social_accounts (user_id, platform, account_id, alt_id, username, access_token, expires_at, error, created_at)
-       VALUES (?, 'instagram', ?, ?, ?, ?, ?, '', ?)
+       VALUES (?, ?, ?, ?, ?, ?, ?, '', ?)
        ON CONFLICT(user_id, platform) DO UPDATE SET account_id = excluded.account_id, alt_id = excluded.alt_id, username = excluded.username,
          access_token = excluded.access_token, expires_at = excluded.expires_at, error = ''`,
-    entry.userId, String(me.user_id || me.id), String(me.id || ''), me.username || '', seal(long.access_token), now() + (long.expires_in || 60 * 86_400) * 1000, now());
+    entry.userId, entry.platform, String(me.user_id || me.id), String(me.id || ''), me.username || '', seal(long.access_token), now() + (long.expires_in || 60 * 86_400) * 1000, now());
+  if (entry.platform !== 'instagram') return; // le compte des Reels ne fait que publier : pas de commentaires à suivre
   // Les commentaires arrivent alors tout de suite par le webhook ; sinon la relecture régulière prend le relais.
   await ig(`${IG_GRAPH}/me/subscribed_apps?${new URLSearchParams({ subscribed_fields: 'comments', access_token: long.access_token })}`,
     { method: 'POST' }).catch(() => {});
 }
 
-const accountOf = (userId) => get(`SELECT * FROM social_accounts WHERE user_id = ? AND platform = 'instagram'`, userId);
-/** Le compte Instagram relié (pour publier des Reels, cut.js) : son nom, et de quoi appeler l'API ; null s'il n'est pas relié. */
-export const instagramName = (userId) => accountOf(userId)?.username ?? null;
+const accountOf = (userId, platform = 'instagram') => get(`SELECT * FROM social_accounts WHERE user_id = ? AND platform = ?`, userId, platform);
+const reelsAccountOf = (userId) => accountOf(userId, PLATFORMS.reels) || accountOf(userId);
+/** Le compte Instagram des Reels (cut.js) : celui réservé aux Reels s'il est relié, sinon celui des réponses automatiques. */
+export const instagramName = (userId) => reelsAccountOf(userId)?.username ?? null;
 export async function instagramAccess(userId) {
-  const account = accountOf(userId);
+  const account = reelsAccountOf(userId);
   return account ? { igId: account.account_id, token: await freshToken(account), call: ig, graph: IG_GRAPH } : null;
 }
 
-export function disconnect(userId) {
-  run(`DELETE FROM social_accounts WHERE user_id = ? AND platform = 'instagram'`, userId);
+export function disconnect(userId, purpose = 'main') {
+  run(`DELETE FROM social_accounts WHERE user_id = ? AND platform = ?`, userId, platformOf(purpose));
 }
 
 /** Le jeton dure 60 jours : il est renouvelé à moins de 30 jours de la fin (Instagram refuse avant 24 h d'âge). */
@@ -87,8 +94,8 @@ async function freshToken(account) {
   if (account.expires_at - now() < 30 * 86_400_000 && now() - account.created_at > 86_400_000) {
     const renewed = await ig(`https://graph.instagram.com/refresh_access_token?${new URLSearchParams({
       grant_type: 'ig_refresh_token', access_token: unseal(account.access_token) })}`);
-    run(`UPDATE social_accounts SET access_token = ?, expires_at = ? WHERE user_id = ? AND platform = 'instagram'`,
-      seal(renewed.access_token), now() + (renewed.expires_in || 60 * 86_400) * 1000, account.user_id);
+    run(`UPDATE social_accounts SET access_token = ?, expires_at = ? WHERE user_id = ? AND platform = ?`,
+      seal(renewed.access_token), now() + (renewed.expires_in || 60 * 86_400) * 1000, account.user_id, account.platform);
     return renewed.access_token;
   }
   return unseal(account.access_token);
@@ -287,9 +294,12 @@ export const automationView = (a) => ({
 });
 
 export function socialState(userId) {
-  const a = accountOf(userId);
+  const a = accountOf(userId), r = accountOf(userId, PLATFORMS.reels);
   return {
-    accounts: { instagram: { configured: platformConfigured(), username: a ? a.username : null, connected: !!a, error: a?.error || '' } },
+    accounts: {
+      instagram: { configured: platformConfigured(), username: a ? a.username : null, connected: !!a, error: a?.error || '' },
+      reels: { configured: platformConfigured(), username: r ? r.username : null, connected: !!r, error: r?.error || '' },
+    },
     automations: all(`SELECT * FROM social_automations WHERE user_id = ? AND platform = 'instagram' ORDER BY id DESC`, userId).map(automationView),
   };
 }

@@ -794,7 +794,7 @@ export function createApp() {
 
   app.post('/api/social/instagram/connect', instagram, (req, res) => {
     if (!social.platformConfigured()) throw new HttpError(503, "La connexion à Instagram n'est pas encore réglée sur le serveur.");
-    res.json({ url: social.connectUrl(req.user.id) });
+    res.json({ url: social.connectUrl(req.user.id, req.body?.purpose === 'reels' ? 'reels' : 'main') });
   });
 
   // Retour d'Instagram, sans session : la demande en cours (state) dit de quel compte il s'agit.
@@ -808,7 +808,7 @@ export function createApp() {
   }));
 
   app.delete('/api/social/instagram/account', instagram, (req, res) => {
-    social.disconnect(req.user.id);
+    social.disconnect(req.user.id, req.query.purpose === 'reels' ? 'reels' : 'main');
     res.json({ ok: true });
   });
 
