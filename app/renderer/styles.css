@@ -453,3 +453,20 @@ button.key.copy:hover { color: var(--pink); }
 /* Fenêtre « nouveauté » (app.js, showNews) */
 .news { display: grid; gap: 14px; }
 .news-shot img { display: block; width: 100%; max-width: 520px; border-radius: 14px; border: 1px solid var(--line, rgba(255,210,214,.14)); box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+
+/* CLIPS : réglages, bibliothèque et éditeur (views/clips.js). */
+.clip-settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.clip-problem { margin: 0; color: var(--pink); }
+.linkish { background: none; border: 0; padding: 0; color: var(--pink); font: inherit; cursor: pointer; text-decoration: underline; }
+.clip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.clip-card { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 0 0 10px; text-align: left; color: var(--bone);
+  background: var(--well); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; cursor: pointer; font: inherit; }
+.clip-card:hover, .clip-card.active { border-color: var(--ember); }
+.clip-card img, .clip-noimg { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #000; }
+.clip-len { position: absolute; top: 8px; right: 8px; padding: 2px 6px; border-radius: 6px; background: rgba(0, 0, 0, .7); font-size: 12px; }
+.clip-meta { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
+.clip-editor { display: flex; flex-direction: column; gap: 12px; }
+.clip-video { width: 100%; max-height: 60vh; background: #000; border-radius: 8px; }
+.clip-trim { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.clip-trim label { display: flex; flex-direction: column; gap: 4px; color: var(--haze); font-size: 12px; }
+.clip-trim input { accent-color: var(--ember); }

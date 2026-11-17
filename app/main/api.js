@@ -60,9 +60,10 @@ function meter(total, onProgress) {
   });
 }
 
-async function upload(method, route, filePath, contentType, onProgress) {
-  const { size } = fs.statSync(filePath);
-  const body = fs.createReadStream(filePath).pipe(meter(size, onProgress));
+// range { start, end } (octets inclus) : un morceau du fichier seulement.
+async function upload(method, route, filePath, contentType, onProgress, range) {
+  const size = range ? range.end - range.start + 1 : fs.statSync(filePath).size;
+  const body = fs.createReadStream(filePath, range).pipe(meter(size, onProgress));
   const response = await send(method, route, {
     headers: { 'Content-Type': contentType, 'Content-Length': String(size) },
     body: Readable.toWeb(body),

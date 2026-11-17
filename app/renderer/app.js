@@ -7,6 +7,7 @@ import { accountView } from './views/account.js';
 import { adminView, fillMissingDemos } from './views/admin.js';
 import { supportView } from './views/support.js';
 import { supportAdminView } from './views/support-admin.js';
+import { clipsView } from './views/clips.js';
 
 const central = window.central;
 
@@ -408,6 +409,7 @@ function sidebar() {
     item('cloud', 'CLOUD', 'Mes sons · projets'),
     item('carte', 'CARTE', 'Membres · villes'),
     canWatch(me.user) ? item('watchparty', 'WATCHPARTY', 'Regarder ensemble') : null,
+    canWatch(me.user) ? item('clips', 'CLIPS', 'Tes moments · F8') : null,
     hasPanel(me.user) ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin', 'Catalogue · ventes'),
       isStaff(me.user) ? item('support-admin', 'Panel support', 'Demandes reçues') : null,
       // L'équipe et les partenaires s'accordent tous les plugins, ou y renoncent pour voir l'application comme un client.
@@ -446,13 +448,14 @@ const VIEWS = {
   cloud: () => toolPage('cloud'),
   carte: () => toolPage('carte'),
   watchparty: () => toolPage('watchparty'),
+  clips: clipsView,
 };
 
 /** Les écrans réservés : le panel admin (équipe et partenaires), le panel support (équipe seulement). */
 const ADMIN_ROUTES = ['admin', 'support-admin'];
-// La WATCHPARTY : membres ONIRIQUE, beta-testeurs, équipe et fondateurs (comme le serveur, server/src/watchparty.js).
+// La WATCHPARTY et les clips : membres ONIRIQUE, beta-testeurs, équipe et fondateurs (comme server/src/watchparty.js et main/clips.js).
 const canWatch = (user) => ['vip', 'beta', 'betaf', 'admin', 'founder'].includes(user.role);
-const allowed = (route, user) => (route === 'admin' ? hasPanel(user) : route === 'support-admin' ? isStaff(user) : route === 'watchparty' ? canWatch(user) : true);
+const allowed = (route, user) => (route === 'admin' ? hasPanel(user) : route === 'support-admin' ? isStaff(user) : route === 'watchparty' || route === 'clips' ? canWatch(user) : true);
 
 /** Tant que l'adresse e-mail du compte n'est pas validée : le rappel, et de quoi redemander le lien. */
 function verifyBanner() {

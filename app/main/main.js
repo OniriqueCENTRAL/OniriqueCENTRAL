@@ -9,6 +9,7 @@ const path = require('node:path');
 const api = require('./api');
 const installer = require('./installer');
 const store = require('./store');
+const clips = require('./clips');
 
 let win = null;
 
@@ -615,6 +616,7 @@ async function closeTools() {
     win?.contentView.removeChildView(view);
     view.webContents.close();
   }
+  clips.sync().catch(() => {}); // les clips suivent le compte connecté
 }
 
 function createWindow() {
@@ -1210,6 +1212,8 @@ app.whenReady().then(async () => {
 
   createWindow();
   createTray();
+  clips.init({ handle, getWin: () => win, site: SITE });
+  clips.sync().catch(() => {});
   win.webContents.once('did-finish-load', () => openLink(earlyLink || process.argv.find((a) => /^onirique:\/\//i.test(a))));
   createMini();
   setTimeout(checkInvites, 4000);

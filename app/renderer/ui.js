@@ -76,6 +76,7 @@ const ICONS = {
   carte: 'M12 21s-6.5-5.8-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.2 12 21 12 21zM12 7.2l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z',
   self: 'M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0',
   watchparty: 'M3 5h18v12H3zM8 21h8M10.5 8.5v5l4-2.5z',
+  clips: 'M4 6h12v12H4zM16 10l4-2.5v9L16 14M8 3.5l1 1.5M12 3.5l-1 1.5',
 };
 export function navIcon(name) {
   const box = h('span', { class: 'ico', 'aria-hidden': 'true' });
