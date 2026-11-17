@@ -5,7 +5,8 @@ import { call } from '../app.js';
 // touche en fait un clip (main/clips.js). Ici : les réglages, la bibliothèque, la coupe et le partage par ONIRIQUE ENVOI.
 const LENGTHS = [15, 30, 60, 120];
 const QUALITIES = [['720/30', '720p · 30 i/s'], ['1080/30', '1080p · 30 i/s'], ['1080/60', '1080p · 60 i/s']];
-const MIME = () => ['video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=h264,opus', 'video/webm;codecs=vp8,opus'].find((m) => MediaRecorder.isTypeSupported(m));
+// La coupe, faite hors du jeu, en VP8 : le WebM que lisent le plus de téléphones et Discord.
+const MIME = () => ['video/webm;codecs=vp8,opus', 'video/webm;codecs=h264,opus'].find((m) => MediaRecorder.isTypeSupported(m));
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const mo = (bytes) => `${(bytes / 1e6).toFixed(bytes < 1e7 ? 1 : 0)} Mo`;
 
@@ -36,7 +37,7 @@ export function clipsView() {
         h('div', { class: 'row' },
           st.running ? button('Clipper maintenant', () => attempt(() => call('clips:now')), 'small quiet') : null,
           button(st.running ? 'Couper' : 'Activer les clips', () => set({ on: !st.running }), st.running ? 'small quiet' : 'small primary'))),
-      st.problem ? h('p', { class: 'clip-problem' }, st.problem) : null,
+      st.problem ? h('p', { class: 'clip-problem' }, st.problem) : '',
       h('div', { class: 'clip-settings' },
         select('Durée du clip', String(s.seconds), LENGTHS.map((n) => [String(n), n < 60 ? `${n} secondes` : `${n / 60} minute${n > 60 ? 's' : ''}`]), (v) => set({ seconds: Number(v) })),
         select('Qualité', `${s.height}/${s.fps}`, QUALITIES, (v) => { const [height, fps] = v.split('/').map(Number); set({ height, fps }); }),
@@ -73,7 +74,12 @@ export function clipsView() {
     const inA = range(a, (v) => { a = Math.min(v, b - 1); inA.value = a; video.currentTime = a; showLabel(); });
     const inB = range(b, (v) => { b = Math.max(v, a + 1); inB.value = b; video.currentTime = Math.max(a, b - 2); showLabel(); });
     showLabel();
-    video.addEventListener('loadedmetadata', () => { video.currentTime = a; }, { once: true });
+    // Un WebM enregistré en direct n'annonce pas sa durée : un saut tout au bout la fait trouver au lecteur (barre de lecture).
+    video.addEventListener('loadedmetadata', () => {
+      if (video.duration !== Infinity) { video.currentTime = a; return; }
+      video.addEventListener('durationchange', () => { video.currentTime = a; }, { once: true });
+      video.currentTime = 1e101;
+    }, { once: true });
     video.addEventListener('timeupdate', () => { if (total && video.currentTime >= b) { video.pause(); video.currentTime = a; } });
     const cut = () => a > 0.3 || (total && b < total - 0.3);
     const phase = h('span', { class: 'muted', 'data-phase': `clip:${clip.name}` });
@@ -143,11 +149,14 @@ async function exportCut(url, a, b, onProgress) {
     { mimeType: mime, videoBitsPerSecond: 8e6, audioBitsPerSecond: 160e3 });
   const chunks = [];
   recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-  recorder.start(1000);
   await video.play();
+  recorder.start(1000); // une fois la lecture partie : pas d'image figée au début
   await new Promise((ok) => {
-    const tick = () => { onProgress(Math.min(1, (video.currentTime - a) / (b - a))); if (video.currentTime >= b || video.ended) ok(); else requestAnimationFrame(tick); };
-    tick();
+    // Une horloge plutôt que les images de la fenêtre : elles s'arrêtent quand la CENTRAL est cachée par une autre.
+    const timer = setInterval(() => {
+      onProgress(Math.min(1, (video.currentTime - a) / (b - a)));
+      if (video.currentTime >= b || video.ended || video.paused) { clearInterval(timer); ok(); }
+    }, 50);
   });
   video.pause();
   const stopped = new Promise((ok) => { recorder.onstop = ok; });

@@ -24,8 +24,9 @@ async function run() {
     return window.clipsRec.error(`L'écran n'a pas pu être capté (${error.message}).`);
   }
   stream.getVideoTracks()[0].addEventListener('ended', () => window.clipsRec.error("L'écran capté a disparu (débranché ?)."));
-  // H.264 d'abord : l'encodeur de la carte graphique s'en charge, le jeu garde le processeur.
-  const mime = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=h264,opus', 'video/webm;codecs=vp8,opus']
+  // H.264 d'abord : l'encodeur de la carte graphique s'en charge, le jeu garde le processeur. En WebM : un MP4 pris en
+  // cours d'enregistrement annonce une durée fausse, et le lecteur ne va pas plus loin.
+  const mime = ['video/webm;codecs=h264,opus', 'video/webm;codecs=vp8,opus']
     .find((m) => MediaRecorder.isTypeSupported(m));
   const bitrate = height >= 1080 ? (fps > 30 ? 12e6 : 8e6) : 5e6;
   const recs = [];
