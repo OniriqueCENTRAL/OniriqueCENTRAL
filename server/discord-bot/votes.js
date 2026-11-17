@@ -61,11 +61,12 @@ export async function startVote(i) {
     collector.on('collect', async (b) => {
       if (b.user.id === target.id) return b.reply({ content: 'Tu ne peux pas voter sur ton propre cas.', flags: MessageFlags.Ephemeral }).catch(() => {});
       votes.set(b.user.id, b.customId === 'vote:yes');
-      await b.update({ embeds: [view(false)] }).catch(() => {});
+      await b.update({ embeds: [view(false)] }).catch((e) => console.error('Vote :', e.message));
     });
     collector.on('end', async () => {
       running.delete(key);
-      let result = '❎ Vote rejeté.';
+      const { yes, no } = tally(votes);
+      let result = yes < MIN_VOTES ? `❎ Vote rejeté : ${yes} « Pour » sur les ${MIN_VOTES} nécessaires.` : `❎ Vote rejeté : ${no} « Contre » pour ${yes} « Pour ».`;
       if (tally(votes).passed) {
         const reason = `Vote lancé par ${i.user.tag}, ${formatDuration(ms)}`;
         try {
@@ -75,7 +76,8 @@ export async function startVote(i) {
           result = `⚠️ Vote adopté, mais Discord a refusé : ${e.message}`;
         }
       }
-      await message.edit({ embeds: [view(true, result)], components: [buttons(true)] }).catch(() => {});
+      // Par la réponse à la commande (valable 15 min) : la modifier comme un message ordinaire échouait en silence.
+      await i.editReply({ embeds: [view(true, result)], components: [buttons(true)] }).catch((e) => console.error('Fin du vote :', e.message));
     });
   } catch (e) {
     running.delete(key);
