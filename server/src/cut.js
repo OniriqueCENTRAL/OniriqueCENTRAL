@@ -193,21 +193,21 @@ const AUDIO_TTL = 30 * 60_000; // un son envoyé sans vidéo derrière est effac
 // temps réel est réencodé en x264, réglé pour tenir dans la mémoire du serveur (1 cœur, moins de 2 Go).
 // reorder : le H.264 brut a des images rangées dans le désordre (images B, encodeurs d'Apple). Copié tel quel, il perdrait
 // leur ordre d'affichage (une image qui revient en arrière à chaque coupe sur iPhone) : il est alors décodé dans le bon
-// ordre et réencodé en x264, sans images B.
-export const cutArgs = (input, output, audio = null, offset = 0, raw = false, reorder = false) => ['-y', '-hide_banner', '-loglevel', 'error',
+// ordre et réencodé en x264, sans images B. fast (case « Export rapide ») : ce réencodage va 3 à 5 fois plus vite.
+export const cutArgs = (input, output, audio = null, offset = 0, raw = false, reorder = false, fast = false) => ['-y', '-hide_banner', '-loglevel', 'error',
   ...(raw ? ['-r', '30', '-f', 'h264'] : []), '-i', input,
   ...(audio ? [...(offset > 0 ? ['-itsoffset', offset.toFixed(3)] : offset < 0 ? ['-ss', (-offset).toFixed(3)] : []), '-i', audio,
     // Pas de -shortest avec le H.264 brut copié : ffmpeg y perd tout le son (le son a déjà la durée exacte de la vidéo).
     '-map', '0:v:0', '-map', '1:a:0', ...(raw ? [] : ['-shortest'])] : []),
   ...(raw && !reorder ? ['-c:v', 'copy'] : ['-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,format=yuv420p',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-threads', '1', '-x264-params', 'rc-lookahead=20', '-profile:v', 'high', '-tune', 'film',
+    '-c:v', 'libx264', '-preset', fast ? 'veryfast' : 'slow', '-crf', fast ? '15' : '14', '-threads', '1', '-x264-params', 'rc-lookahead=20', '-profile:v', 'high', '-tune', 'film',
     ...(reorder ? ['-bf', '0'] : [])]),
   '-c:a', 'aac', '-b:a', '320k',
   '-movflags', '+faststart', output];
 
-function toMp4(input, output, audio, offset, raw, reorder = false) {
+function toMp4(input, output, audio, offset, raw, reorder = false, fast = false) {
   if (testing) { fs.copyFileSync(input, output); return Promise.resolve(); } // pas de ffmpeg pendant les tests
-  return new Promise((resolve, reject) => execFile('ffmpeg', cutArgs(input, output, audio, offset, raw, reorder), { timeout: 10 * 60_000 }, (error, _out, stderr) =>
+  return new Promise((resolve, reject) => execFile('ffmpeg', cutArgs(input, output, audio, offset, raw, reorder, fast), { timeout: 10 * 60_000 }, (error, _out, stderr) =>
     (error ? reject(new HttpError(500, 'La conversion en MP4 a échoué : ' + (String(stderr || error.message).trim().split('\n').pop().slice(0, 160) || 'ffmpeg'))) : resolve())));
 }
 
@@ -526,7 +526,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     const input = path.join(dir, file.storedAs), output = input + '.mp4';
     const clean = () => { fs.rmSync(input, { force: true }); fs.rmSync(output, { force: true }); };
     // Le son ne sert qu'une fois : effacé dès que le MP4 est fait (ou raté).
-    try { await toMp4(input, output, audio?.file, offset, req.query.raw === 'h264', req.query.reorder === '1'); } catch (error) { clean(); throw error; } finally { if (audio) forget(audioId); }
+    try { await toMp4(input, output, audio?.file, offset, req.query.raw === 'h264', req.query.reorder === '1', req.query.fast === '1'); } catch (error) { clean(); throw error; } finally { if (audio) forget(audioId); }
     res.set({ 'Content-Type': 'video/mp4', 'Content-Length': fs.statSync(output).size, 'Cache-Control': 'no-store' });
     const stream = fs.createReadStream(output);
     stream.on('close', clean);
