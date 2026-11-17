@@ -53,7 +53,7 @@ assert.equal(duration(3_725_000), '1 h 02');
 assert.deepEqual(albumIdsOf('<a href="/album/2QFhpFWnxp6hIMHowmb8VG">x</a><a href="/album/2QFhpFWnxp6hIMHowmb8VG">'), ['2QFhpFWnxp6hIMHowmb8VG']);
 
 // Votes /mute et /ban : durées, décompte, liste des mutes.
-const { parseDuration, formatDuration, tally, loadMutes, saveMutes, VOTE_COMMANDS } = await import('./votes.js');
+const { parseDuration, formatDuration, tally, loadMutes, saveMutes, VOTE_COMMANDS } = await import('./vote-rules.js');
 assert.equal(parseDuration('10m'), 600_000);
 assert.equal(parseDuration(' 1j 30min '), 86_400_000 + 1_800_000);
 assert.equal(parseDuration('90'), 5_400_000);
