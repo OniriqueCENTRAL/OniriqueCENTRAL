@@ -80,7 +80,7 @@ try {
   await call('GET', '/api/social', { token: await account('client', 'user'), expect: 403 });
   await call('GET', '/api/social', { token: await account('admin', 'admin'), expect: 403 });
   let state = await call('GET', '/api/social', { token: founder });
-  assert.deepEqual(state, { accounts: { instagram: { configured: true, username: null, connected: false, error: '' } }, automations: [] });
+  assert.deepEqual(state, { accounts: { instagram: { configured: true, username: null, connected: false, error: '' }, reels: { configured: true, username: null, connected: false, error: '' } }, automations: [] });
   await call('POST', '/api/social/tiktok/connect', { token: founder, expect: 404 });
 
   // Pas d'automation sans compte relié.
