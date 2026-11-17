@@ -3,15 +3,16 @@
 #include "OniriqueKnob.h"
 
 //==============================================================================
-//  Deux potards dessinés d'après le logo ONIRIQUE (onglet KNOB de l'administration), pour les plugins d'ONIRIQUE :
+//  Les dix potards dessinés d'après le logo ONIRIQUE (onglet KNOB de l'administration), pour les plugins d'ONIRIQUE :
 //
 //  - « Ronce » (TUNER) : l'arc pousse des épines comme une ronce ; anneau de métal liquide épineux sur le bouton.
 //  - « Orbite » (VERB) : le « O » du logo en anneau blanc lumineux, l'orbite en pointillés qui s'allume, une étoile
 //    qui la parcourt.
+//  - « Viseur », « Nova », « Épine », « Étoile », « Spectre », « Éclipse », « Constellation », « Sceau » : les autres
+//    modèles de l'onglet KNOB (chacun est décrit au-dessus de sa fonction).
 //
-//  Même appel que le potard commun :
-//      onirique::ui::drawKnobRonce  (g, zone, position, angleDebut, angleFin, accent, bipolaire, survolé);
-//      onirique::ui::drawKnobOrbite (g, zone, position, angleDebut, angleFin, accent, bipolaire, survolé);
+//  Même appel que le potard commun, par exemple :
+//      onirique::ui::drawKnobRonce (g, zone, position, angleDebut, angleFin, accent, bipolaire, survolé);
 //
 //  Ce fichier se copie tel quel à côté d'OniriqueKnob.h, et ne se modifie qu'ici (plugin-ui/ONIRIQUE/ du dépôt
 //  ONIRIQUE CENTRAL).
@@ -125,6 +126,7 @@ inline void drawKnobOrbite (juce::Graphics& g, juce::Rectangle<float> area, floa
 {
     using namespace juce;
     using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
     const float d = jmin (area.getWidth(), area.getHeight());
     if (d < 8.0f) return;
     const auto c = area.getCentre();
@@ -287,6 +289,343 @@ inline void drawKnobRonce (juce::Graphics& g, juce::Rectangle<float> area, float
     glowStroke (g, needle, accent, 2.0f * s, glowAmt);
     g.setColour (hot);
     g.fillPath (needle);
+}
+
+/** « Viseur » : la croix de visée du logo. */
+inline void drawKnobViseur (juce::Graphics& g, juce::Rectangle<float> area, float position, float startAngle, float endAngle,
+                            juce::Colour accent, bool bipolar, bool hover)
+{
+    using namespace juce;
+    using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
+    const float d = jmin (area.getWidth(), area.getHeight());
+    if (d < 8.0f) return;
+    const auto c = area.getCentre();
+    const float R = d * 0.36f, k = R / 60.0f;   // les traits sont dessinés pour R = 60
+    const float pos = jlimit (0.0f, 1.0f, position);
+    const auto lit = span (pos, bipolar);
+    const auto angle = [&] (float t) { return startAngle + (endAngle - startAngle) * t; };
+    const float a = angle (pos);
+
+    // l'orbite en pointillés, puis l'arc de valeur
+    {
+        Path ring, dots;
+        ring.addEllipse (Rectangle<float> (2.04f * R, 2.04f * R).withCentre (c));
+        const float dash[] = { 1.0f * k, 5.0f * k };
+        PathStrokeType (1.3f * k).createDashedStroke (dots, ring, dash, 2);
+        g.setColour (bone.withAlpha (0.3f));
+        g.fillPath (dots);
+    }
+    arc (g, c, R * 0.9f, angle (lit.lo), angle (lit.hi), accent, 2.6f * k, 12.0f * k);
+
+    body (g, c, R * 0.6f, accent, hover);
+    g.setColour (bone.withAlpha (0.65f));
+    g.drawEllipse (Rectangle<float> (1.12f * R, 1.12f * R).withCentre (c), 1.2f * k);
+
+    // les trois autres branches de la croix, puis la branche haute qui traverse l'arc
+    for (int q = 1; q < 4; ++q)
+    {
+        const float b = a + (float) q * MathConstants<float>::halfPi;
+        segment (g, at (c, R * 0.58f, b), at (c, R * 0.78f, b), bone.withAlpha (0.4f), 1.3f * k);
+    }
+    segment (g, at (c, R * 0.22f, a), at (c, R * 1.12f, a), bone, 1.6f * k, 8.0f * k);
+    star (g, at (c, R * 1.14f, a), R * 0.07f, bone, 10.0f * k);
+    star (g, c, R * 0.08f, bone.withAlpha (0.8f), 4.0f * k);
+}
+
+/** « Nova » : des rayons qui partent du centre. */
+inline void drawKnobNova (juce::Graphics& g, juce::Rectangle<float> area, float position, float startAngle, float endAngle,
+                          juce::Colour accent, bool bipolar, bool hover)
+{
+    using namespace juce;
+    using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
+    const float d = jmin (area.getWidth(), area.getHeight());
+    if (d < 8.0f) return;
+    const auto c = area.getCentre();
+    const float R = d * 0.36f, k = R / 60.0f;
+    const float pos = jlimit (0.0f, 1.0f, position);
+    const auto lit = span (pos, bipolar);
+    const auto angle = [&] (float t) { return startAngle + (endAngle - startAngle) * t; };
+    const float a = angle (pos);
+
+    arc (g, c, R, startAngle, endAngle, bone.withAlpha (0.1f), 1.5f * k);
+    arc (g, c, R, angle (lit.lo), angle (lit.hi), accent, 3.0f * k, 12.0f * k);
+    for (int i = 0; i <= 6; ++i)
+    {
+        const float u = (float) i / 6.0f;
+        const bool on = lit.contains (u);
+        star (g, at (c, R * 1.16f, angle (u)), R * 0.05f, on ? accent : bone.withAlpha (0.35f), on ? 6.0f * k : 0.0f);
+    }
+
+    body (g, c, R * 0.72f, accent, hover);
+    for (int i = 0; i < 8; ++i)
+        segment (g, c, at (c, R * (i % 2 ? 0.45f : 0.62f), a + MathConstants<float>::pi * (0.125f + 0.25f * (float) i)), bone.withAlpha (0.3f), 1.0f * k);
+
+    // le rayon principal, de l'os pâle au centre vers la couleur du réglage
+    const auto end = at (c, R * 1.08f, a);
+    Path ray;
+    ray.startNewSubPath (c);
+    ray.lineTo (end);
+    glow (g, ray, accent, 2.0f * k, 10.0f * k);
+    g.setGradientFill (ColourGradient (bone, c, accent, end, false));
+    g.strokePath (ray, PathStrokeType (2.0f * k, PathStrokeType::curved, PathStrokeType::rounded));
+    star (g, c, R * 0.12f, bone, 10.0f * k);
+}
+
+namespace logoknob
+{
+/** Le cadre commun des modèles dessinés pour R = 60 (les traits sont multipliés par k). */
+struct Frame
+{
+    juce::Point<float> c;
+    float R, k, pos, a;
+    Span lit;
+    float start, end;
+    float angle (float t) const { return start + (end - start) * t; }
+};
+
+inline bool frame (Frame& f, juce::Rectangle<float> area, float position, float startAngle, float endAngle, bool bipolar)
+{
+    const float d = juce::jmin (area.getWidth(), area.getHeight());
+    if (d < 8.0f) return false;
+    f.c = area.getCentre();
+    f.R = d * 0.36f; f.k = f.R / 60.0f;
+    f.pos = juce::jlimit (0.0f, 1.0f, position);
+    f.lit = span (f.pos, bipolar);
+    f.start = startAngle; f.end = endAngle;
+    f.a = f.angle (f.pos);
+    return true;
+}
+
+/** Un triangle effilé de `from` (base de demi-largeur w) à la pointe `to`. */
+inline void addSpike (juce::Path& p, juce::Point<float> from, juce::Point<float> to, float w)
+{
+    const auto dir = to - from;
+    const float len = juce::jmax (1.0e-4f, dir.getDistanceFromOrigin());
+    const juce::Point<float> n (-dir.y / len * w, dir.x / len * w);
+    p.startNewSubPath (from + n);
+    p.lineTo (to);
+    p.lineTo (from - n);
+    p.closeSubPath();
+}
+
+/** L'étoile du logo tournée d'un angle. */
+inline void starRotated (juce::Graphics& g, juce::Point<float> c, float r, float rotation, juce::Colour col, float blur)
+{
+    auto p = knobStar (c, r);
+    p.applyTransform (juce::AffineTransform::rotation (rotation, c.x, c.y));
+    if (blur > 0.0f) glow (g, p, col, 0.0f, blur);
+    g.setColour (col);
+    g.fillPath (p);
+}
+
+/** Un anneau irrégulier comme du métal liquide, avec sa lueur blanche. */
+inline void liquidRing (juce::Graphics& g, juce::Point<float> c, float r, float seed, float width)
+{
+    juce::Path p;
+    for (int i = 0; i <= 120; ++i)
+    {
+        const float a = (float) i / 120.0f * juce::MathConstants<float>::twoPi;
+        const float m = 1.0f + 0.07f * std::sin (3.0f * a + seed) + 0.045f * std::sin (5.0f * a + seed * 2.3f) + 0.03f * std::sin (9.0f * a + seed * 0.7f);
+        const auto q = at (c, r * m, a);
+        if (i == 0) p.startNewSubPath (q); else p.lineTo (q);
+    }
+    p.closeSubPath();
+    stroke (g, p, bone, width, width * 3.0f);
+}
+} // namespace logoknob
+
+/** « Épine » : graduations en épines effilées comme les branches du logo, aiguille en longue épine courbée. */
+inline void drawKnobEpine (juce::Graphics& g, juce::Rectangle<float> area, float position, float startAngle, float endAngle,
+                           juce::Colour accent, bool bipolar, bool hover)
+{
+    using namespace juce;
+    using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
+    Frame f;
+    if (! frame (f, area, position, startAngle, endAngle, bipolar)) return;
+    const auto c = f.c; const float R = f.R, k = f.k, a = f.a;
+
+    body (g, c, R * 0.66f, accent, hover);
+    const int n = R < 22.0f ? 19 : 37;
+    Path on, off;
+    for (int i = 0; i < n; ++i)
+    {
+        const float u = (float) i / (float) (n - 1), b = f.angle (u);
+        addSpike (f.lit.contains (u) ? on : off, at (c, R * 0.75f, b), at (c, R * (i % 4 == 0 ? 1.04f : 0.94f), b), 1.8f * k);
+    }
+    g.setColour (bone.withAlpha (0.22f));
+    g.fillPath (off);
+    glow (g, on, accent, 0.0f, 8.0f * k);
+    g.setColour (accent);
+    g.fillPath (on);
+
+    // l'aiguille : une épine qui se courbe du centre vers la valeur
+    const auto tip = at (c, R * 0.7f, a), side = at (c, R * 0.35f, a - 0.12f);
+    const auto n1 = at (c, 4.0f * k, a + MathConstants<float>::halfPi), n2 = at (c, 4.0f * k, a - MathConstants<float>::halfPi);
+    Path needle;
+    needle.startNewSubPath (n1);
+    needle.quadraticTo (side, tip);
+    needle.lineTo (n2);
+    needle.closeSubPath();
+    glow (g, needle, accent, 0.0f, 12.0f * k);
+    g.setGradientFill (ColourGradient (accent.interpolatedWith (Colours::white, 0.45f), c, accent.interpolatedWith (Colours::white, 0.8f), tip, false));
+    g.fillPath (needle);
+    const auto cap = Rectangle<float> (0.14f * R, 0.14f * R).withCentre (c);
+    g.setColour (Colour (0xff050203));
+    g.fillEllipse (cap);
+    g.setColour (bone.withAlpha (0.25f));
+    g.drawEllipse (cap, jmax (0.6f, k));
+}
+
+/** « Étoile » : la grande étoile à quatre branches du logo sert d'aiguille ; une petite étoile brille au bout de l'arc. */
+inline void drawKnobEtoile (juce::Graphics& g, juce::Rectangle<float> area, float position, float startAngle, float endAngle,
+                            juce::Colour accent, bool bipolar, bool hover)
+{
+    using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
+    Frame f;
+    if (! frame (f, area, position, startAngle, endAngle, bipolar)) return;
+    arc (g, f.c, f.R, f.start, f.end, bone.withAlpha (0.12f), 3.0f * f.k);
+    arc (g, f.c, f.R, f.angle (f.lit.lo), f.angle (f.lit.hi), accent, 3.0f * f.k, 12.0f * f.k);
+    body (g, f.c, f.R * 0.74f, accent, hover);
+    star (g, at (f.c, f.R, f.a), f.R * 0.09f, bone, 10.0f * f.k);
+    starRotated (g, f.c, f.R * 0.44f, f.a, bone, 16.0f * f.k);
+}
+
+/** « Spectre » : tout en blanc lumineux comme le logo ; anneau de métal liquide irrégulier, épine vers le centre. */
+inline void drawKnobSpectre (juce::Graphics& g, juce::Rectangle<float> area, float position, float startAngle, float endAngle,
+                             juce::Colour accent, bool bipolar, bool hover)
+{
+    using namespace juce;
+    using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
+    Frame f;
+    if (! frame (f, area, position, startAngle, endAngle, bipolar)) return;
+    const auto c = f.c; const float R = f.R, k = f.k;
+    const auto disc = Rectangle<float> (1.64f * R, 1.64f * R).withCentre (c);
+    if (hover)
+    {
+        g.setColour (accent.withAlpha (0.08f));
+        g.fillEllipse (disc.expanded (R * 0.1f));
+    }
+    g.setColour (Colour (20, 8, 10).withAlpha (0.9f));
+    g.fillEllipse (disc);
+    g.setColour (bone.withAlpha (0.08f));
+    g.drawEllipse (disc, 6.0f * k);
+    liquidRing (g, c, R * 0.58f, 1.3f + f.pos * 2.0f, R * 0.1f);
+    segment (g, at (c, R * 1.02f, f.a), at (c, R * 0.42f, f.a), bone, 1.6f * k, 6.0f * k);
+    star (g, at (c, R * 1.06f, f.a), R * 0.09f, bone, 10.0f * k);
+}
+
+/** « Éclipse » : un disque noir cerné d'une couronne blanche ; les rayons du soleil s'allongent et s'allument
+    jusqu'à la valeur. */
+inline void drawKnobEclipse (juce::Graphics& g, juce::Rectangle<float> area, float position, float startAngle, float endAngle,
+                             juce::Colour accent, bool bipolar, bool hover)
+{
+    using namespace juce;
+    using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
+    Frame f;
+    if (! frame (f, area, position, startAngle, endAngle, bipolar)) return;
+    const auto c = f.c; const float R = f.R, k = f.k;
+    const int n = R < 22.0f ? 60 : 120;
+    Path on, off;
+    for (int i = 0; i < n; ++i)
+    {
+        const float b = (float) i / (float) n * MathConstants<float>::twoPi;
+        float rel = std::fmod (b - f.start, MathConstants<float>::twoPi);
+        if (rel < 0.0f) rel += MathConstants<float>::twoPi;
+        const float u = rel / (f.end - f.start);
+        const bool isLit = u <= 1.0f && f.lit.contains (u);
+        const float len = (isLit ? 0.3f : 0.1f) * (0.6f + 0.4f * std::abs (std::sin ((float) i * 7.31f)));
+        Path& dst = isLit ? on : off;
+        dst.startNewSubPath (at (c, R * 0.73f, b));
+        dst.lineTo (at (c, R * (0.73f + len), b));
+    }
+    stroke (g, off, bone.withAlpha (0.45f), 1.0f * k, 3.0f * k);
+    stroke (g, on, bone, 1.4f * k, 6.0f * k);
+    const auto disc = Rectangle<float> (1.4f * R, 1.4f * R).withCentre (c);
+    if (hover)
+    {
+        g.setColour (accent.withAlpha (0.1f));
+        g.fillEllipse (disc.expanded (R * 0.08f));
+    }
+    g.setColour (Colours::black);
+    g.fillEllipse (disc);
+    Path rim;
+    rim.addEllipse (disc);
+    stroke (g, rim, bone, 2.0f * k, 16.0f * k);
+    star (g, at (c, R * 0.7f, f.a), R * 0.1f, bone, 10.0f * k);
+}
+
+/** « Constellation » : les graduations sont des étoiles reliées par un fil, une constellation qui s'allume ; une
+    étoile parcourt l'orbite. */
+inline void drawKnobConstellation (juce::Graphics& g, juce::Rectangle<float> area, float position, float startAngle, float endAngle,
+                                   juce::Colour accent, bool bipolar, bool hover)
+{
+    using namespace juce;
+    using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
+    Frame f;
+    if (! frame (f, area, position, startAngle, endAngle, bipolar)) return;
+    const auto c = f.c; const float R = f.R, k = f.k;
+
+    body (g, c, R * 0.62f, accent, hover);
+    {
+        Path orbit, dots;
+        orbit.addEllipse (Rectangle<float> (R, R).withCentre (c));
+        const float dash[] = { 1.0f * k, 4.0f * k };
+        PathStrokeType (1.2f * k).createDashedStroke (dots, orbit, dash, 2);
+        g.setColour (accent.withAlpha (0.4f));
+        g.fillPath (dots);
+    }
+    g.setColour (bone.withAlpha (0.35f));
+    for (int i = 0; i < 6; ++i)
+    {
+        const auto p = at (c, R * (0.12f + 0.07f * (float) i), (float) i * 2.4f);
+        g.fillRect (p.x, p.y, 1.4f * k, 1.4f * k);
+    }
+    constexpr int n = 11;
+    Point<float> pts[n];
+    for (int i = 0; i < n; ++i)
+        pts[i] = at (c, R * (i % 2 ? 0.97f : 1.03f), f.angle ((float) i / (float) (n - 1)));
+    for (int i = 1; i < n; ++i)
+    {
+        const bool isLit = f.lit.contains ((float) (i - 1) / (float) (n - 1)) && f.lit.contains ((float) i / (float) (n - 1));
+        segment (g, pts[i - 1], pts[i], isLit ? accent : bone.withAlpha (0.16f), 1.0f * k, isLit ? 6.0f * k : 0.0f);
+    }
+    for (int i = 0; i < n; ++i)
+    {
+        const bool isLit = f.lit.contains ((float) i / (float) (n - 1));
+        star (g, pts[i], R * (i % 5 == 0 ? 0.075f : 0.055f), isLit ? bone : bone.withAlpha (0.4f), isLit ? 8.0f * k : 0.0f);
+    }
+    star (g, at (c, R * 0.62f, f.a), R * 0.09f, accent.interpolatedWith (Colours::white, 0.7f), 12.0f * k);
+}
+
+/** « Sceau » : un sceau gravé, cercles, petit « O » au centre et quatre étoiles ; l'étoile du haut sert d'aiguille. */
+inline void drawKnobSceau (juce::Graphics& g, juce::Rectangle<float> area, float position, float startAngle, float endAngle,
+                           juce::Colour accent, bool bipolar, bool hover)
+{
+    using namespace juce;
+    using namespace logoknob;
+    using logoknob::bone;   // certains plugins ont aussi un onirique::ui::bone
+    Frame f;
+    if (! frame (f, area, position, startAngle, endAngle, bipolar)) return;
+    const auto c = f.c; const float R = f.R, k = f.k;
+    arc (g, c, R, f.start, f.end, bone.withAlpha (0.1f), 1.5f * k);
+    arc (g, c, R, f.angle (f.lit.lo), f.angle (f.lit.hi), accent, 3.0f * k, 12.0f * k);
+    body (g, c, R * 0.8f, accent, hover);
+    g.setColour (bone.withAlpha (0.11f));
+    for (const float m : { 0.72f, 0.6f, 0.44f })
+        g.drawEllipse (Rectangle<float> (2.0f * m * R, 2.0f * m * R).withCentre (c), 1.2f * k);
+    Path o;
+    o.addEllipse (Rectangle<float> (0.2f * R, 0.2f * R).withCentre (c));
+    stroke (g, o, bone, 2.0f * k, 8.0f * k);
+    for (int q = 3; q >= 0; --q)
+        star (g, at (c, R * 0.52f, f.a + (float) q * MathConstants<float>::halfPi), R * (q ? 0.06f : 0.09f),
+              q ? bone.withAlpha (0.45f) : accent, q ? 0.0f : 10.0f * k);
 }
 
 } // namespace onirique::ui
