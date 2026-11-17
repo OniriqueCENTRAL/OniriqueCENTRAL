@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Pose les cookies du compte YouTube de secours du Downloader (« YouTube bloque le serveur »). À lancer sur le VPS, en root :
+#   onirique-youtube-cookies        attend le contenu du fichier cookies.txt collé, puis Ctrl+D
+#   onirique-youtube-cookies off    retire les cookies (le Downloader repasse sans compte)
+# Les cookies ne quittent pas le serveur et ne s'affichent pas.
+#
+# À faire avant, dans Chrome ou Firefox :
+#   1. Ouvrir une fenêtre de navigation privée, se connecter sur youtube.com avec le compte de secours (jamais un compte personnel).
+#   2. Dans cet onglet, ouvrir youtube.com/robots.txt, exporter les cookies de youtube.com au format Netscape
+#      (extension « Get cookies.txt LOCALLY » ou équivalent), puis FERMER la fenêtre privée sans se déconnecter :
+#      sinon YouTube change les cookies et ceux du serveur ne valent plus rien.
+set -euo pipefail
+
+FILE=/var/lib/onirique-central/youtube-cookies.txt
+YTDLP=/var/lib/onirique-central/yt-dlp
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" = off ]; then rm -f "$FILE"; echo "Cookies YouTube retirés."; exit 0; fi
+
+NEW=$(mktemp); trap 'rm -f "$NEW"' EXIT
+echo "Colle le contenu du fichier cookies.txt, puis Entrée et Ctrl+D :"
+cat > "$NEW"
+tr -d '\r' < "$NEW" > "$NEW.lf" && mv "$NEW.lf" "$NEW"
+
+# Sans ces cookies, YouTube voit un visiteur anonyme et bloque le serveur comme un robot.
+missing=''
+for name in LOGIN_INFO SAPISID __Secure-3PSID; do
+  awk -F'\t' -v n="$name" '!/^#/ && $1 ~ /youtube\.com$/ && $6 == n { found = 1 } END { exit !found }' "$NEW" || missing="$missing $name"
+done
+[ -z "$missing" ] || stop "Il manque les cookies de connexion :$missing. Exporte les cookies de youtube.com depuis un onglet où le compte est connecté."
+
+install -o central -g root -m 600 "$NEW" "$FILE"
+echo "Essai sur une vidéo publique…"
+if runuser -u central -- "$YTDLP" --js-runtimes node --remote-components ejs:github --cookies "$FILE" \
+     --no-warnings --simulate -O '%(title)s' -- 'https://www.youtube.com/watch?v=jNQXAC9IVRw' >/dev/null 2>&1; then
+  echo "C'est bon : le Downloader passe par le compte de secours."
+else
+  stop "Les cookies sont posés mais YouTube refuse encore : refais l'export (fenêtre privée fermée sans se déconnecter)."
+fi
