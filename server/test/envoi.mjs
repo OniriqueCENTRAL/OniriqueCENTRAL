@@ -60,6 +60,19 @@ try {
   assert.equal(await (await api(`/api/envois/${id}/files/${info.files[1].id}`)).text(), 'deux');
   const zip = Buffer.from(await (await api(`/api/envois/${id}/zip`)).arrayBuffer());
   assert.ok(zip.includes('voix.wav') && zip.includes('voix (2).wav'), 'les deux noms dans le .zip');
+  assert.ok(!zip.includes(Buffer.from([0x50, 0x4b, 0x06, 0x07])), 'sous 4 Go, pas de ZIP64');
+  // Au-delà de 4 Go (ici le seuil baissé à 0) : sommaire ZIP64, tailles et positions dans le champ « extra ».
+  const { writeZip } = await import('../src/zipstream.js');
+  const { PassThrough } = await import('node:stream');
+  const out = new PassThrough(), parts64 = [];
+  out.on('data', (c) => parts64.push(c));
+  await writeZip(out, [{ name: 'a.wav', data: Buffer.from('un') }, { name: 'b.wav', data: Buffer.from('deux') }], 0);
+  const z64 = Buffer.concat(parts64), eocd = z64.length - 22, loc = eocd - 20, rec = Number(z64.readBigUInt64LE(loc + 8));
+  assert.equal(z64.readUInt32LE(eocd + 16), 0xFFFFFFFF);
+  assert.equal(z64.readUInt32LE(loc), 0x07064b50);
+  assert.equal(z64.readUInt32LE(rec), 0x06064b50);
+  assert.equal(z64.readBigUInt64LE(rec + 32), 2n, 'deux fichiers au sommaire ZIP64');
+  assert.equal(z64.readBigUInt64LE(30 + 5 + 4), 2n, 'la vraie taille du premier fichier dans son champ « extra »');
   assert.equal(get('SELECT downloads FROM envois WHERE id = ?', id).downloads, 2);
   assert.equal((await (await api('/api/envois', { token })).json()).length, 1);
 
