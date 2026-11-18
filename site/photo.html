@@ -115,6 +115,9 @@ body:has(.ps.full) { overflow: hidden; }
 #layers li { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
 #layers li:hover { background: rgba(255,255,255,.04); }
 #layers li.on { background: rgba(var(--acc),.2); }
+#layers li.drag { opacity: .45; }
+#layers li.drop-above { box-shadow: inset 0 2px 0 rgb(var(--acc)); }
+#layers li.drop-below { box-shadow: inset 0 -2px 0 rgb(var(--acc)); }
 #layers .eye { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--mist); cursor: pointer; }
 #layers .eye[aria-pressed="false"] { opacity: .25; }
 #layers canvas { width: 38px; height: 38px; flex: none; border-radius: 4px; box-shadow: 0 0 0 1px var(--line); }
@@ -141,6 +144,9 @@ body:has(.ps.full) { overflow: hidden; }
 .ps-dlg .ps-btn { padding: 9px 16px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--mist); cursor: pointer; }
 .ps-dlg .ps-btn.on { background: var(--lit); color: #fff; }
 .ps-dlg.fx { width: min(700px, calc(100vw - 24px)); margin: auto 12px auto auto; }
+.ps-dlg.live { margin: auto 12px auto auto; }
+.ps-dlg.live::backdrop { background: rgba(5,3,4,.12); backdrop-filter: none; }
+.ps-dlg h2 { cursor: move; user-select: none; touch-action: none; }
 .ps-dlg.fx::backdrop { background: rgba(5,3,4,.12); backdrop-filter: none; } /* l’image reste visible : l’aperçu est en direct */
 .fx-body { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 16px; min-height: 380px; }
 .fx-list { display: grid; align-content: start; gap: 2px; padding: 6px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.25); }
@@ -271,6 +277,7 @@ body:has(.ps.full) { overflow: hidden; }
   </nav>
 </footer>
 
+<script src="assets/photo-filters.js?v=1"></script>
 <script>
 // ONIRIQUE PHOTO : un document (largeur, hauteur) fait de calques (un canvas chacun, à une position), composés
 // dans l'ordre avec leur opacité et leur mode de fusion. Chaque geste terminé ajoute un état à l'historique.
@@ -521,6 +528,18 @@ function thumb(l) {
   x.drawImage(l.canvas, (76 - l.canvas.width * s) / 2, (76 - l.canvas.height * s) / 2, l.canvas.width * s, l.canvas.height * s);
   return c;
 }
+let dragFrom = -1;
+/** Déplace le calque from juste au-dessus (above) ou en dessous du calque onto, dans l'ordre de l'image. */
+function moveLayer(from, onto, above) {
+  if (from < 0 || from >= doc.layers.length) return refreshLayers();
+  let to = above ? onto + 1 : onto;   // la place visée, avant de retirer le calque
+  if (from < to) --to;
+  if (to === from) return refreshLayers();
+  const [l] = doc.layers.splice(from, 1);
+  doc.layers.splice(to, 0, l);
+  doc.active = to;
+  commit("Déplacer le calque");
+}
 function refreshLayers() {
   const list = $("layers");
   list.replaceChildren();
@@ -543,6 +562,19 @@ function refreshLayers() {
     const li = el("li", { className: i === doc.active ? "on" : "" }, eye, pic, name, el("span", { className: "kind", textContent: [l.text ? "T" : "", hasFx(l.fx) ? "fx" : ""].filter(Boolean).join(" ") }));
     li.dataset.i = i;
     li.onclick = () => { if (doc.active !== i) { doc.active = i; refresh(); } };
+    // Glisser un calque vers le haut ou le bas de la liste change l'ordre (le haut de la liste = le dessus de l'image).
+    li.draggable = true;
+    li.ondragstart = (e) => { dragFrom = i; li.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); };
+    li.ondragend = () => { dragFrom = -1; list.querySelectorAll("li").forEach((o) => o.classList.remove("drag", "drop-above", "drop-below")); };
+    const above = (e) => { const r = li.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; };
+    li.ondragover = (e) => {
+      if (dragFrom < 0) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = "move";
+      const up = above(e);
+      li.classList.toggle("drop-above", up); li.classList.toggle("drop-below", !up);
+    };
+    li.ondragleave = () => li.classList.remove("drop-above", "drop-below");
+    li.ondrop = (e) => { e.preventDefault(); const from = dragFrom; dragFrom = -1; moveLayer(from, i, above(e)); };
     list.prepend(li);
   });
   const l = active();
@@ -1361,6 +1393,7 @@ function ask(title, fields, live) {
       : el("input", { name: q.k, type: q.type, ...(q.min != null ? { min: q.min, max: q.max, required: true } : {}), value: q.value ?? "", ...(q.type === "checkbox" ? { checked: !!q.value } : {}) });
     const out = el(q.type === "range" ? "output" : "span", { textContent: q.type === "range" ? input.value + q.unit : q.unit || "" });
     if (q.type === "range") input.addEventListener("input", () => { out.textContent = input.value + q.unit; });
+    if (q.type === "select" && q.value != null) input.value = q.value;
     f.append(el("label", { className: q.type === "checkbox" ? "check" : "" }, el("span", { textContent: q.label }), input, out));
   }
   const values = () => Object.fromEntries(fields.map((q) => { const i = f.elements[q.k]; return [q.k, q.type === "checkbox" ? i.checked : q.type === "number" || q.type === "range" ? +i.value : i.value]; }));
@@ -1377,6 +1410,27 @@ function ask(title, fields, live) {
   });
 }
 
+// Les fenêtres se déplacent en tirant leur titre ; elles reprennent leur place à la fermeture.
+{
+  const d = $("dlg");
+  let grab = null;
+  d.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || !e.target.closest("h2") || !d.contains(e.target)) return;
+    const r = d.getBoundingClientRect();
+    grab = { dx: e.clientX - r.left, dy: e.clientY - r.top, id: e.pointerId };
+    Object.assign(d.style, { margin: "0", left: r.left + "px", top: r.top + "px", right: "auto", bottom: "auto" });
+    e.target.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  d.addEventListener("pointermove", (e) => {
+    if (!grab || e.pointerId !== grab.id) return;
+    const w = d.offsetWidth, x = Math.max(40 - w, Math.min(innerWidth - 40, e.clientX - grab.dx)), y = Math.max(0, Math.min(innerHeight - 40, e.clientY - grab.dy));
+    d.style.left = x + "px"; d.style.top = y + "px";
+  });
+  const drop = () => { grab = null; };
+  d.addEventListener("pointerup", drop); d.addEventListener("pointercancel", drop);
+  d.addEventListener("close", () => { grab = null; for (const k of ["margin", "left", "top", "right", "bottom"]) d.style[k] = ""; });
+}
+
 // ——— Menus ———
 const MENUS = [
   ["Fichier", [["Nouveau…", newDialog, "Ctrl+Alt+N"], ["Ouvrir…", () => $("file").click(), "Ctrl+O"], ["Placer une image…", D(() => $("place").click()), "Ctrl+Maj+O"], "-",
@@ -1385,14 +1439,13 @@ const MENUS = [
   ["Image", [["Réglages…", D(() => adjustDialog()), "Ctrl+U"], "-", ["Taille de l’image…", D(resizeDialog), "Ctrl+Alt+I"], ["Taille de la zone de travail…", D(canvasDialog), "Ctrl+Alt+C"],
     ["Recadrer à la sélection", D(cropToSelection)], "-", ["Rotation 90° horaire", D(() => rotateImage(1, "Rotation 90° horaire"))], ["Rotation 90° antihoraire", D(() => rotateImage(-1, "Rotation 90° antihoraire"))],
     ["Rotation 180°", D(() => rotateImage(2, "Rotation 180°"))], ["Symétrie horizontale", D(() => flipImage(true))], ["Symétrie verticale", D(() => flipImage(false))]]],
-  ["Calque", [["Nouveau calque", D(newLayer), "Ctrl+Maj+N"], ["Dupliquer le calque", D(duplicate), "Ctrl+J"], ["Supprimer le calque", D(removeLayer)], "-",
+  ["Calque", [["Nouveau calque", D(newLayer), "Ctrl+Maj+N"], ["Dupliquer le calque", D(duplicate), "Ctrl+J"], ["Supprimer le calque", D(removeLayer), "Suppr"], "-",
     ["Options de fusion…", D(() => fxDialog())], ["Effacer le style de calque", D(clearFx)], "-",
     ["Monter", D(() => shiftLayer(1)), "Ctrl+]"], ["Descendre", D(() => shiftLayer(-1)), "Ctrl+["], ["Fusionner avec le calque du dessous", D(mergeDown), "Ctrl+E"], ["Aplatir l’image", D(flattenImage)], "-",
     ["Centrer dans l’image", D(centerLayer)], ["Rotation 90° horaire", D(() => rotateLayer(true))], ["Rotation 90° antihoraire", D(() => rotateLayer(false))],
     ["Symétrie horizontale", D(() => flipLayer(true))], ["Symétrie verticale", D(() => flipLayer(false))], ["Pixelliser le texte", D(() => { if (active().text) { rasterize(active()); commit("Pixelliser le texte"); } })]]],
   ["Sélection", [["Tout sélectionner", D(selectAll), "Ctrl+A"], ["Désélectionner", D(deselect), "Ctrl+D"]]],
-  ["Filtre", [["Noir et blanc", D(() => filterLayer("grayscale(100%)", "Noir et blanc"))], ["Sépia", D(() => filterLayer("sepia(100%)", "Sépia"))],
-    ["Négatif", D(() => filterLayer("invert(100%)", "Négatif")), "Ctrl+I"], ["Flou…", D(() => adjustDialog("bl"))]]],
+  ["Filtre", filterMenu()],
   ["Affichage", [["Zoom avant", D(() => zoomAt(1.25)), "Ctrl++"], ["Zoom arrière", D(() => zoomAt(.8)), "Ctrl+-"], ["Ajuster à l’écran", D(fit), "Ctrl+0"], ["Taille réelle (100 %)", D(actualSize), "Ctrl+1"], "-", ["Plein écran", () => toggleFull(), "F"]]],
 ];
 const KEYS = { "Ctrl+Maj+Z": D(redo), "Ctrl+Maj++": D(() => zoomAt(1.25)), "Ctrl+Maj+-": D(() => zoomAt(.8)), "Alt+Backspace": D(fillSelection) };
@@ -1423,8 +1476,10 @@ for (const [name, items] of MENUS) {
   b.setAttribute("aria-haspopup", "menu"); b.setAttribute("aria-expanded", "false");
   b.onclick = (e) => { e.stopPropagation(); openMenu?.button === b ? closeMenu() : showMenu(b, items); };
   b.onmouseenter = () => { if (openMenu?.button && openMenu.button !== b) showMenu(b, items); };
-  for (const item of items) if (item[2]) KEYS[item[2]] = item[1];
+  for (const item of items) if (Array.isArray(item) && item[2]) KEYS[item[2]] = item[1];
 }
+// Suppr (ou Retour arrière) : efface la sélection s'il y en a une, sinon supprime le calque choisi.
+KEYS["Suppr"] = KEYS["Backspace"] = D(() => (selection ? clearSelection() : removeLayer()));
 document.addEventListener("click", (e) => { if (openMenu && !openMenu.box.contains(e.target)) closeMenu(); });
 
 /** Les calques visibles qui ont un pixel au point p, du dessus vers le dessous. */
@@ -1531,7 +1586,7 @@ addEventListener("keydown", (e) => {
   if (k === "[" || k === "]") { opts.size = Math.max(1, Math.min(400, Math.round(opts.size * (k === "]" ? 1.2 : 1 / 1.2)))); options(); render(); return; }
   if (e.key === "Enter" && tool === "crop") return applyCrop();
   if (e.key === "Escape") { if (tool === "crop") { resetCrop(); cropInfo(); } else selection = null; status(); render(); return; }
-  if (e.key === "Suppr" || e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); return clearSelection(); }
+  if (e.key === "Suppr" || e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); return selection ? clearSelection() : removeLayer(); }
   const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
   if (arrows && tool === "move") {
     e.preventDefault();
