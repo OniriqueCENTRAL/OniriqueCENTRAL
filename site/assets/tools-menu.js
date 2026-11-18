@@ -33,7 +33,7 @@ window.OniriqueTools = [
     ["Downloader", "downloader", "Un lien YouTube ou TikTok en MP3, en WAV ou en vidéo MP4 HD, au nom de la vidéo ; option PROD avec BPM et tonalité."],
   ]],
   ["Image", [
-    ["Recadrer", "recadrer", "Une photo aux dimensions voulues (cover, story, miniature…), centrée, en un glisser-déposer."],
+    ["Recadrer", "recadrer", "Une photo ou une vidéo aux dimensions voulues (cover, story, miniature…), centrée ; pour une vidéo, couper, réduire et régler le volume."],
     ["ONIRIQUE PHOTO", "photo", "Un éditeur d’images avec calques : recadrage aux formats cover, story et miniature, texte, pinceau, réglages, export."],
   ]],
   ["Sortie", [

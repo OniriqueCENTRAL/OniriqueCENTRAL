@@ -6,25 +6,27 @@
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Recadrer une image aux bonnes dimensions — ONIRIQUE</title>
-<meta name="description" content="Dépose une photo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : l’image est recadrée et centrée, prête à télécharger. Gratuit, sans compte, sans envoi du fichier.">
+<title>Recadrer une image ou une vidéo aux bonnes dimensions — ONIRIQUE</title>
+<meta name="description" content="Dépose une photo ou une vidéo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : elle est recadrée et centrée. Pour une vidéo : couper le début et la fin, réduire la taille et le poids, monter ou baisser le son. Gratuit, sans compte, sans envoi du fichier.">
 <link rel="canonical" href="https://onirique.store/recadrer">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
-<meta property="og:title" content="Recadrer une image aux bonnes dimensions — ONIRIQUE">
-<meta property="og:description" content="Dépose une photo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : l’image est recadrée et centrée, prête à télécharger. Gratuit, sans compte, sans envoi du fichier.">
+<meta property="og:title" content="Recadrer une image ou une vidéo aux bonnes dimensions — ONIRIQUE">
+<meta property="og:description" content="Dépose une photo ou une vidéo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : elle est recadrée et centrée. Pour une vidéo : couper le début et la fin, réduire la taille et le poids, monter ou baisser le son. Gratuit, sans compte, sans envoi du fichier.">
 <meta property="og:url" content="https://onirique.store/recadrer">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Recadrer une image","url":"https://onirique.store/recadrer","description":"Dépose une photo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : l’image est recadrée et centrée, prête à télécharger. Gratuit, sans compte, sans envoi du fichier.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Recadrer une image","item":"https://onirique.store/recadrer"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Recadrer une image ou une vidéo","url":"https://onirique.store/recadrer","description":"Dépose une photo ou une vidéo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : elle est recadrée et centrée. Pour une vidéo : couper le début et la fin, réduire la taille et le poids, monter ou baisser le son. Gratuit, sans compte, sans envoi du fichier.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Recadrer une image ou une vidéo","item":"https://onirique.store/recadrer"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=3">
 <link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
+.kind { display: flex; justify-content: center; margin-top: 26px; }
+.kind + .drop { margin-top: 16px; }
 .opt { display: grid; gap: 10px; }
 .chips.wide { border-radius: 22px; }
 .chips.wide button { text-transform: none; letter-spacing: .02em; }
@@ -32,14 +34,52 @@
 .swap { height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.42); color: var(--mist); font: 500 18px/1 var(--f-body); cursor: pointer; }
 .swap:hover { border-color: var(--ember); }
 .frame { display: grid; justify-items: center; gap: 14px; background: repeating-conic-gradient(rgba(255,255,255,.04) 0 25%, transparent 0 50%) 0 0 / 20px 20px; }
-.frame canvas { display: block; max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 0 0 1px var(--line), 0 20px 50px -20px rgba(0,0,0,.9); cursor: grab; touch-action: none; }
-.frame canvas.dragging { cursor: grabbing; }
+.frame canvas#preview { display: block; max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 0 0 1px var(--line), 0 20px 50px -20px rgba(0,0,0,.9); cursor: grab; touch-action: none; }
+.frame canvas#preview.dragging { cursor: grabbing; }
 .tools-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; width: 100%; }
 .tools-row label { display: flex; align-items: center; gap: 10px; min-width: min(100%, 260px); }
 .tools-row input[type="range"] { flex: 1; }
-.tools-row output { min-width: 5ch; color: var(--mist); font: 500 12px/1 var(--f-mono); }
+.tools-row output, .vol output { min-width: 5ch; color: var(--mist); font: 500 12px/1 var(--f-mono); letter-spacing: 0; text-transform: none; }
 .tools-row .go { padding: 10px 16px; font-size: 13px; }
 #bg-box input[type="color"] { width: 100%; height: 48px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.42); }
+
+/* Vidéo : lecture, frise de découpe (vignettes, zone gardée, poignées, tête de lecture) */
+.player { display: grid; gap: 12px; width: 100%; }
+.player-row { display: flex; align-items: center; gap: 14px; }
+.play { display: grid; place-items: center; flex: none; width: 46px; height: 46px; border: 0; border-radius: 50%; background: var(--mist); color: var(--night); cursor: pointer; box-shadow: 0 8px 26px -8px rgba(var(--acc),.7); transition: transform .15s var(--ease, ease); }
+.play:hover { transform: scale(1.06); }
+.play:active { transform: scale(.96); }
+.play svg { width: 18px; height: 18px; fill: currentColor; }
+.timeline { position: relative; flex: 1; min-width: 0; height: 58px; border-radius: 10px; background: rgba(0,0,0,.55); touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.thumbs { position: absolute; inset: 0; display: flex; overflow: hidden; border-radius: 10px; }
+.thumbs canvas { flex: 1 1 0; min-width: 0; width: 0; height: 100%; opacity: 0; transition: opacity .35s; }
+.thumbs canvas.in { opacity: 1; }
+.shade { position: absolute; top: 0; bottom: 0; background: rgba(9,8,10,.74); pointer-events: none; }
+.shade.l { left: 0; border-radius: 10px 0 0 10px; }
+.shade.r { right: 0; border-radius: 0 10px 10px 0; }
+.keep { position: absolute; top: -3px; bottom: -3px; border: 2px solid var(--ember); border-radius: 10px; box-shadow: 0 0 22px rgba(var(--acc),.35); pointer-events: none; }
+.handle { position: absolute; top: -3px; bottom: -3px; z-index: 2; display: grid; place-items: center; width: 18px; margin-left: -9px; border-radius: 7px; background: var(--ember); cursor: ew-resize; touch-action: none; }
+.handle::after { content: ""; width: 2px; height: 20px; border-radius: 2px; background: rgba(255,255,255,.9); }
+.handle:hover, .handle.on { background: var(--ember-text); }
+.handle:focus-visible { outline: 2px solid var(--mist); outline-offset: 2px; }
+.playhead { position: absolute; top: -7px; bottom: -7px; z-index: 3; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--mist); box-shadow: 0 0 10px rgba(0,0,0,.9); pointer-events: none; }
+.time { min-width: 13ch; color: var(--haze); font: 500 12px/1 var(--f-mono); text-align: right; }
+.trim { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; color: var(--haze); font: 500 12px/1.4 var(--f-mono); }
+.trim b { color: var(--mist); font-weight: 500; }
+.trim div { display: flex; gap: 8px; }
+.mini { padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--mist); font: 500 12px/1 var(--f-mono); cursor: pointer; }
+.mini:hover { border-color: var(--ember); }
+.vol { display: flex; align-items: center; gap: 12px; }
+.vol input[type="range"] { flex: 1; }
+.check { display: flex !important; align-items: center; gap: 10px !important; padding-top: 12px; }
+@media (max-width: 560px) {
+  .player-row { flex-wrap: wrap; justify-content: space-between; }
+  .timeline { order: 3; flex: 1 0 100%; }
+}
+.progress { display: grid; gap: 10px; }
+.bar { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.08); }
+.bar i { display: block; width: 0; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--ember), var(--ember-text)); transition: width .25s ease; }
+.progress .split p { font: 500 13px/1.4 var(--f-mono); }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
@@ -55,16 +95,17 @@
 <main class="wrap" id="contenu">
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
-    <h1>Recadrer une <em>image</em></h1>
-    <p class="lede">Une photo pour une cover, une story ou une miniature : dépose-la, choisis les dimensions, elle est recadrée et centrée. Glisse-la pour la placer autrement, puis télécharge.</p>
+    <h1>Recadrer une <em>image</em> ou une <em>vidéo</em></h1>
+    <p class="lede">Dépose-la, choisis les dimensions : elle est recadrée et centrée, glisse-la pour la placer autrement. Une vidéo se coupe, se réduit et se règle en volume au passage.</p>
 
+    <div class="kind"><div class="chips" id="kind"><button type="button" data-v="image" aria-pressed="true">Image</button><button type="button" data-v="video" aria-pressed="false">Vidéo</button></div></div>
     <button class="drop" id="drop" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v16h16M2 6h16v16"/></svg>
-      <strong>Dépose une image ici</strong>
-      <span>ou clique pour la choisir · JPG, PNG, WEBP, GIF, AVIF</span>
+      <strong id="drop-title">Dépose une image ici</strong>
+      <span id="drop-hint">ou clique pour la choisir · JPG, PNG, WEBP, GIF, AVIF</span>
     </button>
-    <input id="file" type="file" accept="image/*" hidden>
-    <p class="hint">Sans compte. Le recadrage se fait dans ton navigateur : ton image n’est envoyée nulle part.</p>
+    <input id="file" type="file" accept="image/*,video/*,.mov,.mkv" hidden>
+    <p class="hint">Sans compte. Tout se fait dans ton navigateur : ton fichier n’est envoyé nulle part.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
@@ -74,45 +115,79 @@
       <span class="label">Format</span>
       <div><div class="chips wide" id="formats"></div></div>
       <div class="dims">
-        <label>Largeur (px)<input id="w" type="number" min="1" max="16384" inputmode="numeric"></label>
+        <label>Largeur (px)<input id="w" type="number" min="2" max="16384" inputmode="numeric"></label>
         <button class="swap" id="swap" type="button" title="Inverser largeur et hauteur" aria-label="Inverser largeur et hauteur">⇄</button>
-        <label>Hauteur (px)<input id="h" type="number" min="1" max="16384" inputmode="numeric"></label>
+        <label>Hauteur (px)<input id="h" type="number" min="2" max="16384" inputmode="numeric"></label>
       </div>
       <div class="fields">
-        <label>Cadrage<select id="mode"><option value="fill">Remplir le cadre (les bords sont coupés)</option><option value="fit">Image entière (bandes de couleur)</option></select></label>
+        <label>Cadrage<select id="mode"><option value="fill">Remplir le cadre (les bords sont coupés)</option><option value="fit" id="fit-option">Image entière (bandes de couleur)</option></select></label>
         <label id="bg-box" hidden>Couleur des bandes<input id="bg" type="color" value="#000000"></label>
       </div>
     </div>
     <div class="frame">
-      <canvas id="preview" aria-label="Aperçu du recadrage : glisse l’image pour la placer"></canvas>
+      <canvas id="preview" aria-label="Aperçu du recadrage : glisse pour placer"></canvas>
+      <div class="player" id="player" hidden>
+        <div class="player-row">
+          <button class="play" id="play" type="button" aria-label="Lire la partie gardée (Espace)"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="play-icon" d="M7 4.5v15l13-7.5z"/></svg></button>
+          <div class="timeline" id="timeline" aria-label="Frise de la vidéo : clique pour aller à un moment">
+            <div class="thumbs" id="thumbs"></div>
+            <div class="shade l" id="shade-l"></div><div class="shade r" id="shade-r"></div>
+            <div class="keep" id="keep"></div>
+            <div class="handle" id="ha" role="slider" tabindex="0" aria-label="Début de la partie gardée"></div>
+            <div class="handle" id="hb" role="slider" tabindex="0" aria-label="Fin de la partie gardée"></div>
+            <div class="playhead" id="playhead"></div>
+          </div>
+          <span class="time" id="time">0:00,0</span>
+        </div>
+        <div class="trim">
+          <span>Début <b id="t-a">0:00,0</b> · Fin <b id="t-b">0:00,0</b> · Durée <b id="t-d">0:00,0</b></span>
+          <div><button class="mini" id="set-a" type="button" title="Touche I">Début ici</button><button class="mini" id="set-b" type="button" title="Touche O">Fin ici</button><button class="mini" id="trim-reset" type="button">Tout garder</button></div>
+        </div>
+      </div>
       <div class="tools-row">
         <label>Zoom<input id="zoom" type="range" min="100" max="400" value="100"><output id="zoom-v">100 %</output></label>
         <button class="go ghost" id="center" type="button">Centrer</button>
       </div>
-      <p class="muted" id="guide">Glisse l’image pour la placer : elle s’aimante au centre. Molette : zoom.</p>
+      <p class="muted" id="guide">Glisse l’image pour la placer : elle s’aimante au centre. Molette : zoom. Double-clic : recentrer.</p>
     </div>
-    <div class="opt">
+    <div class="fields" id="video-options" hidden>
+      <label>Volume<span class="vol"><input id="volume" type="range" min="0" max="300" step="5" value="100"><output id="volume-v">100 %</output></span></label>
+      <label>Poids du fichier<select id="weight"><option value="high">Haute qualité</option><option value="medium" selected>Équilibré</option><option value="low">Léger (pour l’envoyer vite)</option></select></label>
+      <label class="check"><input id="mute" type="checkbox">Couper le son</label>
+    </div>
+    <div class="opt" id="image-options">
       <span class="label">Fichier</span>
       <div><div class="chips" id="out-format"><button type="button" data-v="jpg" aria-pressed="true">JPG</button><button type="button" data-v="png" aria-pressed="false">PNG</button><button type="button" data-v="webp" aria-pressed="false">WEBP</button></div></div>
+    </div>
+    <div class="progress" id="progress" hidden>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="split"><p id="p-text"></p><button class="go ghost" id="cancel" type="button">Annuler</button></div>
     </div>
     <div class="dim split">
       <p id="r-out"></p>
       <button class="go" id="go" type="button">Télécharger</button>
     </div>
   </article>
+  <video id="video" playsinline preload="auto" hidden></video>
 
   <section class="text">
     <h2>Les dimensions à connaître</h2>
     <p><strong>Cover</strong> (Spotify, Apple Music, Deezer, distributeurs) : un carré de 3000 × 3000 pixels. <strong>Post Instagram</strong> : 1080 × 1350 en portrait, le format qui prend le plus de place dans le fil. <strong>Story, reel, TikTok et canvas Spotify</strong> : 1080 × 1920. <strong>Miniature YouTube</strong> : 1280 × 720. <strong>Bannière YouTube</strong> : 2560 × 1440, dont seul le centre (1546 × 423) se voit partout. <strong>Bannière X</strong> : 1500 × 500.</p>
+    <h2>Pour une vidéo</h2>
+    <p>Choisis le format (une vidéo horizontale passe en 1080 × 1920 pour TikTok, centrée), garde le passage voulu en tirant les poignées rouges de la frise, règle le volume et le poids du fichier. La vidéo sort en MP4, lisible partout. La fabrication se fait dans ton navigateur : compte quelques secondes à quelques minutes selon la longueur et l’ordinateur.</p>
     <h2>Questions fréquentes</h2>
     <details><summary>Remplir le cadre ou image entière ?</summary>
-      <p><strong>Remplir le cadre</strong> coupe ce qui dépasse pour qu’il n’y ait aucun bord vide : c’est ce qu’on veut pour une cover ou une story. <strong>Image entière</strong> garde toute la photo et ajoute des bandes de la couleur choisie là où elle ne remplit pas le cadre.</p></details>
+      <p><strong>Remplir le cadre</strong> coupe ce qui dépasse pour qu’il n’y ait aucun bord vide : c’est ce qu’on veut pour une cover ou une story. <strong>Image entière</strong> garde toute l’image et ajoute des bandes (de la couleur choisie pour une image, noires pour une vidéo).</p></details>
     <details><summary>Comment centrer un visage ou un objet ?</summary>
       <p>Glisse l’image dans l’aperçu : elle se recale d’elle-même sur le centre quand tu t’en approches, et un trait le montre. Le zoom resserre le cadre ; « Centrer » remet tout au milieu.</p></details>
-    <details><summary>Mon image est trop petite pour la taille choisie</summary>
-      <p>Elle est agrandie, et la page le signale : une image agrandie perd en netteté. Pour une cover, pars d’une image d’au moins 3000 pixels de côté.</p></details>
+    <details><summary>Comment réduire le poids d’une vidéo ?</summary>
+      <p>Baisse ses dimensions (720p, 1280 × 720, suffit pour un message) et choisis « Léger » dans le poids du fichier. Couper le début et la fin inutiles allège aussi.</p></details>
+    <details><summary>Monter le volume abîme-t-il le son ?</summary>
+      <p>Jusqu’à ce que le son atteigne le maximum, non. Au-delà, les crêtes sont arrondies pour éviter la saturation : un son déjà fort poussé à 300 % paraîtra écrasé. Écoute l’aperçu, il joue au volume choisi.</p></details>
+    <details><summary>Mon fichier est trop petit pour la taille choisie</summary>
+      <p>Il est agrandi, et la page le signale : un fichier agrandi perd en netteté. Pour une cover, pars d’une image d’au moins 3000 pixels de côté.</p></details>
     <details><summary>Et pour ajouter du texte, un logo, retoucher ?</summary>
-      <p><a href="photo">ONIRIQUE PHOTO</a> est un éditeur complet avec calques, texte, pinceau et réglages.</p></details>
+      <p><a href="photo">ONIRIQUE PHOTO</a> est un éditeur d’images complet avec calques, texte, pinceau et réglages.</p></details>
   </section>
 </main>
 
@@ -124,46 +199,55 @@
 
 <script src="assets/audio-kit.js"></script>
 <script>
-// Le cadrage : l'image est mise à l'échelle pour remplir (ou contenir) le cadre de W × H pixels, multipliée par le
-// zoom, et le point (cx, cy) de l'image tombe au centre du cadre. L'aperçu et le fichier sont dessinés par paint().
+// Le cadrage : la source (une image, ou la vidéo) est mise à l'échelle pour remplir (ou contenir) le cadre de W × H pixels,
+// multipliée par le zoom, et son point (cx, cy) tombe au centre du cadre. L'aperçu et l'image téléchargée sont dessinés par
+// paint() ; une vidéo est refaite par Mediabunny (WebCodecs) avec la même zone, coupée et au volume choisi, en MP4.
 const $ = (id) => document.getElementById(id);
 const A = OniriqueAudio;
 const MAX_PX = 16777216; // la plus grande surface de canvas que Safari accepte
 const MIME = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" };
 const SNAP = 10; // distance (pixels d'écran) à laquelle l'image s'aimante au centre
-const FORMATS = [["Cover", 3000, 3000], ["Post Instagram", 1080, 1350], ["Story, TikTok", 1080, 1920], ["Miniature YouTube", 1280, 720], ["Bannière YouTube", 2560, 1440], ["Bannière X", 1500, 500]];
-let file = null, img = null, W = 3000, H = 3000, z = 1, cx = 0, cy = 0, format = "jpg", snapped = { x: false, y: false }, drag = null;
+const MIN_KEEP = .2; // la plus courte partie gardée d'une vidéo, en secondes
+const MEDIABUNNY = "https://cdn.jsdelivr.net/npm/mediabunny@1.65.1/dist/bundles/mediabunny.min.mjs";
+const IMAGE_FORMATS = [["Cover", 3000, 3000], ["Post Instagram", 1080, 1350], ["Story, TikTok", 1080, 1920], ["Miniature YouTube", 1280, 720], ["Bannière YouTube", 2560, 1440], ["Bannière X", 1500, 500]];
+const VIDEO_FORMATS = [["Story, TikTok, Reel", 1080, 1920], ["Post Instagram", 1080, 1350], ["Carré", 1080, 1080], ["Full HD", 1920, 1080], ["HD 720p", 1280, 720]];
+let kind = "image", file = null, src = null, SW = 0, SH = 0; // ce qui est dessiné (canvas de l'image ou balise vidéo) et sa taille
+let W = 3000, H = 3000, z = 1, cx = 0, cy = 0, format = "jpg", snapped = { x: false, y: false }, drag = null;
+const video = $("video");
+let duration = 0, keepA = 0, keepB = 0, videoUrl = null, audio = null, conversion = null, working = false, canceled = false, loading = 0;
 
 const fit = () => $("mode").value === "fit";
-const scale = () => (fit() ? Math.min : Math.max)(W / img.width, H / img.height) * z;
+const scale = () => (fit() ? Math.min : Math.max)(W / SW, H / SH) * z;
+const clock = (t) => { t = Math.max(0, t); return Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0") + "," + Math.floor(t * 10 % 10); };
+const even = (n) => Math.max(2, n - (n % 2)); // H.264 veut des dimensions paires
+const isVideoFile = (f) => f.type.startsWith("video/") || /\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name);
 
-/** Garde le cadre dans l'image : sur un axe où l'image est plus petite que le cadre, elle reste centrée. */
+/** Garde le cadre dans la source : sur un axe où elle est plus petite que le cadre, elle reste centrée. */
 function clamp() {
   const s = scale(), hw = W / s / 2, hh = H / s / 2;
-  cx = hw * 2 >= img.width ? img.width / 2 : Math.min(img.width - hw, Math.max(hw, cx));
-  cy = hh * 2 >= img.height ? img.height / 2 : Math.min(img.height - hh, Math.max(hh, cy));
+  cx = hw * 2 >= SW ? SW / 2 : Math.min(SW - hw, Math.max(hw, cx));
+  cy = hh * 2 >= SH ? SH / 2 : Math.min(SH - hh, Math.max(hh, cy));
 }
 
 function paint(c, outW, outH) {
   const s = scale() * outW / W;
   c.clearRect(0, 0, outW, outH);
-  if (fit() || format === "jpg") { c.fillStyle = fit() ? $("bg").value : "#fff"; c.fillRect(0, 0, outW, outH); }
+  if (fit() || (kind === "image" && format === "jpg")) { c.fillStyle = !fit() ? "#fff" : kind === "video" ? "#000" : $("bg").value; c.fillRect(0, 0, outW, outH); }
   c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
-  c.drawImage(img, outW / 2 - cx * s, outH / 2 - cy * s, img.width * s, img.height * s);
+  c.drawImage(src, outW / 2 - cx * s, outH / 2 - cy * s, SW * s, SH * s);
 }
 
 function draw() {
-  if (!img) return;
+  if (!src) return;
   const view = $("preview"), frame = getComputedStyle(view.parentElement), dpr = devicePixelRatio || 1;
   const box = view.parentElement.clientWidth - parseFloat(frame.paddingLeft) - parseFloat(frame.paddingRight);
-  const maxH = Math.min(innerHeight * .6, 620);
-  const k = Math.min(box / W, maxH / H);
+  const k = Math.min(box / W, Math.min(innerHeight * .6, 620) / H);
   const vw = Math.max(1, Math.round(W * k)), vh = Math.max(1, Math.round(H * k));
   view.style.width = vw + "px"; // la hauteur suit les proportions du canvas (height: auto)
   if (view.width !== Math.round(vw * dpr) || view.height !== Math.round(vh * dpr)) { view.width = Math.round(vw * dpr); view.height = Math.round(vh * dpr); }
   const c = view.getContext("2d");
   paint(c, view.width, view.height);
-  // Les tiers, et le centre en couleur quand l'image y est aimantée pendant qu'on la glisse
+  // Les tiers, et le centre en couleur quand la source y est aimantée pendant qu'on la glisse
   c.lineWidth = dpr;
   c.strokeStyle = "rgba(255,255,255,.28)";
   c.beginPath();
@@ -177,44 +261,51 @@ function draw() {
     if (snapped.y) { c.moveTo(0, view.height / 2); c.lineTo(view.width, view.height / 2); }
     c.stroke();
   }
-  describe();
 }
 
 function describe() {
-  const ok = W * H <= MAX_PX;
-  $("go").disabled = !ok;
-  const up = scale();
-  $("r-out").textContent = !ok ? "Trop grand : 16,7 millions de pixels au plus (par exemple 4096 × 4096)."
-    : W + " × " + H + " px, " + format.toUpperCase() + (up > 1.05 ? " · image agrandie ×" + A.decimal(up) + " : elle sera moins nette" : "");
-  $("r-out").className = up > 1.05 && ok ? "warn" : "";
-  document.querySelectorAll("#formats button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === W + "x" + H || (b.dataset.v === "" && !FORMATS.some(([, w, h]) => w === W && h === H)))));
+  if (!src) return;
+  const up = scale(), big = up > 1.05;
+  let text, ok = true;
+  if (kind === "video") {
+    text = even(W) + " × " + even(H) + " px, MP4 · " + clock(keepB - keepA) + ($("mute").checked ? " · sans son" : audioGain() !== 1 ? " · volume " + $("volume").value + " %" : "");
+  } else {
+    ok = W * H <= MAX_PX;
+    text = ok ? W + " × " + H + " px, " + format.toUpperCase() : "Trop grand : 16,7 millions de pixels au plus (par exemple 4096 × 4096).";
+  }
+  if (ok && big) text += " · agrandi ×" + A.decimal(up) + " : moins net";
+  $("go").disabled = !ok || working;
+  $("r-out").textContent = text;
+  $("r-out").className = ok && big ? "warn" : "";
+  const list = kind === "video" ? VIDEO_FORMATS : IMAGE_FORMATS;
+  document.querySelectorAll("#formats button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === W + "x" + H
+    || (b.dataset.v === "" && !list.some(([, w, h]) => w === W && h === H) && !(W === SW && H === SH)))));
 }
+const update = () => { clamp(); draw(); describe(); };
 
+function buildFormats() {
+  const list = [["Taille d’origine", Math.round(SW), Math.round(SH)], ...(kind === "video" ? VIDEO_FORMATS : IMAGE_FORMATS)];
+  $("formats").replaceChildren(...list.map(([name, w, h]) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", textContent: name + " · " + w + " × " + h, onclick: () => setSize(w, h) });
+    b.dataset.v = w + "x" + h;
+    return b;
+  }), Object.assign(document.createElement("button"), { type: "button", textContent: "Sur mesure", onclick: () => { $("w").focus(); $("w").select(); } }));
+  $("formats").lastChild.dataset.v = "";
+}
 function setSize(w, h) {
-  W = Math.min(16384, Math.max(1, Math.round(w) || 1));
-  H = Math.min(16384, Math.max(1, Math.round(h) || 1));
+  W = Math.min(16384, Math.max(2, Math.round(w) || 2));
+  H = Math.min(16384, Math.max(2, Math.round(h) || 2));
   $("w").value = W; $("h").value = H;
-  clamp(); draw();
+  update();
 }
-function center() { cx = img.width / 2; cy = img.height / 2; clamp(); draw(); }
-function setZoom(v) { z = Math.min(4, Math.max(1, v)); $("zoom").value = Math.round(z * 100); $("zoom-v").textContent = Math.round(z * 100) + " %"; clamp(); draw(); }
+function center() { cx = SW / 2; cy = SH / 2; update(); }
+function setZoom(v) { z = Math.min(4, Math.max(1, v)); $("zoom").value = Math.round(z * 100); $("zoom-v").textContent = Math.round(z * 100) + " %"; update(); }
 
-FORMATS.forEach(([name, w, h]) => {
-  const b = Object.assign(document.createElement("button"), { type: "button", textContent: name + " · " + w + " × " + h });
-  b.dataset.v = w + "x" + h;
-  b.onclick = () => setSize(w, h);
-  $("formats").append(b);
-});
-const custom = Object.assign(document.createElement("button"), { type: "button", textContent: "Sur mesure" });
-custom.dataset.v = "";
-custom.onclick = () => { $("w").focus(); $("w").select(); };
-$("formats").append(custom);
-
-$("w").oninput = () => { if (+$("w").value >= 1) setSize(+$("w").value, H); };
-$("h").oninput = () => { if (+$("h").value >= 1) setSize(W, +$("h").value); };
+$("w").oninput = () => { if (+$("w").value >= 2) setSize(+$("w").value, H); };
+$("h").oninput = () => { if (+$("h").value >= 2) setSize(W, +$("h").value); };
 $("w").onchange = $("h").onchange = () => setSize(+$("w").value, +$("h").value);
 $("swap").onclick = () => setSize(H, W);
-$("mode").onchange = () => { $("bg-box").hidden = !fit(); clamp(); draw(); };
+$("mode").onchange = () => { $("bg-box").hidden = !fit() || kind === "video"; update(); };
 $("bg").oninput = draw;
 $("zoom").oninput = () => setZoom($("zoom").value / 100);
 $("center").onclick = center;
@@ -222,64 +313,327 @@ document.querySelectorAll("#out-format button").forEach((button) => {
   button.onclick = () => {
     format = button.dataset.v;
     document.querySelectorAll("#out-format button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
-    draw();
+    draw(); describe();
   };
 });
 
-// Glisser l'image ; près du centre, elle s'y aimante
+// Glisser la source ; près du centre, elle s'y aimante
 const view = $("preview");
 view.addEventListener("pointerdown", (e) => {
-  if (!img) return;
+  if (!src || working) return;
   view.setPointerCapture(e.pointerId);
   drag = { x: e.clientX, y: e.clientY, cx, cy };
   view.classList.add("dragging");
 });
 view.addEventListener("pointermove", (e) => {
   if (!drag) return;
-  const s = scale() * view.clientWidth / W; // pixels d'écran par pixel de l'image
+  const s = scale() * view.clientWidth / W; // pixels d'écran par pixel de la source
   cx = drag.cx - (e.clientX - drag.x) / s;
   cy = drag.cy - (e.clientY - drag.y) / s;
   clamp();
-  // Seulement sur un axe où l'image peut bouger : sinon elle est déjà centrée et le trait ne dirait rien.
-  const free = { x: W / scale() < img.width - .5, y: H / scale() < img.height - .5 };
-  snapped = { x: free.x && Math.abs(cx - img.width / 2) * s < SNAP, y: free.y && Math.abs(cy - img.height / 2) * s < SNAP };
-  if (snapped.x) cx = img.width / 2;
-  if (snapped.y) cy = img.height / 2;
-  clamp();
-  draw();
+  // Seulement sur un axe où la source peut bouger : sinon elle est déjà centrée et le trait ne dirait rien.
+  const free = { x: W / scale() < SW - .5, y: H / scale() < SH - .5 };
+  snapped = { x: free.x && Math.abs(cx - SW / 2) * s < SNAP, y: free.y && Math.abs(cy - SH / 2) * s < SNAP };
+  if (snapped.x) cx = SW / 2;
+  if (snapped.y) cy = SH / 2;
+  clamp(); draw();
 });
 const release = () => { if (!drag) return; drag = null; view.classList.remove("dragging"); draw(); };
 view.addEventListener("pointerup", release);
 view.addEventListener("pointercancel", release);
-view.addEventListener("wheel", (e) => { if (!img) return; e.preventDefault(); setZoom(z * Math.exp(-e.deltaY * .0015)); }, { passive: false });
+view.addEventListener("wheel", (e) => { if (!src || working) return; e.preventDefault(); setZoom(z * Math.exp(-e.deltaY * .0015)); }, { passive: false });
 view.addEventListener("dblclick", center);
-addEventListener("resize", draw);
+addEventListener("resize", () => { draw(); placeMarks(); });
 
-async function open(chosen) {
-  $("error").textContent = "";
-  const image = new Image(), url = URL.createObjectURL(chosen);
+// ——— Image ou vidéo ———
+function setKind(k) {
+  kind = k;
+  document.querySelectorAll("#kind button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === k)));
+  const title = k === "video" ? "Dépose une vidéo ici" : "Dépose une image ici";
+  $("drop-title").dataset.idle = title; // le texte que reprend la zone de dépôt quand elle se libère
+  if ($("panel").hidden) $("drop-title").textContent = title;
+  $("drop-hint").textContent = k === "video" ? "ou clique pour la choisir · MP4, MOV, WEBM" : "ou clique pour la choisir · JPG, PNG, WEBP, GIF, AVIF";
+  $("file").accept = k === "video" ? "video/*,.mov,.mkv" : "image/*";
+  $("fit-option").textContent = k === "video" ? "Image entière (bandes noires)" : "Image entière (bandes de couleur)";
+  $("player").hidden = $("video-options").hidden = k !== "video";
+  $("image-options").hidden = k === "video";
+  $("bg-box").hidden = !fit() || k === "video";
+  $("go").textContent = k === "video" ? "Fabriquer la vidéo" : "Télécharger";
+}
+document.querySelectorAll("#kind button").forEach((b) => {
+  b.onclick = () => {
+    if (working || b.dataset.v === kind) return;
+    // Le fichier ouvert est de l'autre sorte : on repart de la zone de dépôt.
+    if (file) { stopVideo(); file = src = null; $("panel").hidden = true; }
+    setKind(b.dataset.v);
+    A.busy($("drop"), false, "");
+  };
+});
+
+function showPanel(name, info) {
+  $("r-file").textContent = name;
+  $("r-info").textContent = info;
+  $("panel").hidden = false;
+  A.busy($("drop"), false, kind === "video" ? "Choisir une autre vidéo" : "Choisir une autre image");
+  z = 1; $("zoom").value = 100; $("zoom-v").textContent = "100 %";
+  buildFormats();
+}
+
+async function openImage(chosen) {
+  const image = new Image(), url = URL.createObjectURL(chosen), ticket = ++loading;
   image.src = url;
   try {
     await image.decode();
+    if (ticket !== loading) return; // un autre fichier a été déposé entre-temps
     if (!image.naturalWidth) throw new Error();
     // Une très grande photo est ramenée sous la limite des canvas, sans perte visible au format de sortie.
     const s = Math.min(1, Math.sqrt(MAX_PX / (image.naturalWidth * image.naturalHeight)));
     const c = Object.assign(document.createElement("canvas"), { width: Math.round(image.naturalWidth * s), height: Math.round(image.naturalHeight * s) });
     c.getContext("2d").drawImage(image, 0, 0, c.width, c.height);
-    file = chosen; img = c;
-    $("r-file").textContent = file.name;
-    $("r-info").textContent = image.naturalWidth + " × " + image.naturalHeight + " px";
-    $("panel").hidden = false;
-    A.busy($("drop"), false, "Choisir une autre image");
-    z = 1; $("zoom").value = 100; $("zoom-v").textContent = "100 %";
+    stopVideo();
+    setKind("image");
+    file = chosen; src = c; SW = c.width; SH = c.height;
+    showPanel(file.name, image.naturalWidth + " × " + image.naturalHeight + " px");
     setSize(W, H); center();
   } catch {
     $("error").textContent = "Ce navigateur ne sait pas lire cette image.";
   } finally { URL.revokeObjectURL(url); }
 }
 
+// ——— Vidéo : lecture de la partie gardée, frise, volume ———
+function stopVideo() {
+  video.pause();
+  if (videoUrl) { video.removeAttribute("src"); video.load(); URL.revokeObjectURL(videoUrl); videoUrl = null; }
+  $("thumbs").replaceChildren();
+}
+const loaded = (el, event) => new Promise((resolve, reject) => {
+  const ok = () => { el.removeEventListener("error", ko); resolve(); }, ko = () => { el.removeEventListener(event, ok); reject(new Error()); };
+  el.addEventListener(event, ok, { once: true }); el.addEventListener("error", ko, { once: true });
+});
+async function openVideo(chosen) {
+  const ticket = ++loading;
+  A.busy($("drop"), true, "Lecture de la vidéo…");
+  stopVideo();
+  videoUrl = URL.createObjectURL(chosen);
+  video.src = videoUrl;
+  try {
+    await loaded(video, "loadeddata");
+    if (!video.videoWidth) throw new Error("Ce fichier n’a pas d’image.");
+    duration = video.duration;
+    if (!Number.isFinite(duration)) { // un WebM sans durée écrite : on la trouve en allant au bout
+      video.currentTime = 1e9; await loaded(video, "seeked"); duration = video.duration; video.currentTime = 0; await loaded(video, "seeked");
+    }
+    if (ticket !== loading) return;
+    setKind("video");
+    file = chosen; src = video; SW = video.videoWidth; SH = video.videoHeight;
+    keepA = 0; keepB = duration;
+    showPanel(file.name, SW + " × " + SH + " px · " + clock(duration) + " · " + (file.size < 1e6 ? Math.ceil(file.size / 1e3) + " Ko" : A.decimal(file.size / 1e6) + " Mo"));
+    setSize(even(SW), even(SH)); center();
+    placeMarks(); thumbnails(ticket);
+  } catch (error) {
+    if (ticket !== loading) return;
+    stopVideo();
+    A.busy($("drop"), false, "");
+    $("error").textContent = error.message || "Ce navigateur ne sait pas lire cette vidéo (essaie un MP4).";
+  }
+}
+video.addEventListener("seeked", () => { draw(); placeMarks(); });
+video.addEventListener("play", () => { $("play-icon").setAttribute("d", "M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z"); tick(); });
+video.addEventListener("pause", () => { $("play-icon").setAttribute("d", "M7 4.5v15l13-7.5z"); placeMarks(); });
+/** Pendant la lecture : l'aperçu suit la vidéo, et la lecture boucle sur la partie gardée. */
+function tick() {
+  if (video.paused || kind !== "video") return;
+  if (video.currentTime >= keepB - .02 || video.currentTime < keepA - .3) video.currentTime = keepA;
+  draw(); placeMarks();
+  requestAnimationFrame(tick);
+}
+const audioGain = () => ($("mute").checked ? 0 : $("volume").value / 100);
+/** L'aperçu joue au volume choisi, au-delà de 100 % compris (WebAudio). */
+function routeAudio() {
+  if (audio) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)(), gain = ctx.createGain();
+    ctx.createMediaElementSource(video).connect(gain).connect(ctx.destination);
+    audio = { ctx, gain };
+  } catch { audio = false; }
+  applyGain();
+}
+function applyGain() {
+  if (audio) audio.gain.gain.setTargetAtTime(audioGain(), audio.ctx.currentTime, .02);
+  else video.volume = Math.min(1, audioGain());
+  $("volume-v").textContent = $("volume").value + " %";
+  describe();
+}
+function togglePlay() {
+  if (kind !== "video" || !src || working) return;
+  routeAudio();
+  audio?.ctx.resume();
+  if (!video.paused) return video.pause();
+  if (video.currentTime < keepA || video.currentTime >= keepB - .05) video.currentTime = keepA;
+  video.play().catch(() => {});
+}
+$("play").onclick = togglePlay;
+$("volume").oninput = applyGain;
+$("mute").onchange = applyGain;
+$("weight").onchange = describe;
+
+// La frise : poignées de début et de fin, tête de lecture, clic pour aller à un moment
+const pct = (t) => (duration ? t / duration * 100 : 0) + "%";
+function placeMarks() {
+  if (kind !== "video" || !duration) return;
+  $("ha").style.left = pct(keepA); $("hb").style.left = pct(keepB);
+  $("shade-l").style.width = pct(keepA); $("shade-r").style.width = (100 - keepB / duration * 100) + "%";
+  $("keep").style.left = pct(keepA); $("keep").style.width = pct(keepB - keepA);
+  $("playhead").style.left = pct(video.currentTime);
+  $("time").textContent = clock(video.currentTime) + " / " + clock(duration);
+  $("t-a").textContent = clock(keepA); $("t-b").textContent = clock(keepB); $("t-d").textContent = clock(keepB - keepA);
+  $("ha").setAttribute("aria-valuetext", clock(keepA)); $("hb").setAttribute("aria-valuetext", clock(keepB));
+}
+// Une seule demande de position à la fois : pendant qu'on tire, la vidéo suit sans s'engorger.
+let wanted = null;
+function seek(t) {
+  wanted = Math.min(duration, Math.max(0, t));
+  if (!video.seeking) { video.currentTime = wanted; wanted = null; }
+  placeMarks();
+}
+video.addEventListener("seeked", () => { if (wanted != null) { video.currentTime = wanted; wanted = null; } });
+function setKeep(which, t) {
+  if (which === "a") keepA = Math.min(Math.max(0, t), keepB - MIN_KEEP);
+  else keepB = Math.max(Math.min(duration, t), keepA + MIN_KEEP);
+  placeMarks(); describe();
+}
+const timeAt = (e) => { const r = $("timeline").getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * duration; };
+let scrub = null;
+$("timeline").addEventListener("pointerdown", (e) => {
+  if (!duration || working) return;
+  e.preventDefault();
+  $("timeline").setPointerCapture(e.pointerId);
+  scrub = e.target.closest(".handle")?.id === "ha" ? "a" : e.target.closest(".handle")?.id === "hb" ? "b" : "head";
+  if (scrub !== "head") $("h" + scrub).classList.add("on");
+  if (!video.paused) video.pause();
+  const t = timeAt(e);
+  if (scrub === "head") seek(t); else { setKeep(scrub, t); seek(scrub === "a" ? keepA : keepB); }
+});
+$("timeline").addEventListener("pointermove", (e) => {
+  if (!scrub) return;
+  const t = timeAt(e);
+  if (scrub === "head") seek(t); else { setKeep(scrub, t); seek(scrub === "a" ? keepA : keepB); }
+});
+const endScrub = () => { if (!scrub) return; $("ha").classList.remove("on"); $("hb").classList.remove("on"); scrub = null; };
+$("timeline").addEventListener("pointerup", endScrub);
+$("timeline").addEventListener("pointercancel", endScrub);
+for (const which of ["a", "b"]) {
+  $("h" + which).addEventListener("keydown", (e) => {
+    const step = { ArrowLeft: -.1, ArrowRight: .1, ArrowDown: -.1, ArrowUp: .1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    setKeep(which, (which === "a" ? keepA : keepB) + step * (e.shiftKey ? 10 : 1));
+    seek(which === "a" ? keepA : keepB);
+  });
+}
+$("set-a").onclick = () => setKeep("a", video.currentTime);
+$("set-b").onclick = () => setKeep("b", video.currentTime);
+$("trim-reset").onclick = () => { keepA = 0; keepB = duration; placeMarks(); describe(); };
+addEventListener("keydown", (e) => {
+  if (kind !== "video" || !src || e.ctrlKey || e.metaKey || e.altKey || e.target.closest("input, select, textarea, button, [role=slider]")) return;
+  if (e.code === "Space") { e.preventDefault(); togglePlay(); }
+  if (e.key === "i" || e.key === "I") setKeep("a", video.currentTime);
+  if (e.key === "o" || e.key === "O") setKeep("b", video.currentTime);
+});
+
+/** Les vignettes de la frise, tirées d'une seconde balise vidéo pour ne pas gêner l'aperçu. */
+async function thumbnails(ticket) {
+  const strip = $("thumbs"), count = Math.max(4, Math.min(14, Math.round(strip.clientWidth / 64) || 8));
+  const shots = Array.from({ length: count }, () => Object.assign(document.createElement("canvas"), { width: 96, height: 58 }));
+  strip.replaceChildren(...shots);
+  const probe = Object.assign(document.createElement("video"), { muted: true, playsInline: true, preload: "auto", src: videoUrl });
+  try {
+    await loaded(probe, "loadeddata");
+    for (let i = 0; i < count && ticket === loading; i++) {
+      probe.currentTime = Math.min(duration - .05, (i + .5) * duration / count);
+      await loaded(probe, "seeked");
+      const c = shots[i].getContext("2d"), s = Math.max(96 / probe.videoWidth, 58 / probe.videoHeight);
+      c.drawImage(probe, 48 - probe.videoWidth * s / 2, 29 - probe.videoHeight * s / 2, probe.videoWidth * s, probe.videoHeight * s);
+      shots[i].classList.add("in");
+    }
+  } catch { /* la frise reste sans vignettes */ }
+  probe.removeAttribute("src"); probe.load();
+}
+
+// ——— Fabrication ———
+let mb = null;
+/** Le volume appliqué au son : au-delà du maximum, les crêtes sont arrondies au lieu d'être tranchées. */
+function louder(sample, g) {
+  const n = sample.numberOfFrames * sample.numberOfChannels, data = new Float32Array(n);
+  sample.copyTo(data, { planeIndex: 0, format: "f32" });
+  for (let i = 0; i < n; i++) {
+    const v = data[i] * g, a = Math.abs(v);
+    data[i] = a <= .9 ? v : Math.sign(v) * (.9 + .1 * Math.tanh((a - .9) / .1));
+  }
+  return new mb.AudioSample({ data, format: "f32", numberOfChannels: sample.numberOfChannels, sampleRate: sample.sampleRate, timestamp: sample.timestamp });
+}
+function lock(on) {
+  document.querySelectorAll("#panel input, #panel select, #panel .chips button, #swap, #center, #play, #set-a, #set-b, #trim-reset, #kind button, #drop").forEach((x) => { x.disabled = on; });
+  $("progress").hidden = !on && !$("p-text").textContent;
+  $("cancel").hidden = !on;
+}
+function progress(part, text) {
+  $("bar").style.width = Math.round(part * 100) + "%";
+  $("p-text").textContent = text;
+}
+async function makeVideo() {
+  video.pause();
+  $("error").textContent = "";
+  $("progress").hidden = false;
+  progress(0, "Préparation…");
+  working = true; canceled = false;
+  lock(true); describe();
+  let input = null;
+  try {
+    mb = mb || await import(MEDIABUNNY).catch(() => { throw new Error("L’outil vidéo n’a pas pu se charger : vérifie ta connexion et réessaie."); });
+    if (!window.VideoEncoder) throw new Error("Ce navigateur ne sait pas fabriquer de vidéo : ouvre la page dans Chrome, Edge ou un Safari récent.");
+    const ow = even(W), oh = even(H), quality = { high: mb.QUALITY_HIGH, medium: mb.QUALITY_MEDIUM, low: mb.QUALITY_LOW }[$("weight").value];
+    const vcodec = await mb.getFirstEncodableVideoCodec(["avc", "hevc", "vp9", "av1"], { width: ow, height: oh, bitrate: quality });
+    if (!vcodec) throw new Error("Ce navigateur ne sait pas encoder une vidéo de " + ow + " × " + oh + " : choisis une taille plus petite (1920 × 1080 par exemple).");
+    const g = audioGain(), acodec = g ? await mb.getFirstEncodableAudioCodec(["aac", "opus"], { bitrate: quality }) : null;
+    // La zone gardée, en pixels de la vidéo ; « contain » la met ensuite à la taille voulue (bandes noires si elle est plus petite).
+    const s = scale(), vw = W / s, vh = H / s;
+    const left = Math.max(0, cx - vw / 2), top = Math.max(0, cy - vh / 2);
+    const crop = { left: Math.round(left), top: Math.round(top), width: Math.round(Math.min(SW, cx + vw / 2) - left), height: Math.round(Math.min(SH, cy + vh / 2) - top) };
+    input = new mb.Input({ source: new mb.BlobSource(file), formats: mb.ALL_FORMATS });
+    const output = new mb.Output({ format: new mb.Mp4OutputFormat({ fastStart: "in-memory" }), target: new mb.BufferTarget() });
+    conversion = await mb.Conversion.init({
+      input, output, showWarnings: false,
+      trim: { start: keepA, end: keepB },
+      video: { crop, width: ow, height: oh, fit: "contain", codec: vcodec, bitrate: quality, forceTranscode: true },
+      audio: acodec ? { codec: acodec, bitrate: quality, ...(g !== 1 ? { process: (sample) => louder(sample, g) } : {}) } : { discard: true },
+    });
+    if (canceled) throw Object.assign(new Error(), { name: "ConversionCanceledError" });
+    if (!conversion.isValid) throw new Error("Cette vidéo ne peut pas être refaite dans ce navigateur (format ou codec non pris en charge) : essaie un MP4, ou Chrome.");
+    const started = performance.now();
+    conversion.onProgress = (p) => {
+      const spent = (performance.now() - started) / 1000, left = p > .03 ? spent / p - spent : null;
+      progress(p, "Fabrication… " + Math.round(p * 100) + " %" + (left != null ? " · encore " + (left < 60 ? Math.ceil(left) + " s" : Math.ceil(left / 60) + " min") : ""));
+    };
+    await conversion.execute();
+    const blob = new Blob([output.target.buffer], { type: "video/mp4" });
+    A.download(blob, A.baseName(file) + "-" + ow + "x" + oh + ".mp4");
+    progress(1, "C’est prêt : " + A.decimal(blob.size / 1e6) + " Mo, dans tes téléchargements." + (g && !acodec ? " Sans le son : ce navigateur ne sait pas l’encoder." : ""));
+  } catch (error) {
+    const stopped = canceled || error?.name === "ConversionCanceledError";
+    progress(0, stopped ? "Annulé." : "");
+    if (!stopped) { $("error").textContent = error?.message || "La fabrication a échoué."; $("progress").hidden = true; }
+  } finally {
+    conversion = null; working = false;
+    input?.dispose?.();
+    lock(false); describe();
+  }
+}
+$("cancel").onclick = () => { canceled = true; conversion?.cancel(); };
+
 $("go").onclick = async () => {
-  if (!img) return;
+  if (!src) return;
+  if (kind === "video") return makeVideo();
   $("error").textContent = "";
   const out = Object.assign(document.createElement("canvas"), { width: W, height: H });
   paint(out.getContext("2d"), W, H);
@@ -288,14 +642,20 @@ $("go").onclick = async () => {
   if (!blob || blob.type !== MIME[format]) { $("error").textContent = "Ce navigateur ne sait pas écrire du " + format.toUpperCase() + " : choisis un autre format."; return; }
   A.download(blob, A.baseName(file) + "-" + W + "x" + H + "." + format);
 };
+addEventListener("beforeunload", (e) => { if (working) e.preventDefault(); });
 
 $("w").value = W; $("h").value = H;
 A.dropZone($("drop"), $("file"), (chosen) => {
-  if (!chosen.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif|bmp|avif|svg)$/i.test(chosen.name)) { $("error").textContent = "Ce fichier n’est pas une image."; return; }
-  open(chosen);
+  if (working) return;
+  $("error").textContent = "";
+  $("p-text").textContent = ""; $("progress").hidden = true;
+  if (isVideoFile(chosen)) return openVideo(chosen);
+  if (!chosen.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif|bmp|avif|svg)$/i.test(chosen.name)) { $("error").textContent = "Ce fichier n’est ni une image ni une vidéo."; return; }
+  openImage(chosen);
 });
+if (new URLSearchParams(location.search).get("mode") === "video") setKind("video");
 </script>
-<script src="assets/tools-menu.js?v=19"></script>
+<script src="assets/tools-menu.js?v=20"></script>
 <script src="assets/account.js?v=19"></script>
 <script src="assets/site-nav.js?v=25"></script>
 </html>
