@@ -47,6 +47,7 @@ import { mountWatchparty } from './watchparty.js';
 import { mountPlatforms } from './platforms.js';
 import { mountTransfer } from './transfer.js';
 import { mountEnvoi } from './envoi.js';
+import { mountClips } from './clips.js';
 import { mountRatings } from './ratings.js';
 import { mountProfiles } from './profiles.js';
 import { mountMessages } from './messages.js';
@@ -622,6 +623,8 @@ export function createApp() {
   mountCut(app, { requireUser, receiveFile, wrap });
   // Envoi de fichiers : des fichiers lourds partagés par un lien qui expire.
   mountEnvoi(app, { requireVerified, receiveFile, wrap });
+  // Les clips partagés depuis ONIRIQUE CENTRAL (page /clip, lue par Discord).
+  mountClips(app, { receiveFile, wrap });
   mountTierList(app, { requireUser, receiveImage, removeMedia, wrap });
   mountHm(app, { requireUser });
   mountWatchparty(app);

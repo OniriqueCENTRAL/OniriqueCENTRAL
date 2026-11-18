@@ -84,7 +84,7 @@ const publicRow = (handle) => get(`SELECT p.* FROM link_pages p JOIN users u ON 
 //==============================================================================
 //  Statistiques : une ligne par lien et par jour ; link_id '' compte les visites de la page.
 //==============================================================================
-const BOTS = /bot|crawl|spider|slurp|facebookexternalhit|facebookcatalog|whatsapp|telegram|discord|slack|embedly|preview|skype|vkshare|pinterest|headless|lighthouse|curl|wget/i;
+export const BOTS = /bot|crawl|spider|slurp|facebookexternalhit|facebookcatalog|whatsapp|telegram|discord|slack|embedly|preview|skype|vkshare|pinterest|headless|lighthouse|curl|wget/i;
 const recent = new Map(); // une visite ou un clic par adresse IP, compté une fois par fenêtre
 setInterval(() => { const t = now(); for (const [key, until] of recent) if (until < t) recent.delete(key); }, 60_000).unref();
 const day = (ms = now()) => new Date(ms).toISOString().slice(0, 10);
