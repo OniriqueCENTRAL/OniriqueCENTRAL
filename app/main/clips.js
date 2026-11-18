@@ -1,8 +1,9 @@
 // Les clips, comme Medal : une touche (F8 par défaut) garde les dernières secondes de l'écran et du son de l'ordinateur.
 // Réservés, comme la WATCHPARTY, aux membres ONIRIQUE, beta-testeurs, équipe et fondateurs ; coupés tant qu'on ne les
 // active pas. L'enregistrement tourne dans une fenêtre cachée, jamais affichée ni mise au premier plan, à priorité
-// réduite pour que le jeu garde la main. Les clips vont dans « Vidéos\ONIRIQUE Clips », avec leur image et leurs repères.
-const { BrowserWindow, app, clipboard, desktopCapturer, globalShortcut, ipcMain, screen, shell } = require('electron');
+// réduite pour que le jeu garde la main. Les clips vont dans « Vidéos\ONIRIQUE Clips » (ou le dossier choisi), avec leur
+// image et leurs repères ; un clip partagé a son lien onirique.store/clip (server/src/clips.js).
+const { BrowserWindow, app, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, screen, shell } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const os = require('node:os');
@@ -11,14 +12,24 @@ const api = require('./api');
 const store = require('./store');
 
 const ROLES = ['vip', 'beta', 'betaf', 'admin', 'founder']; // comme server/src/watchparty.js
-const KEYS = ['F8', 'F9', 'F10', 'Alt+F10', 'Ctrl+F8', 'Ctrl+Shift+S'];
-const DEFAULTS = { on: false, seconds: 30, fps: 30, height: 1080, key: 'F8', screen: '' };
+const DEFAULTS = { on: false, seconds: 30, fps: 30, height: 1080, key: 'F8', screen: '', dir: '' };
+// La touche choisie, au format d'Electron (« Ctrl+Shift+K »). Seules les touches qui ne servent pas à écrire se
+// prennent seules (F1 à F24, Pause…) ; une lettre, un chiffre ou un signe demande Ctrl, Alt ou Windows, sinon la
+// touche disparaîtrait de tout ce qu'on tape.
+const ALONE = /^(F([1-9]|1\d|2[0-4])|Pause|PrintScreen|Scrolllock|Insert)$/;
+const OTHER = /^([A-Z0-9]|num[0-9]|numadd|numsub|nummult|numdiv|numdec|Space|Tab|Delete|Home|End|PageUp|PageDown|Up|Down|Left|Right|Plus|[-=[\];',./`\\])$/;
+function isKey(v) {
+  if (typeof v !== 'string' || v.length > 40) return false;
+  const parts = v.split('+'), last = parts.pop();
+  if (new Set(parts).size !== parts.length || parts.some((m) => !['Ctrl', 'Alt', 'Shift', 'Super'].includes(m))) return false;
+  return ALONE.test(last) || (OTHER.test(last) && parts.some((m) => m !== 'Shift'));
+}
 const CHECKS = {
   on: (v) => typeof v === 'boolean', seconds: (v) => [15, 30, 60, 120].includes(v), fps: (v) => [30, 60].includes(v),
-  height: (v) => [720, 1080].includes(v), key: (v) => KEYS.includes(v), screen: (v) => typeof v === 'string' && v.length < 100,
+  height: (v) => [720, 1080].includes(v), key: isKey, screen: (v) => typeof v === 'string' && v.length < 100,
 };
 const NAME = /^clip-[\w-]{1,80}\.(mp4|webm)$/;
-const dir = () => path.join(app.getPath('videos'), 'ONIRIQUE Clips');
+const dir = () => settings().dir || path.join(app.getPath('videos'), 'ONIRIQUE Clips');
 const fileOf = (name) => {
   if (typeof name !== 'string' || !NAME.test(name)) throw new Error('Clip inconnu.');
   return path.join(dir(), name);
@@ -76,7 +87,13 @@ async function sync() {
 async function setSettings(patch) {
   const next = { ...settings() };
   for (const [k, v] of Object.entries(patch || {})) if (CHECKS[k]?.(v)) next[k] = v;
+  if (patch?.key !== undefined && !isKey(patch.key)) throw new Error('Cette touche ne peut pas servir : prends une touche F, ou ajoute Ctrl, Alt ou Windows.');
   if (next.on && !(await allowed())) throw new Error('Les clips sont réservés aux membres ONIRIQUE, aux beta-testeurs et aux fondateurs.');
+  // Une nouvelle touche est essayée avant d'être gardée : prise par un autre logiciel, l'ancienne reste.
+  if (next.key !== settings().key && next.key !== key) {
+    if (!globalShortcut.register(next.key, () => {})) throw new Error(`La touche ${next.key} est déjà prise par un autre logiciel : choisis-en une autre.`);
+    globalShortcut.unregister(next.key);
+  }
   store.setPref('clips', next);
   if (next.on) await start(); else stop();
   notify();
@@ -85,7 +102,7 @@ async function setSettings(patch) {
 
 async function status() {
   const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } }).catch(() => []);
-  return { settings: settings(), running: !!rec, problem, dir: dir(), keys: KEYS,
+  return { settings: settings(), running: !!rec, problem, dir: dir(),
     screens: sources.map((s, i) => ({ id: s.id, name: s.name || `Écran ${i + 1}` })) };
 }
 
@@ -95,7 +112,7 @@ async function list() {
     const meta = await fsp.readFile(sideOf(name, '.json'), 'utf8').then(JSON.parse).catch(() => ({}));
     const thumb = await fsp.readFile(sideOf(name, '.jpg')).then((b) => `data:image/jpeg;base64,${b.toString('base64')}`, () => null);
     const { size, mtimeMs } = await fsp.stat(fileOf(name));
-    return { name, size, thumb, at: meta.at || mtimeMs, start: meta.start || 0, duration: meta.duration || 0 };
+    return { name, size, thumb, at: meta.at || mtimeMs, start: meta.start || 0, duration: meta.duration || 0, shared: meta.shared || null };
   }));
   return clips.sort((a, b) => b.at - a.at);
 }
@@ -107,21 +124,31 @@ async function write(name, bytes, meta, thumb) {
   if (thumb) await fsp.writeFile(sideOf(name, '.jpg'), thumb);
 }
 
-/** Envoie le clip par ONIRIQUE ENVOI (lien valable 30 jours), copie le lien et le renvoie. */
-async function share(name) {
-  const file = fileOf(name), { size } = await fsp.stat(file);
-  const progress = (ratio) => ctx.getWin()?.webContents.send('progress', { id: `clip:${name}`, phase: 'upload', ratio });
-  const { id } = await api.request('POST', '/api/envois', { title: `Clip du ${new Date().toLocaleDateString('fr-FR')}`, days: 30 });
-  const { id: fileId, chunk } = await api.request('POST', `/api/envois/${id}/files/new`, { name, size });
-  for (let offset = 0; offset < size; offset += chunk) {
-    const end = Math.min(size, offset + chunk) - 1;
-    await api.upload('PUT', `/api/envois/${id}/files/${fileId}?offset=${offset}`, file, 'application/octet-stream',
-      (r) => progress((offset + r * (end - offset + 1)) / size), { start: offset, end });
+const readMeta = (name) => fsp.readFile(sideOf(name, '.json'), 'utf8').then(JSON.parse).catch(() => ({}));
+const writeMeta = async (name, patch) => fsp.writeFile(sideOf(name, '.json'), JSON.stringify({ ...(await readMeta(name)), ...patch }));
+
+/** Met le clip en ligne (onirique.store/clip?c=…, lu dans Discord comme un clip Medal), attend la fin de sa
+    préparation sur le serveur, copie le lien et le garde avec le clip. */
+async function share(name, title) {
+  const progress = (phase, ratio) => ctx.getWin()?.webContents.send('progress', { id: `clip:${name}`, phase, ratio });
+  const clip = await api.upload('POST', `/api/clips?title=${encodeURIComponent(String(title || '').slice(0, 100))}`, fileOf(name), 'video/webm', (r) => progress('upload', r));
+  for (let i = 0; clip.status === 'wait'; i++) {
+    if (i > 600) throw new Error('La préparation du clip prend trop de temps : réessaie plus tard.');
+    progress('clip-prepare', 0);
+    await new Promise((ok) => setTimeout(ok, 1000));
+    Object.assign(clip, await api.request('GET', `/api/clips/${clip.id}`));
   }
-  await api.request('POST', `/api/envois/${id}/ready`);
-  const url = `${ctx.site}/envoi?id=${id}`;
-  clipboard.writeText(url);
-  return url;
+  if (clip.status !== 'ready') throw new Error("Le serveur n'a pas pu lire ce clip.");
+  const shared = { id: clip.id, url: clip.url, title: clip.title };
+  await writeMeta(name, { shared });
+  clipboard.writeText(clip.url);
+  return shared;
+}
+
+async function unshare(name) {
+  const { shared } = await readMeta(name);
+  if (shared?.id) await api.request('DELETE', `/api/clips/${encodeURIComponent(shared.id)}`).catch((error) => { if (error.status !== 404) throw error; });
+  await writeMeta(name, { shared: null });
 }
 
 /** handle : celui de main.js (erreurs rendues à l'interface) ; getWin : la fenêtre de l'application ; site : onirique.store. */
@@ -167,6 +194,25 @@ function init({ handle, getWin, site }) {
     await shell.openPath(dir());
   });
   handle('clips:share', share);
+  handle('clips:unshare', unshare);
+  handle('clips:copy', async (name) => { const { shared } = await readMeta(name); if (shared?.url) clipboard.writeText(shared.url); });
+  // Le dossier des clips : choisi dans une fenêtre de Windows (reset : celui par défaut). Les clips déjà pris restent où ils sont.
+  handle('clips:pick-dir', async (reset) => {
+    let chosen = '';
+    if (!reset) {
+      const result = await dialog.showOpenDialog(ctx.getWin(), { title: 'Dossier des clips', defaultPath: dir(), properties: ['openDirectory', 'createDirectory'] });
+      if (result.canceled || !result.filePaths[0]) return status();
+      chosen = result.filePaths[0];
+    }
+    store.setPref('clips', { ...settings(), dir: chosen });
+    notify();
+    return status();
+  });
+  // Pendant qu'on choisit une nouvelle touche, l'actuelle ne prend plus de clip (sinon elle n'arriverait jamais à la page).
+  handle('clips:key-pause', (paused) => {
+    if (paused && key) { globalShortcut.unregister(key); key = null; }
+    else if (!paused && rec && !key && globalShortcut.register(settings().key, save)) key = settings().key;
+  });
 }
 
-module.exports = { init, sync, stop };
+module.exports = { init, sync, stop, isKey };

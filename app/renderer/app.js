@@ -516,6 +516,7 @@ central.onProgress(({ id, phase, ratio }) => {
   document.querySelectorAll(`[data-phase="${CSS.escape(String(id))}"]`).forEach((el) => {
     const percent = `${Math.round(ratio * 100)} %`;
     el.textContent = { install: 'Installation…', upload: `Envoi du fichier ${percent}`, demo: `Création de la démo interactive ${percent} (l'interface du plugin s'ouvre à l'écran, ne la fermez pas)`,
+      'clip-prepare': 'Préparation du lien : le serveur fait la version lue par Discord…',
       'demo-upload': `Envoi de la démo ${percent}` }[phase] ?? `Téléchargement ${percent}`;
   });
 });

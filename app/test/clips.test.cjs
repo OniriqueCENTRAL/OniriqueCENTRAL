@@ -20,13 +20,12 @@ const handlers = {}, sent = [], calls = [];
 let prefs = {};
 const fakes = {
   electron: { app: { getPath: () => tmp, on() {} }, clipboard: { writeText: (t) => sent.push(['clip', t]) }, desktopCapturer: { getSources: async () => [] },
-    globalShortcut: {}, ipcMain: { on() {} }, screen: {}, session: {}, shell: { trashItem: async (f) => fs.rmSync(f) }, BrowserWindow: class {} },
+    globalShortcut: {}, dialog: {}, ipcMain: { on() {} }, screen: {}, session: {}, shell: { trashItem: async (f) => fs.rmSync(f) }, BrowserWindow: class {} },
   './api': { request: async (m, r, b) => { calls.push([m, r, b]);
       if (r === '/api/me') return { user: { role: 'user' } };
-      if (r === '/api/envois') return { id: 'E1' };
-      if (r.endsWith('/files/new')) return { id: 7, chunk: 4 };
+      if (r === '/api/clips/K1') return { id: 'K1', status: 'ready', url: 'https://onirique.store/clip?c=K1', title: 'Le pentakill' };
       return {}; },
-    upload: async (m, r, f, ct, p, range) => { calls.push([m, r, range]); p(1); } },
+    upload: async (m, r, f, ct, p) => { calls.push([m, r]); p(1); return { id: 'K1', status: 'wait', url: 'https://onirique.store/clip?c=K1', title: 'Le pentakill' }; } },
   './store': { get prefs() { return prefs; }, setPref: (k, v) => { prefs[k] = v; } },
 };
 const load = Module._load;
@@ -42,10 +41,14 @@ clips.init({ handle: (c, fn) => { handlers[c] = fn; }, getWin: () => ({ webConte
   fs.writeFileSync(path.join(d, 'clip-2026-11-17_21-04-33.json'), JSON.stringify({ at: 1, duration: 50, start: 20 }));
   const [c] = await handlers['clips:list']();
   assert.deepEqual([c.name, c.size, c.start, c.duration], ['clip-2026-11-17_21-04-33.mp4', 10, 20, 50]);
-  const url = await handlers['clips:share'](c.name);
-  assert.equal(url, 'https://onirique.store/envoi?id=E1');
-  const puts = calls.filter((x) => x[0] === 'PUT');
-  assert.deepEqual(puts.map((x) => [x[1], x[2]]), [['/api/envois/E1/files/7?offset=0', { start: 0, end: 3 }], ['/api/envois/E1/files/7?offset=4', { start: 4, end: 7 }], ['/api/envois/E1/files/7?offset=8', { start: 8, end: 9 }]]);
+  const shared = await handlers['clips:share'](c.name, 'Le pentakill');
+  assert.deepEqual(shared, { id: 'K1', url: 'https://onirique.store/clip?c=K1', title: 'Le pentakill' });
+  assert.ok(sent.some((x) => x[0] === 'clip' && x[1] === shared.url), 'le lien est copié');
+  assert.deepEqual(calls.find((x) => x[0] === 'POST' && x[1].startsWith('/api/clips?')).slice(0, 2), ['POST', '/api/clips?title=Le%20pentakill']);
+  assert.deepEqual((await handlers['clips:list']())[0].shared, shared, 'le lien reste avec le clip');
+  await handlers['clips:unshare'](c.name);
+  assert.ok(calls.some((x) => x[0] === 'DELETE' && x[1] === '/api/clips/K1'));
+  assert.equal((await handlers['clips:list']())[0].shared, null);
   const cut = await handlers['clips:save-cut'](c.name, new Uint8Array([1, 2]), 12.5, 'video/mp4');
   assert.match(cut, /^clip-\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d-coupe\.mp4$/);
   await handlers['clips:delete'](c.name);

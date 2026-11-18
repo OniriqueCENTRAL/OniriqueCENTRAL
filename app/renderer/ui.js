@@ -221,3 +221,41 @@ document.addEventListener('keydown', (event) => {
 overlay().addEventListener('mousedown', (event) => {
   if (event.target === overlay()) closeModal();
 });
+
+/** Le menu déroulant ONIRIQUE, à la place de celui de Windows : un bouton et sa liste, au clavier aussi (flèches, Entrée,
+    Échap). options : [[valeur, texte], …] ; onchange(valeur) au choix d'une autre valeur. */
+export function dropdown(label, options, value, onchange) {
+  let current = value, active = -1;
+  const text = h('span', { class: 'dd-value' });
+  const button = h('button', { type: 'button', class: 'dd-button', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-label': label }, text, h('i', { 'aria-hidden': 'true' }));
+  const items = options.map(([v, t]) => h('div', { class: 'dd-item', role: 'option', onpointerdown: (e) => e.preventDefault(), onclick: () => choose(v) }, t));
+  const list = h('div', { class: 'dd-list', role: 'listbox', 'aria-label': label }, items);
+  const box = h('div', { class: 'dd' }, button, list);
+  const paint = () => {
+    text.textContent = options.find(([v]) => v === current)?.[1] ?? '—';
+    items.forEach((el, i) => { el.classList.toggle('active', i === active); el.setAttribute('aria-selected', String(options[i][0] === current)); });
+    items[active]?.scrollIntoView({ block: 'nearest' });
+  };
+  const outside = (e) => { if (!box.contains(e.target)) open(false); };
+  const open = (on) => {
+    box.classList.toggle('open', on);
+    button.setAttribute('aria-expanded', String(on));
+    document[on ? 'addEventListener' : 'removeEventListener']('pointerdown', outside, true);
+    if (on) { active = Math.max(0, options.findIndex(([v]) => v === current)); paint(); }
+  };
+  const choose = (v) => { open(false); if (v === current) return; current = v; paint(); onchange(v); };
+  button.addEventListener('click', () => open(!box.classList.contains('open')));
+  button.addEventListener('blur', () => open(false));
+  button.addEventListener('keydown', (e) => {
+    const shown = box.classList.contains('open');
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!shown) return open(true);
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      paint();
+    } else if ((e.key === 'Enter' || e.key === ' ') && shown) { e.preventDefault(); choose(options[active][0]); }
+    else if (e.key === 'Escape' && shown) { e.preventDefault(); open(false); }
+  });
+  paint();
+  return box;
+}
