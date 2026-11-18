@@ -33,6 +33,10 @@ sealed partial class Navigateur
         foreach (var c in Vues()) try { c.Profile.DefaultDownloadFolderPath = DossierTelechargements; } catch { }
     }
 
+    // Les mises à jour automatiques des extensions : le moteur les envoie vers « permanently-removed.invalid »,
+    // une adresse qui n'existe pas ; elles échouaient et restaient « Interrompu » dans la liste.
+    static bool AdresseMorte(string url) => Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Host.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase);
+
     void LireTelechargements()
     {
         if (telechargementsLus) return;
@@ -41,7 +45,7 @@ sealed partial class Navigateur
         try
         {
             foreach (var n in JsonNode.Parse(File.ReadAllText(FichierTelechargements))!.AsArray())
-                telechargements.Add(new Telechargement
+                if (!AdresseMorte((string?)n!["url"] ?? "")) telechargements.Add(new Telechargement
                 {
                     Id = prochainTelechargement++, Nom = (string?)n!["nom"] ?? "", Chemin = (string?)n["chemin"] ?? "", Url = (string?)n["url"] ?? "",
                     Etat = (string?)n["etat"] ?? "fini", Recu = (long?)n["recu"] ?? 0, Total = (long?)n["total"] ?? 0, Debut = (long?)n["debut"] ?? 0,
@@ -70,6 +74,7 @@ sealed partial class Navigateur
         LireTelechargements();
         e.Handled = true; // pas de fenêtre d'Edge : le téléchargement continue, suivi ici
         var op = e.DownloadOperation;
+        if (AdresseMorte(op.Uri)) { e.Cancel = true; return; }
         var t = new Telechargement
         {
             Id = prochainTelechargement++, Operation = op, Chemin = e.ResultFilePath, Nom = Path.GetFileName(e.ResultFilePath), Url = op.Uri,
