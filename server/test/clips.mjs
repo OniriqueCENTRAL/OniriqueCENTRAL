@@ -38,6 +38,13 @@ const waitDone = async (id, token) => {
 let ffmpeg = true;
 try { execFileSync('ffmpeg', ['-version']); execFileSync('nice', ['-n', '0', 'true']); } catch { ffmpeg = false; }
 
+// Un vrai WebM de 2 s (image et son) quand ffmpeg est là ; sinon un fichier illisible, qui doit finir « failed ».
+// Fait avant toute requête : pendant ces secondes, une connexion gardée ouverte expirerait côté serveur.
+const src = path.join(dataDir, 'essai.webm');
+if (ffmpeg) execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc=size=640x360:rate=30:duration=2', '-f', 'lavfi', '-i', 'sine=duration=2',
+  '-c:v', 'libvpx', '-c:a', 'libopus', '-shortest', src]);
+else fs.writeFileSync(src, 'pas une vidéo');
+
 try {
   const user = await account('simple@test.local', 'user');
   const nova = await account('nova@test.local', 'beta');
@@ -45,11 +52,6 @@ try {
   assert.equal((await api('/api/clips', { token: user, body: 'x' })).status, 403, 'un simple compte ne partage pas de clip');
   assert.equal((await api('/api/clips', { body: 'x' })).status, 401);
 
-  // Un vrai WebM de 2 s (image et son) quand ffmpeg est là ; sinon un fichier illisible, qui doit finir « failed ».
-  const src = path.join(dataDir, 'essai.webm');
-  if (ffmpeg) execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc=size=640x360:rate=30:duration=2', '-f', 'lavfi', '-i', 'sine=duration=2',
-    '-c:v', 'libvpx', '-c:a', 'libopus', '-shortest', src]);
-  else fs.writeFileSync(src, 'pas une vidéo');
   const sent = await api(`/api/clips?title=${encodeURIComponent('  Le   pentakill <b>  ')}`, { token: nova, body: fs.readFileSync(src) });
   assert.equal(sent.status, 202);
   const first = await sent.json();
