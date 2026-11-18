@@ -107,12 +107,28 @@
         if (m) { en = fill(p.en, m.slice(1).map((v) => translate(v))); break; }
       }
     }
-    if (en === undefined) return text;
+    if (en === undefined) { report(key); return text; }
     // Les espaces autour du texte sont gardés (la mise en page en dépend parfois).
     const lead = text.match(/^\s*/)[0], trail = text.match(/\s*$/)[0];
     return lead + en + trail;
   }
   api.t = translate;
+
+  // Un texte sans traduction est signalé au serveur (server/src/traductions.js), qui le fait traduire s’il est bien écrit
+  // dans le site (jamais un texte d’un compte) : une nouvelle page passe en anglais toute seule, dès la visite suivante.
+  const misses = new Set(), sent = new Set();
+  let flush = null;
+  function report(key) {
+    if (!/^https?:$/.test(location.protocol) || key.length > 400 || !/[a-zà-ÿ]{2}/.test(key) || sent.has(key)) return;
+    misses.add(key); sent.add(key);
+    if (!flush) flush = setTimeout(() => {
+      flush = null;
+      const list = [...misses]; misses.clear();
+      for (let i = 0; i < list.length && i < 400; i += 80) {
+        fetch("/api/i18n-manque", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ textes: list.slice(i, i + 80) }), keepalive: true }).catch(() => {});
+      }
+    }, 4000);
+  }
 
   // Une phrase coupée par une mise en forme (« Nos <em>plugins.</em> ») : remplacée d'un bloc, balises comprises.
   const BLOCK_TAGS = new Set(["H1", "H2", "H3", "H4", "H5", "H6", "P", "LI", "LABEL", "SPAN", "DIV", "TD", "TH", "SMALL", "A", "BUTTON", "DT", "DD", "FIGCAPTION", "LEGEND", "SUMMARY", "STRONG", "EM", "B"]);
