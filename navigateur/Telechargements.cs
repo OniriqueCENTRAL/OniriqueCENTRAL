@@ -33,8 +33,16 @@ sealed partial class Navigateur
         foreach (var c in Vues()) try { c.Profile.DefaultDownloadFolderPath = DossierTelechargements; } catch { }
     }
 
-    // Les mises à jour automatiques des extensions : le moteur les envoie vers « permanently-removed.invalid »,
-    // une adresse qui n'existe pas ; elles échouaient et restaient « Interrompu » dans la liste.
+    // Le moteur envoie les extensions (bouton du Chrome Web Store, mises à jour) vers « permanently-removed.invalid »,
+    // une adresse qui n'existe pas : elles échouaient et restaient « Interrompu » dans la liste.
+    async Task ExtensionDuStore(string fichier)
+    {
+        if (!extensionsActives) { bulle.Montrer("Active les extensions dans les paramètres, puis relance le navigateur.", "Paramètres", () => OuvrirInterne(PageParametres + "#extensions")); return; }
+        bulle.Montrer("Installation de l'extension…");
+        bulle.Montrer(await DepuisLeStore(fichier));
+        await MajExtensions();
+    }
+
     static bool AdresseMorte(string url) => Uri.TryCreate(url, UriKind.Absolute, out var u) && u.Host.EndsWith(".invalid", StringComparison.OrdinalIgnoreCase);
 
     void LireTelechargements()
@@ -74,7 +82,13 @@ sealed partial class Navigateur
         LireTelechargements();
         e.Handled = true; // pas de fenêtre d'Edge : le téléchargement continue, suivi ici
         var op = e.DownloadOperation;
-        if (AdresseMorte(op.Uri)) { e.Cancel = true; return; }
+        if (AdresseMorte(op.Uri))
+        {
+            e.Cancel = true;
+            // « Ajouter à Chrome » sur le Chrome Web Store : le fichier s'appelle « <identifiant>_<n>.crx », on l'installe nous-mêmes.
+            if (Path.GetExtension(e.ResultFilePath).Equals(".crx", StringComparison.OrdinalIgnoreCase)) _ = ExtensionDuStore(Path.GetFileName(e.ResultFilePath));
+            return;
+        }
         var t = new Telechargement
         {
             Id = prochainTelechargement++, Operation = op, Chemin = e.ResultFilePath, Nom = Path.GetFileName(e.ResultFilePath), Url = op.Uri,
