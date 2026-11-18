@@ -19,7 +19,7 @@
   <div class="sch-frame">
   <svg class="sch" viewBox="0 0 685 270" role="img" aria-label="CHANNEL STRIP default chain: gate, console channel, de-esser, saturation, 1176, vari-mu, EQ, de-esser"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOCAL</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="112" height="46" rx="6"/><text x="126" y="68" text-anchor="middle">NOISE GATE</text><rect class="ba" x="212" y="40" width="112" height="46" rx="6"/><text x="268" y="59" text-anchor="middle" class="tb">CONSOLE</text><text x="268" y="75" text-anchor="middle" class="t2">EQ + COMP</text><path class="w" d="M182 63 H212" marker-end="url(#doc-arr)"/><rect class="b" x="354" y="40" width="112" height="46" rx="6"/><text x="410" y="68" text-anchor="middle">DE-ESSER 1</text><path class="w" d="M324 63 H354" marker-end="url(#doc-arr)"/><rect class="b" x="496" y="40" width="112" height="46" rx="6"/><text x="552" y="59" text-anchor="middle">SATURATION</text><text x="552" y="75" text-anchor="middle" class="t2">up to 8×</text><path class="w" d="M466 63 H496" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="150" width="112" height="46" rx="6"/><text x="126" y="169" text-anchor="middle">1176</text><text x="126" y="185" text-anchor="middle" class="t2">FET</text><path class="w" d="M552 86 V118 H126 V150" marker-end="url(#doc-arr)"/><rect class="b" x="212" y="150" width="112" height="46" rx="6"/><text x="268" y="169" text-anchor="middle">VARI-MU</text><text x="268" y="185" text-anchor="middle" class="t2">tube</text><path class="w" d="M182 173 H212" marker-end="url(#doc-arr)"/><rect class="b" x="354" y="150" width="112" height="46" rx="6"/><text x="410" y="169" text-anchor="middle">EQ</text><text x="410" y="185" text-anchor="middle" class="t2">8 bands</text><path class="w" d="M324 173 H354" marker-end="url(#doc-arr)"/><rect class="b" x="496" y="150" width="112" height="46" rx="6"/><text x="552" y="178" text-anchor="middle">DE-ESSER 2</text><path class="w" d="M466 173 H496" marker-end="url(#doc-arr)"/><path class="w" d="M608 173 H648"/><circle class="w" cx="654" cy="173" r="6"/><text x="654" y="201" text-anchor="middle" class="t2">OUTPUT</text></svg>
   </div>
-  <figcaption>The default chain. The second de-esser, at the end, catches sibilance brought back up by saturation and EQ. The order changes freely with each module’s badge.</figcaption>
+  <figcaption>The default chain. The second de-esser, at the end, catches sibilance brought back up by saturation and EQ. The order changes freely by dragging the stars of the chain, at the top of the interface.</figcaption>
 </figure>
 
 <h2 id="cs-modules">1. The modules</h2>
@@ -36,9 +36,9 @@
 
 <h2 id="cs-ordre">2. Order and bypass</h2>
 <ul>
-  <li>Each module has an <b>order badge</b>: change it, and the real chain shows under the title.</li>
+  <li>At the top, the <b>constellation chain</b> shows the real order: one star per module, from IN to OUT. <b>Drag a star</b> to move it, <b>click</b> it to switch the module on or off.</li>
   <li>An order change or a bypass is done with a <b>crossfade</b>: never a click.</li>
-  <li>A bypassed module isn’t computed at all, and a veil passes over its card.</li>
+  <li>A bypassed module isn’t computed at all: its star goes dark and its controls fade.</li>
   <li><b>LISTEN</b> on each de-esser: hear only what it removes.</li>
 </ul>
 
