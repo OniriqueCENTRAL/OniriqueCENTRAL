@@ -140,6 +140,22 @@ body:has(.ps.full) { overflow: hidden; }
 .ps-dlg .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .ps-dlg .ps-btn { padding: 9px 16px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--mist); cursor: pointer; }
 .ps-dlg .ps-btn.on { background: var(--lit); color: #fff; }
+.ps-dlg.fx { width: min(700px, calc(100vw - 24px)); margin: auto 12px auto auto; }
+.ps-dlg.fx::backdrop { background: rgba(5,3,4,.12); backdrop-filter: none; } /* l’image reste visible : l’aperçu est en direct */
+.fx-body { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 16px; min-height: 380px; }
+.fx-list { display: grid; align-content: start; gap: 2px; padding: 6px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.25); }
+.fx-list .row { display: flex; align-items: center; gap: 8px; padding: 2px 4px 2px 8px; border-radius: 9px; }
+.fx-list .row.sel { background: rgba(var(--acc),.2); }
+.fx-list .row input { flex: none; width: 15px; height: 15px; margin: 0; accent-color: var(--ember); }
+.fx-list .row button { flex: 1; min-width: 0; padding: 7px 0; border: 0; background: none; color: var(--soft); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.fx-list .row.sel button, .fx-list .row button:hover { color: var(--mist); }
+.fx-list .row.head button { font-weight: 600; color: var(--mist); }
+.fx-panel { display: grid; align-content: start; gap: 12px; }
+.fx-panel h3 { margin: 0 0 4px; font: 500 11px/1.4 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.fx-panel label { grid-template-columns: 170px minmax(0, 1fr) 58px; }
+.fx-panel input[type="color"] { width: 46px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; }
+.fx-panel .note { margin: 0; color: var(--haze); font-size: 13px; }
+@media (max-width: 640px) { .fx-body { grid-template-columns: 1fr; } .fx-panel label { grid-template-columns: 110px minmax(0, 1fr) 50px; } }
 
 .ps-text { max-width: 980px; margin-inline: auto; padding-inline: clamp(4px, 3vw, 28px); }
 .ps-text table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; font-size: 15px; }
@@ -406,7 +422,7 @@ function compose(c, live) {
     const src = !live ? l.canvas : l.preview || (action?.stroke && i === doc.active ? withStroke(l) : l.canvas);
     c.globalAlpha = l.opacity;
     c.globalCompositeOperation = l.blend;
-    c.drawImage(src, b.x, b.y, b.w, b.h);
+    drawStyled(c, l, src, b);
   });
   c.globalAlpha = 1;
   c.globalCompositeOperation = "source-over";
@@ -521,7 +537,10 @@ function refreshLayers() {
       input.onblur = done;
       name.replaceChildren(input); input.focus(); input.select();
     };
-    const li = el("li", { className: i === doc.active ? "on" : "" }, eye, thumb(l), name, el("span", { className: "kind", textContent: l.text ? "T" : "" }));
+    const pic = thumb(l);
+    pic.title = "Double-clic : options de fusion";
+    pic.ondblclick = () => { doc.active = i; refresh(); fxDialog(); };
+    const li = el("li", { className: i === doc.active ? "on" : "" }, eye, pic, name, el("span", { className: "kind", textContent: [l.text ? "T" : "", hasFx(l.fx) ? "fx" : ""].filter(Boolean).join(" ") }));
     li.dataset.i = i;
     li.onclick = () => { if (doc.active !== i) { doc.active = i; refresh(); } };
     list.prepend(li);
@@ -1037,7 +1056,7 @@ function mergeDown() {
   for (const l of [lo, up]) {
     if (!l.visible) continue;
     x.globalAlpha = l.opacity; x.globalCompositeOperation = l === lo ? "source-over" : l.blend;
-    x.drawImage(l.canvas, l.x, l.y);
+    drawStyled(x, l, l.canvas, boxOf(l)); // les styles de calque sont fondus dans le résultat
   }
   doc.layers.splice(i - 1, 2, layer(lo.name, c)); doc.active = i - 1;
   commit("Fusionner les calques");
@@ -1084,6 +1103,254 @@ async function adjustDialog(only) {
   if (v && css(v) !== "none") filterLayer(css(v), only ? "Flou" : "Réglages", v.bl > 0); else render();
 }
 
+// ——— Styles de calque (« Options de fusion ») ———
+// Comme dans les logiciels de retouche : les effets restent modifiables, ils sont recalculés depuis les pixels du calque.
+// Ordre de dessin : ombre portée et lueur externe (masquées sous le calque), contour extérieur, contenu (opacité du fond),
+// incrustations motif, dégradé et couleur, satin, lueur interne, ombre interne, contour intérieur, biseautage.
+const FX = [
+  ["bevel", "Biseautage et estompage", { size: 10, angle: 120, hi: 75, lo: 75 },
+    [["size", "Taille", 1, 100, " px"], ["angle", "Angle de la lumière", -180, 180, "°"], ["hi", "Opacité de l’éclaircissement", 0, 100, " %"], ["lo", "Opacité de l’ombre", 0, 100, " %"]]],
+  ["stroke", "Contour", { size: 6, pos: "outside", color: "#000000", opacity: 100 },
+    [["size", "Taille", 1, 100, " px"], ["pos", "Position", [["outside", "Extérieur"], ["inside", "Intérieur"], ["center", "Centre"]]], ["opacity", "Opacité", 0, 100, " %"], ["color", "Couleur"]]],
+  ["innerShadow", "Ombre interne", { color: "#000000", opacity: 75, angle: 120, distance: 5, size: 5 },
+    [["color", "Couleur"], ["opacity", "Opacité", 0, 100, " %"], ["angle", "Angle", -180, 180, "°"], ["distance", "Distance", 0, 100, " px"], ["size", "Taille", 0, 100, " px"]]],
+  ["innerGlow", "Lueur interne", { color: "#fff3b0", opacity: 75, size: 10 },
+    [["color", "Couleur"], ["opacity", "Opacité", 0, 100, " %"], ["size", "Taille", 1, 100, " px"]]],
+  ["satin", "Satin", { color: "#000000", opacity: 50, angle: 19, distance: 11, size: 14, invert: true },
+    [["color", "Couleur"], ["opacity", "Opacité", 0, 100, " %"], ["angle", "Angle", -180, 180, "°"], ["distance", "Distance", 1, 100, " px"], ["size", "Taille", 0, 100, " px"], ["invert", "Inverser", true]]],
+  ["colorOverlay", "Incrustation couleur", { color: "#e5384a", opacity: 100 },
+    [["color", "Couleur"], ["opacity", "Opacité", 0, 100, " %"]]],
+  ["gradientOverlay", "Incrustation en dégradé", { from: "#000000", to: "#ffffff", opacity: 100, style: "linear", angle: 90, reverse: false },
+    [["from", "Couleur de départ"], ["to", "Couleur d’arrivée"], ["opacity", "Opacité", 0, 100, " %"], ["style", "Style", [["linear", "Linéaire"], ["radial", "Radial"]]], ["angle", "Angle", -180, 180, "°"], ["reverse", "Inverser", true]]],
+  ["patternOverlay", "Incrustation de motif", { pattern: "grain", scale: 100, opacity: 60 },
+    [["pattern", "Motif", [["grain", "Grain"], ["lines", "Lignes"], ["dots", "Points"], ["checker", "Damier"]]], ["scale", "Échelle", 25, 400, " %"], ["opacity", "Opacité", 0, 100, " %"]]],
+  ["outerGlow", "Lueur externe", { color: "#fff3b0", opacity: 75, size: 15 },
+    [["color", "Couleur"], ["opacity", "Opacité", 0, 100, " %"], ["size", "Taille", 1, 150, " px"]]],
+  ["dropShadow", "Ombre portée", { color: "#000000", opacity: 75, angle: 120, distance: 10, size: 10 },
+    [["color", "Couleur"], ["opacity", "Opacité", 0, 100, " %"], ["angle", "Angle", -180, 180, "°"], ["distance", "Distance", 0, 200, " px"], ["size", "Taille", 0, 150, " px"]]],
+];
+const hasFx = (fx) => !!fx && ((fx.fill ?? 100) < 100 || FX.some(([id]) => fx[id]?.on));
+const fxOn = (fx, id) => (fx[id]?.on ? fx[id] : null);
+const rgba = (hex, a) => { const [r, g, b] = rgb(hex); return "rgba(" + r + "," + g + "," + b + "," + a + ")"; };
+/** Le décalage d'une ombre éclairée sous l'angle a (degrés, 90 = lumière d'en haut) : à l'opposé de la lumière. */
+const away = (a, d) => [-Math.cos(a * Math.PI / 180) * d, Math.sin(a * Math.PI / 180) * d];
+
+/** La zone non transparente d'un canvas (gardée tant que le canvas ne change pas). */
+const boundsMemo = new WeakMap();
+function bounds(c, fresh) {
+  if (!fresh && boundsMemo.has(c)) return boundsMemo.get(c);
+  const w = c.width, h = c.height, d = c.getContext("2d").getImageData(0, 0, w, h).data;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0, i = (y * w) * 4 + 3; x < w; x++, i += 4) if (d[i]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; y1 = y; }
+  const b = x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  if (!fresh) boundsMemo.set(c, b);
+  return b;
+}
+/** Distance de chaque pixel au plus proche pixel « graine » (chanfrein 1 / √2, en deux passes). */
+function distances(a, w, h, seedInside) {
+  const d = new Float32Array(w * h), SQ = Math.SQRT2;
+  for (let i = 0; i < d.length; i++) d[i] = (a[i] >= 128) === seedInside ? 0 : 1e9;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x; let v = d[i];
+    if (!v) continue;
+    if (x > 0) v = Math.min(v, d[i - 1] + 1);
+    if (y > 0) { v = Math.min(v, d[i - w] + 1); if (x > 0) v = Math.min(v, d[i - w - 1] + SQ); if (x < w - 1) v = Math.min(v, d[i - w + 1] + SQ); }
+    d[i] = v;
+  }
+  for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
+    const i = y * w + x; let v = d[i];
+    if (!v) continue;
+    if (x < w - 1) v = Math.min(v, d[i + 1] + 1);
+    if (y < h - 1) { v = Math.min(v, d[i + w] + 1); if (x < w - 1) v = Math.min(v, d[i + w + 1] + SQ); if (x > 0) v = Math.min(v, d[i + w - 1] + SQ); }
+    d[i] = v;
+  }
+  return d;
+}
+const PATTERNS = {};
+function patternTile(name) {
+  if (PATTERNS[name]) return PATTERNS[name];
+  const t = canvasOf(name === "grain" ? 128 : name === "checker" ? 16 : 12, name === "grain" ? 128 : name === "checker" ? 16 : 12), c = t.getContext("2d");
+  if (name === "grain") {
+    const img = c.createImageData(128, 128); let seed = 7;
+    for (let i = 0; i < img.data.length; i += 4) { seed = (seed * 16807) % 2147483647; const v = seed % 256; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+    c.putImageData(img, 0, 0);
+  } else {
+    c.fillStyle = "#fff"; c.fillRect(0, 0, t.width, t.height); c.fillStyle = "#000";
+    if (name === "lines") { c.lineWidth = 2.2; c.beginPath(); c.moveTo(-2, 14); c.lineTo(14, -2); c.moveTo(-2, 26); c.lineTo(26, -2); c.stroke(); }
+    if (name === "dots") { c.beginPath(); c.arc(6, 6, 2.6, 0, Math.PI * 2); c.fill(); }
+    if (name === "checker") { c.fillRect(0, 0, 8, 8); c.fillRect(8, 8, 8, 8); }
+  }
+  return (PATTERNS[name] = t);
+}
+/** Dessine la silhouette `shape` (ou son négatif) dans c en ombre floutée et décalée : seule l'ombre reste. */
+function blurred(c, shape, color, blur, dx, dy) {
+  const far = shape.width * 2 + 4000;
+  c.save();
+  c.shadowColor = color; c.shadowBlur = blur; c.shadowOffsetX = dx + far; c.shadowOffsetY = dy;
+  c.drawImage(shape, -far, 0);
+  c.restore();
+}
+const styleMemo = new WeakMap();
+/** Le calque avec son style : { canvas, x, y } en pixels du canvas source, ou null s'il n'a aucun pixel. */
+function styled(l, src) {
+  const fx = l.fx, key = JSON.stringify(fx), cacheable = src === l.canvas || src === l.preview;
+  const memo = cacheable && styleMemo.get(src);
+  if (memo && memo.key === key) return memo.out;
+  const b = bounds(src, !cacheable);
+  let out = null;
+  if (b) {
+    const st = fxOn(fx, "stroke"), ds = fxOn(fx, "dropShadow"), og = fxOn(fx, "outerGlow"), is = fxOn(fx, "innerShadow"), sat = fxOn(fx, "satin"), bv = fxOn(fx, "bevel");
+    const P = Math.ceil(Math.max(2, ds ? ds.distance + ds.size * 1.5 : 0, og ? og.size * 1.5 : 0, st ? st.size + 2 : 0,
+      is ? is.distance + is.size * 1.5 : 0, sat ? sat.distance + sat.size * 1.5 : 0, bv ? bv.size * 2 : 0, fxOn(fx, "innerGlow") ? fx.innerGlow.size * 1.5 : 0));
+    const W = b.w + 2 * P, H = b.h + 2 * P;
+    const sil = canvasOf(W, H); sil.getContext("2d").drawImage(src, b.x, b.y, b.w, b.h, P, P, b.w, b.h);
+    const inv = canvasOf(W, H), ic = inv.getContext("2d"); ic.fillRect(0, 0, W, H); ic.globalCompositeOperation = "destination-out"; ic.drawImage(sil, 0, 0);
+    const o = canvasOf(W, H), c = o.getContext("2d");
+    const masked = (paint, alpha, inside = true) => { // un effet peint dans un calque à part, gardé dans (ou hors de) la silhouette
+      const t = canvasOf(W, H), tc = t.getContext("2d");
+      paint(tc, t);
+      tc.globalCompositeOperation = inside ? "destination-in" : "destination-out"; tc.drawImage(sil, 0, 0);
+      c.globalAlpha = alpha; c.drawImage(t, 0, 0); c.globalAlpha = 1;
+    };
+    const innerShade = (color, alpha, dx, dy, blur) => masked((tc) => blurred(tc, inv, color, blur, dx, dy), alpha);
+    // Sous le calque
+    if (ds) blurred(c, sil, rgba(ds.color, ds.opacity / 100), ds.size, ...away(ds.angle, ds.distance));
+    if (og) for (let k = 0; k < 2; k++) blurred(c, sil, rgba(og.color, og.opacity / 100), og.size, 0, 0);
+    if (ds || og) { c.globalCompositeOperation = "destination-out"; c.drawImage(sil, 0, 0); c.globalCompositeOperation = "source-over"; }
+    // Contour : distance de chaque pixel au bord de la silhouette
+    let strokeIn = null;
+    if (st) {
+      const a = sil.getContext("2d").getImageData(0, 0, W, H).data, alpha = new Uint8Array(W * H);
+      for (let i = 0; i < alpha.length; i++) alpha[i] = a[i * 4 + 3];
+      const r = st.pos === "center" ? st.size / 2 : st.size, [cr, cg, cb] = rgb(st.color), op = st.opacity / 100;
+      const make = (outside) => {
+        const d = distances(alpha, W, H, outside), img = new ImageData(W, H);
+        for (let i = 0; i < alpha.length; i++) {
+          const cover = Math.min(1, Math.max(0, r + 1 - d[i])) * (outside ? 1 - alpha[i] / 255 : alpha[i] / 255);
+          if (!cover) continue;
+          img.data[i * 4] = cr; img.data[i * 4 + 1] = cg; img.data[i * 4 + 2] = cb; img.data[i * 4 + 3] = Math.round(cover * op * 255);
+        }
+        const t = canvasOf(W, H); t.getContext("2d").putImageData(img, 0, 0); return t;
+      };
+      if (st.pos !== "inside") c.drawImage(make(true), 0, 0);
+      if (st.pos !== "outside") strokeIn = make(false);
+    }
+    // Le contenu, à l'opacité du fond
+    c.globalAlpha = (fx.fill ?? 100) / 100; c.drawImage(sil, 0, 0); c.globalAlpha = 1;
+    const po = fxOn(fx, "patternOverlay"), go = fxOn(fx, "gradientOverlay"), co = fxOn(fx, "colorOverlay"), ig = fxOn(fx, "innerGlow");
+    if (po) masked((tc, t) => { const p = tc.createPattern(patternTile(po.pattern), "repeat"); p.setTransform(new DOMMatrix().scale(po.scale / 100)); tc.fillStyle = p; tc.fillRect(0, 0, t.width, t.height); }, po.opacity / 100);
+    if (go) masked((tc) => {
+      const cx = P + b.w / 2, cy = P + b.h / 2, [ca, cb2] = go.reverse ? [go.to, go.from] : [go.from, go.to];
+      let g;
+      if (go.style === "radial") g = tc.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(b.w, b.h) / 2);
+      else {
+        const t = go.angle * Math.PI / 180, ux = Math.cos(t), uy = -Math.sin(t), L = (Math.abs(b.w * ux) + Math.abs(b.h * uy)) / 2;
+        g = tc.createLinearGradient(cx - ux * L, cy - uy * L, cx + ux * L, cy + uy * L);
+      }
+      g.addColorStop(0, ca); g.addColorStop(1, cb2); tc.fillStyle = g; tc.fillRect(0, 0, W, H);
+    }, go.opacity / 100);
+    if (co) masked((tc) => { tc.fillStyle = co.color; tc.fillRect(0, 0, W, H); }, co.opacity / 100);
+    if (sat) masked((tc) => {
+      const [dx, dy] = away(sat.angle, sat.distance), x = canvasOf(W, H), xc = x.getContext("2d");
+      xc.drawImage(sil, dx, dy); xc.globalCompositeOperation = "xor"; xc.drawImage(sil, -dx, -dy);
+      if (!sat.invert) { const f = canvasOf(W, H), fc2 = f.getContext("2d"); fc2.fillRect(0, 0, W, H); fc2.globalCompositeOperation = "destination-out"; fc2.drawImage(x, 0, 0); blurred(tc, f, sat.color, sat.size, 0, 0); }
+      else blurred(tc, x, sat.color, sat.size, 0, 0);
+    }, sat.opacity / 100);
+    if (ig) for (let k = 0; k < 2; k++) innerShade(ig.color, ig.opacity / 100, 0, 0, ig.size);
+    if (is) innerShade(is.color, is.opacity / 100, ...away(is.angle, is.distance), is.size);
+    if (strokeIn) c.drawImage(strokeIn, 0, 0);
+    if (bv) {
+      const [dx, dy] = away(bv.angle, bv.size / 2);
+      innerShade("#ffffff", bv.hi / 100, dx, dy, bv.size);
+      innerShade("#000000", bv.lo / 100, -dx, -dy, bv.size);
+    }
+    out = { canvas: o, x: b.x - P, y: b.y - P };
+  }
+  if (cacheable) styleMemo.set(src, { key, out });
+  return out;
+}
+/** Dessine le calque (avec son style s'il en a un) dans la boîte b du document. */
+function drawStyled(c, l, src, b) {
+  if (!hasFx(l.fx)) return c.drawImage(src, b.x, b.y, b.w, b.h);
+  const st = styled(l, src);
+  if (!st) return;
+  const sx = b.w / src.width, sy = b.h / src.height;
+  c.drawImage(st.canvas, b.x + st.x * sx, b.y + st.y * sy, st.canvas.width * sx, st.canvas.height * sy);
+}
+function clearFx() {
+  const l = active();
+  if (!hasFx(l.fx)) return say("Ce calque n’a pas de style.");
+  l.fx = null; commit("Effacer le style de calque");
+}
+/** La fenêtre « Style de calque » : les options de fusion à gauche, les réglages de l'effet choisi à droite, aperçu en direct. */
+function fxDialog(start = "general") {
+  const l = active(), saved = { blend: l.blend, opacity: l.opacity, fx: l.fx };
+  const fx = structuredClone(l.fx || {});
+  fx.fill ??= 100;
+  for (const [id, , defaults] of FX) fx[id] = { on: false, ...defaults, ...fx[id] };
+  let sel = start;
+  const d = $("dlg"), list = el("div", { className: "fx-list" }), panel = el("div", { className: "fx-panel" });
+  const live = () => { l.fx = fx; render(); };
+  const field = (obj, spec, after) => {
+    const [k, label, a, b2, unit] = spec;
+    let input, out = el("span", { textContent: "" });
+    if (Array.isArray(a)) { input = el("select", {}, ...a.map(([v, t]) => el("option", { value: v, textContent: t }))); input.value = obj[k]; }
+    else if (a === true) { input = el("input", { type: "checkbox", checked: !!obj[k] }); }
+    else if (a === undefined) { input = el("input", { type: "color", value: obj[k] }); }
+    else { input = el("input", { type: "range", min: a, max: b2, value: obj[k] }); out = el("output", { textContent: obj[k] + unit }); }
+    input.addEventListener("input", () => {
+      obj[k] = input.type === "checkbox" ? input.checked : input.type === "range" ? +input.value : input.value;
+      if (input.type === "range") out.textContent = input.value + unit;
+      after?.(); live();
+    });
+    return el("label", { className: a === true ? "check" : "" }, el("span", { textContent: label }), input, out);
+  };
+  const showPanel = () => {
+    list.querySelectorAll(".row").forEach((r) => r.classList.toggle("sel", r.dataset.id === sel));
+    if (sel === "general") {
+      const g = { blend: l.blend, opacity: Math.round(l.opacity * 100) };
+      panel.replaceChildren(el("h3", { textContent: "Options de fusion générales" }),
+        field(g, ["blend", "Mode de fusion", BLENDS.map(([v, t]) => [v, t])], () => { l.blend = g.blend; }),
+        field(g, ["opacity", "Opacité", 0, 100, " %"], () => { l.opacity = g.opacity / 100; }),
+        el("h3", { textContent: "Fusion avancée" }),
+        field(fx, ["fill", "Opacité du fond", 0, 100, " %"]),
+        el("p", { className: "note", textContent: "L’opacité du fond rend le calque transparent sans toucher à ses effets : à 0 %, il ne reste que le contour, les ombres et les lueurs." }));
+      return;
+    }
+    const [id, name, , specs] = FX.find(([x]) => x === sel);
+    panel.replaceChildren(el("h3", { textContent: name }), ...specs.map((spec) => field(fx[id], spec)));
+  };
+  const head = el("div", { className: "row head" }, el("button", { type: "button", textContent: "Options de fusion", onclick: () => { sel = "general"; showPanel(); } }));
+  head.dataset.id = "general";
+  list.append(head);
+  for (const [id, name] of FX) {
+    const box = el("input", { type: "checkbox", checked: fx[id].on, "aria-label": name });
+    box.onchange = () => { fx[id].on = box.checked; sel = id; showPanel(); live(); };
+    const row = el("div", { className: "row" }, box, el("button", { type: "button", textContent: name, onclick: () => { fx[id].on = box.checked = true; sel = id; showPanel(); live(); } }));
+    row.dataset.id = id;
+    list.append(row);
+  }
+  const cancel = el("button", { type: "button", className: "ps-btn", textContent: "Annuler" });
+  const ok = el("button", { type: "button", className: "ps-btn on", textContent: "OK" });
+  d.className = "ps-dlg fx";
+  d.replaceChildren(el("form", { method: "dialog" }, el("h2", { textContent: "Style de calque · « " + l.name + " »" }), el("div", { className: "fx-body" }, list, panel), el("div", { className: "acts" }, cancel, ok)));
+  showPanel(); live();
+  const end = (keep) => {
+    d.close(); d.className = "ps-dlg";
+    if (!keep) { Object.assign(l, saved); render(); return; }
+    // Le style gardé : seulement les effets cochés, dans un objet neuf (l'historique garde l'ancien tel quel).
+    const kept = { fill: fx.fill };
+    for (const [id] of FX) if (fx[id].on) kept[id] = { ...fx[id] };
+    l.fx = hasFx(kept) ? kept : null;
+    if (l.blend !== saved.blend || l.opacity !== saved.opacity || JSON.stringify(l.fx) !== JSON.stringify(saved.fx)) commit("Style de calque");
+    else render();
+  };
+  cancel.onclick = () => end(false);
+  ok.onclick = () => end(true);
+  d.oncancel = (e) => { e.preventDefault(); end(false); };
+  d.showModal();
+}
+
 // ——— Fenêtres de dialogue ———
 function ask(title, fields, live) {
   const d = $("dlg"), f = el("form", { method: "dialog" });
@@ -1119,6 +1386,7 @@ const MENUS = [
     ["Recadrer à la sélection", D(cropToSelection)], "-", ["Rotation 90° horaire", D(() => rotateImage(1, "Rotation 90° horaire"))], ["Rotation 90° antihoraire", D(() => rotateImage(-1, "Rotation 90° antihoraire"))],
     ["Rotation 180°", D(() => rotateImage(2, "Rotation 180°"))], ["Symétrie horizontale", D(() => flipImage(true))], ["Symétrie verticale", D(() => flipImage(false))]]],
   ["Calque", [["Nouveau calque", D(newLayer), "Ctrl+Maj+N"], ["Dupliquer le calque", D(duplicate), "Ctrl+J"], ["Supprimer le calque", D(removeLayer)], "-",
+    ["Options de fusion…", D(() => fxDialog())], ["Effacer le style de calque", D(clearFx)], "-",
     ["Monter", D(() => shiftLayer(1)), "Ctrl+]"], ["Descendre", D(() => shiftLayer(-1)), "Ctrl+["], ["Fusionner avec le calque du dessous", D(mergeDown), "Ctrl+E"], ["Aplatir l’image", D(flattenImage)], "-",
     ["Centrer dans l’image", D(centerLayer)], ["Rotation 90° horaire", D(() => rotateLayer(true))], ["Rotation 90° antihoraire", D(() => rotateLayer(false))],
     ["Symétrie horizontale", D(() => flipLayer(true))], ["Symétrie verticale", D(() => flipLayer(false))], ["Pixelliser le texte", D(() => { if (active().text) { rasterize(active()); commit("Pixelliser le texte"); } })]]],
@@ -1180,7 +1448,7 @@ function contextItems(p) {
   if (under.length > 1) items.push("#Calques ici", ...under.slice(0, 5).map((i) => [(i === doc.active ? "✓ " : "") + doc.layers[i].name, () => { doc.active = i; refresh(); }]));
   items.push("#Calque « " + (l.name.length > 22 ? l.name.slice(0, 21) + "…" : l.name) + " »",
     ["Dupliquer", duplicate, "Ctrl+J"], ["Supprimer", removeLayer, "", doc.layers.length > 1],
-    ["Fusionner avec le dessous", mergeDown, "Ctrl+E", doc.active > 0], ["Centrer dans l’image", centerLayer]);
+    ["Options de fusion…", fxDialog], ["Fusionner avec le dessous", mergeDown, "Ctrl+E", doc.active > 0], ["Centrer dans l’image", centerLayer]);
   if (l.text) items.push(["Modifier le texte", () => { setTool("text"); focusText(); }]);
   if (selection) items.push("#Sélection", ["Désélectionner", deselect, "Ctrl+D"], ["Effacer", clearSelection, "Suppr"], ["Recadrer à la sélection", cropToSelection]);
   items.push("#Image");
@@ -1193,6 +1461,7 @@ function contextItems(p) {
 function layerItems() {
   const l = active(), i = doc.active, n = doc.layers.length;
   return ["#Calque « " + (l.name.length > 22 ? l.name.slice(0, 21) + "…" : l.name) + " »",
+    ["Options de fusion…", fxDialog], ...(hasFx(l.fx) ? [["Effacer le style de calque", clearFx]] : []),
     ["Renommer…", () => $("layers").querySelector('[data-i="' + i + '"] .name')?.dispatchEvent(new MouseEvent("dblclick"))],
     [l.visible ? "Masquer" : "Afficher", () => { l.visible = !l.visible; commit(l.visible ? "Afficher le calque" : "Masquer le calque"); }],
     ["Dupliquer", duplicate, "Ctrl+J"], ["Supprimer", removeLayer, "", n > 1],
