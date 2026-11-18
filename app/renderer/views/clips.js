@@ -36,6 +36,18 @@ function accelerator(e) {
 }
 const keyLabel = (k) => k.replace('Super', 'Windows').replace('Shift', 'Maj').replace(/num(\d)$/, 'Pavé $1');
 
+/** Les noms des micros ou des sorties de ce PC. Sans accès au micro ils n'ont pas de nom : il est demandé une fois. */
+async function deviceNames(kind) {
+  let list = await navigator.mediaDevices.enumerateDevices();
+  if (!list.some((d) => d.kind === kind && d.label)) {
+    (await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null))?.getTracks().forEach((t) => t.stop());
+    list = await navigator.mediaDevices.enumerateDevices();
+  }
+  return [...new Set(list.filter((d) => d.kind === kind && d.label && !/^(default|communications)$/.test(d.deviceId)).map((d) => d.label))];
+}
+// Un appareil choisi puis débranché reste dans la liste, marqué.
+const withSaved = (names, saved) => names.map((n) => [n, n]).concat(saved && !names.includes(saved) ? [[saved, `${saved} (débranché)`]] : []);
+
 let current = null; // l'écran affiché, redessiné quand un clip arrive
 window.central.onClips(() => { if (current?.isConnected()) current.refresh(); });
 const refresh = () => { if (current?.isConnected()) current.refresh(); };
@@ -49,7 +61,8 @@ export function clipsView() {
   const library = h('div', { class: 'clip-grid' });
 
   const drawStatus = async () => {
-    const st = await call('clips:state').catch((error) => (toast(error.message, true), null));
+    const [st, inputs, outputs] = await Promise.all([call('clips:state').catch((error) => (toast(error.message, true), null)),
+      deviceNames('audioinput').catch(() => []), deviceNames('audiooutput').catch(() => [])]);
     if (!st) return;
     const s = st.settings;
     const set = (patch) => attempt(async () => { await call('clips:set', patch); }).finally(drawStatus);
@@ -70,12 +83,20 @@ export function clipsView() {
         field('Qualité', dropdown('Qualité', QUALITIES, `${s.height}/${s.fps}`, (v) => { const [height, fps] = v.split('/').map(Number); set({ height, fps }); })),
         field('Touche', keyPicker(s.key, (k) => set({ key: k }))),
         field('Écran', dropdown('Écran', [['', 'Écran principal'], ...st.screens.map((x) => [x.id, x.name])], s.screen, (v) => set({ screen: v })))),
+      h('div', { class: 'clip-settings' },
+        st.tap ? field('Son capté', dropdown('Son capté', [['', 'Sortie de Windows'], ...withSaved(outputs, s.output)], s.output, (v) => set({ output: v }))) : null,
+        field('Micro', dropdown('Micro', [['off', 'Pas de micro'], ['', 'Micro de Windows'], ...withSaved(inputs, s.mic === 'off' ? '' : s.mic)], s.mic, (v) => set({ mic: v }))),
+        s.mic === 'off' ? null : field('Micro en mono', h('label', { class: 'check clip-mono' },
+          h('input', { type: 'checkbox', checked: s.mono, onchange: (e) => set({ mono: e.target.checked }) }),
+          h('span', { class: 'muted' }, 'La voix au milieu, même si le micro n’est branché que d’un côté')))),
       h('div', { class: 'row between wrap clip-dir' },
         h('span', { class: 'muted' }, 'Dossier des clips : ', h('button', { class: 'linkish', type: 'button', title: 'Ouvrir le dossier', onclick: () => call('clips:reveal') }, st.dir)),
         h('div', { class: 'row' },
           s.dir ? button('Par défaut', () => attempt(() => call('clips:pick-dir', true)).finally(drawStatus), 'small quiet') : null,
           button('Changer de dossier…', () => attempt(() => call('clips:pick-dir', false)).finally(drawStatus), 'small quiet'))),
-      h('p', { class: 'muted', style: { margin: 0 } }, 'Le son capté est celui de l’ordinateur : jeu, musique, Discord.'));
+      h('p', { class: 'muted', style: { margin: 0 } }, st.tap
+        ? 'Le son capté est tout ce que joue la sortie choisie : jeu, musique, Discord. Avec Voicemeeter ou une carte son, prends celle que tu écoutes.'
+        : 'Le son capté est celui de l’ordinateur : jeu, musique, Discord.'));
   };
 
   const drawLibrary = async () => {

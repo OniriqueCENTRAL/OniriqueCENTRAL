@@ -196,10 +196,23 @@ function openSettings() {
     try { await call('api', 'POST', '/api/me/profile', { rocky: on }); user.rocky = on; }
     catch (error) { rocky.checked = !on; toast(error.message || 'Réglage non enregistré.', true); }
   });
+  // Ouvrir la CENTRAL au démarrage de Windows : coupé tant qu'on ne le coche pas, réglé dans Windows (main.js).
+  const atLogin = h('input', { type: 'checkbox', disabled: true, 'aria-label': 'Ouvrir la CENTRAL au démarrage de Windows' });
+  call('settings:login').then((on) => { atLogin.checked = on; atLogin.disabled = false; }, () => {});
+  atLogin.addEventListener('change', async () => {
+    const on = atLogin.checked;
+    atLogin.disabled = true;
+    try { atLogin.checked = await call('settings:login', on); } catch (error) { atLogin.checked = !on; toast(error.message, true); }
+    atLogin.disabled = false;
+  });
   const bgButton = (label, action) => button(label, async () => {
     try { setBackground(await call('settings:background', action)); } catch (error) { toast(error.message, true); }
   }, 'small quiet');
   modal('Paramètres', h('div', { class: 'stack' },
+    eyebrow('Démarrage'),
+    h('label', { class: 'row', style: { gap: '12px', 'align-items': 'center' } }, atLogin,
+      h('span', null, h('b', null, 'Ouvrir la CENTRAL au démarrage de Windows'), h('br'),
+        h('span', { class: 'muted' }, 'Elle s’ouvre toute seule quand tu allumes le PC : tes clips sont prêts sans y penser.'))),
     eyebrow("Couleur de l'application"),
     h('p', { class: 'muted', style: { margin: 0 } }, 'Toute la CENTRAL prend cette couleur : boutons, voyants, lueurs, CUT et CLOUD compris.'),
     swatches,

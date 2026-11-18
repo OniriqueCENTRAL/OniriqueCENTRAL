@@ -6,7 +6,7 @@ const CHANNELS = [
   'plugin:install', 'plugin:uninstall', 'plugin:reveal', 'plugin:open',
   'license:activate', 'license:deactivate', 'license:redeem',
   'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail', 'open:site', 'tool:show', 'tool:hide', 'accounts:state', 'accounts:login', 'accounts:logout', 'tool:freeze', 'tool:thaw', 'tool:home', 'tool:back', 'tool:cloud-buttons', 'tool:cloud-press', 'tool:reset', 'theme:accent',
-  'settings:server', 'settings:vst3Dir', 'settings:background',
+  'settings:server', 'settings:vst3Dir', 'settings:background', 'settings:login',
   'clips:state', 'clips:set', 'clips:now', 'clips:list', 'clips:read', 'clips:save-cut', 'clips:delete', 'clips:reveal', 'clips:share', 'clips:unshare', 'clips:copy', 'clips:pick-dir', 'clips:key-pause',
 ];
 

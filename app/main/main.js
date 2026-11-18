@@ -1202,6 +1202,15 @@ app.whenReady().then(async () => {
     preview.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(String(html).slice(0, 2_000_000)));
   });
   handle('clipboard', (text) => clipboard.writeText(String(text).slice(0, 5000)));
+  // Ouvrir la CENTRAL au démarrage de Windows : sans argument, l'état ; avec true ou false, le change. Seulement pour
+  // l'application installée (une version de développement s'inscrirait à sa place).
+  handle('settings:login', (on) => {
+    if (typeof on === 'boolean') {
+      if (!app.isPackaged) throw new Error('Seule l’application installée peut s’ouvrir au démarrage de Windows.');
+      app.setLoginItemSettings({ openAtLogin: on });
+    }
+    return app.getLoginItemSettings().openAtLogin;
+  });
 
   ipcMain.on('window', (_event, action) => {
     if (action === 'minimize') win.minimize();
@@ -1212,7 +1221,7 @@ app.whenReady().then(async () => {
 
   createWindow();
   createTray();
-  clips.init({ handle, getWin: () => win, site: SITE });
+  clips.init({ handle, getWin: () => win, site: SITE, audiotap: AUDIOTAP });
   clips.sync().catch(() => {});
   win.webContents.once('did-finish-load', () => openLink(earlyLink || process.argv.find((a) => /^onirique:\/\//i.test(a))));
   createMini();

@@ -460,6 +460,8 @@ button.key.copy:hover { color: var(--pink); }
 .clip-field { gap: 7px; }
 .clip-problem { margin: 0; color: var(--pink); }
 .clip-dir { gap: 10px; }
+.clip-mono { min-height: 40px; }
+.clip-mono span { font-size: 13px; }
 .linkish { background: none; border: 0; padding: 0; color: var(--pink); font: inherit; cursor: pointer; text-decoration: underline; overflow-wrap: anywhere; text-align: left; }
 .clip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
 .clip-card { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 0 0 10px; text-align: left; color: var(--bone);

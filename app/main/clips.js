@@ -4,6 +4,7 @@
 // réduite pour que le jeu garde la main. Les clips vont dans « Vidéos\ONIRIQUE Clips » (ou le dossier choisi), avec leur
 // image et leurs repères ; un clip partagé a son lien onirique.store/clip (server/src/clips.js).
 const { BrowserWindow, app, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, screen, shell } = require('electron');
+const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const os = require('node:os');
@@ -12,7 +13,9 @@ const api = require('./api');
 const store = require('./store');
 
 const ROLES = ['vip', 'beta', 'betaf', 'admin', 'founder']; // comme server/src/watchparty.js
-const DEFAULTS = { on: false, seconds: 30, fps: 30, height: 1080, key: 'F8', screen: '', dir: '' };
+// mic : 'off' (pas de micro), '' (celui de Windows) ou le nom d'un micro ; output : '' (la sortie de Windows) ou le nom
+// d'une sortie, captée par tools/audiotap ; mono : le micro sur les deux côtés (un micro branché sur une seule entrée).
+const DEFAULTS = { on: false, seconds: 30, fps: 30, height: 1080, key: 'F8', screen: '', dir: '', mic: 'off', mono: false, output: '' };
 // La touche choisie, au format d'Electron (« Ctrl+Shift+K »). Seules les touches qui ne servent pas à écrire se
 // prennent seules (F1 à F24, Pause…) ; une lettre, un chiffre ou un signe demande Ctrl, Alt ou Windows, sinon la
 // touche disparaîtrait de tout ce qu'on tape.
@@ -27,6 +30,7 @@ function isKey(v) {
 const CHECKS = {
   on: (v) => typeof v === 'boolean', seconds: (v) => [15, 30, 60, 120].includes(v), fps: (v) => [30, 60].includes(v),
   height: (v) => [720, 1080].includes(v), key: isKey, screen: (v) => typeof v === 'string' && v.length < 100,
+  mic: (v) => typeof v === 'string' && v.length <= 200, mono: (v) => typeof v === 'boolean', output: (v) => typeof v === 'string' && v.length <= 200,
 };
 const NAME = /^clip-[\w-]{1,80}\.(mp4|webm)$/;
 const dir = () => settings().dir || path.join(app.getPath('videos'), 'ONIRIQUE Clips');
@@ -39,7 +43,8 @@ const settings = () => ({ ...DEFAULTS, ...store.prefs.clips });
 // 2026-11-17_21-04-33 : l'heure de ce PC, lisible dans l'explorateur.
 const stamp = (t) => new Date(t - new Date(t).getTimezoneOffset() * 60_000).toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
 
-let rec = null, key = null, problem = '', ctx = null;
+let rec = null, key = null, problem = '', ctx = null, tap = null;
+const tapReady = () => process.platform === 'win32' && !!ctx?.audiotap && fs.existsSync(ctx.audiotap);
 const notify = () => ctx.getWin()?.webContents.send('clips:changed');
 
 async function allowed() {
@@ -47,7 +52,32 @@ async function allowed() {
   return !!me && ROLES.includes(me.user.role);
 }
 
+function stopTap() {
+  const child = tap;
+  tap = null;
+  if (!child) return;
+  try { child.stdin.end(); } catch { /* déjà fermé */ }
+  setTimeout(() => { if (child.exitCode === null) child.kill(); }, 1000);
+}
+
+// Le son d'une sortie précise (casque, Voicemeeter…) : audiotap le lit et la fenêtre d'enregistrement en fait une piste.
+function startTap(name) {
+  const web = rec.webContents, child = spawn(ctx.audiotap, ['device', name], { windowsHide: true });
+  tap = child;
+  let err = '';
+  child.stdout.on('data', (chunk) => { if (!web.isDestroyed()) web.send('clips-rec:pcm', chunk); });
+  child.stderr.on('data', (d) => { err += d; });
+  child.on('error', (e) => { err += e.message; });
+  child.on('exit', (code) => {
+    if (tap !== child) return;
+    tap = null;
+    problem = `Le son de « ${name} » n'est plus capté${err ? ` (${err.trim().slice(0, 120)})` : ''} : choisis une autre sortie, puis réactive les clips.`;
+    notify();
+  });
+}
+
 function stop() {
+  stopTap();
   if (key) globalShortcut.unregister(key);
   key = null;
   if (rec && !rec.isDestroyed()) rec.destroy();
@@ -69,7 +99,10 @@ async function start() {
   const web = rec.webContents;
   web.on('did-finish-load', () => { try { os.setPriority(web.getOSProcessId(), os.constants.priority.PRIORITY_BELOW_NORMAL); } catch { /* priorité normale */ } });
   web.on('render-process-gone', () => { problem = "L'enregistreur s'est arrêté : désactive puis réactive les clips."; stop(); notify(); });
-  rec.loadFile(path.join(__dirname, '..', 'renderer', 'clips-recorder.html'), { query: { seconds: String(s.seconds), fps: String(s.fps), height: String(s.height), source: source.id, audio: process.platform === 'win32' ? '1' : '0' } });
+  const byTap = !!s.output && tapReady();
+  rec.loadFile(path.join(__dirname, '..', 'renderer', 'clips-recorder.html'), { query: { seconds: String(s.seconds), fps: String(s.fps), height: String(s.height),
+    source: source.id, audio: process.platform === 'win32' && !byTap ? '1' : '0', pcm: byTap ? '1' : '0', mic: s.mic, mono: s.mono ? '1' : '0' } });
+  if (byTap) startTap(s.output);
   if (globalShortcut.register(s.key, save)) key = s.key;
   else problem = `La touche ${s.key} est déjà prise par un autre logiciel : choisis-en une autre.`;
 }
@@ -102,7 +135,7 @@ async function setSettings(patch) {
 
 async function status() {
   const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } }).catch(() => []);
-  return { settings: settings(), running: !!rec, problem, dir: dir(),
+  return { settings: settings(), running: !!rec, problem, dir: dir(), tap: tapReady(),
     screens: sources.map((s, i) => ({ id: s.id, name: s.name || `Écran ${i + 1}` })) };
 }
 
@@ -151,9 +184,10 @@ async function unshare(name) {
   await writeMeta(name, { shared: null });
 }
 
-/** handle : celui de main.js (erreurs rendues à l'interface) ; getWin : la fenêtre de l'application ; site : onirique.store. */
-function init({ handle, getWin, site }) {
-  ctx = { getWin, site };
+/** handle : celui de main.js (erreurs rendues à l'interface) ; getWin : la fenêtre de l'application ; site : onirique.store ;
+    audiotap : le programme qui capte le son d'une sortie. */
+function init({ handle, getWin, site, audiotap }) {
+  ctx = { getWin, site, audiotap };
   ipcMain.on('clips-rec:saved', async (event, bytes, meta) => {
     if (event.sender !== rec?.webContents || !(bytes instanceof Uint8Array) || !meta) return;
     const at = Number(meta.at) || Date.now(), duration = Math.max(0, Number(meta.duration) || 0);
@@ -162,6 +196,12 @@ function init({ handle, getWin, site }) {
     try {
       await write(name, bytes, { at, duration, start: Math.min(duration, Math.max(0, Number(meta.start) || 0)) }, thumb);
     } catch (error) { problem = `Le clip n'a pas pu être écrit (${error.message}).`; }
+    notify();
+  });
+  // Un souci qui n'arrête pas l'enregistrement (micro débranché…) : affiché, l'écran et le son continuent.
+  ipcMain.on('clips-rec:warn', (event, message) => {
+    if (event.sender !== rec?.webContents) return;
+    problem = String(message).slice(0, 300);
     notify();
   });
   ipcMain.on('clips-rec:error', (event, message) => {
