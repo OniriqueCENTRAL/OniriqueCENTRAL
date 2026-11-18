@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=87bf063d"></script>
+<script src="assets/ui.js?v=4"></script>
+<script src="assets/annonce.js?v=6"></script>
+<script src="/api/announce.js" async></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Recadrer une image aux bonnes dimensions — ONIRIQUE</title>
+<meta name="description" content="Dépose une photo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : l’image est recadrée et centrée, prête à télécharger. Gratuit, sans compte, sans envoi du fichier.">
+<link rel="canonical" href="https://onirique.store/recadrer">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ONIRIQUE">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Recadrer une image aux bonnes dimensions — ONIRIQUE">
+<meta property="og:description" content="Dépose une photo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : l’image est recadrée et centrée, prête à télécharger. Gratuit, sans compte, sans envoi du fichier.">
+<meta property="og:url" content="https://onirique.store/recadrer">
+<meta property="og:image" content="https://onirique.store/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Recadrer une image","url":"https://onirique.store/recadrer","description":"Dépose une photo, choisis les dimensions (cover 3000 × 3000, story 1080 × 1920, miniature YouTube…) : l’image est recadrée et centrée, prête à télécharger. Gratuit, sans compte, sans envoi du fichier.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Recadrer une image","item":"https://onirique.store/recadrer"}]}]}</script>
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
+<style>
+.opt { display: grid; gap: 10px; }
+.chips.wide { border-radius: 22px; }
+.chips.wide button { text-transform: none; letter-spacing: .02em; }
+.dims { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 10px; }
+.swap { height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.42); color: var(--mist); font: 500 18px/1 var(--f-body); cursor: pointer; }
+.swap:hover { border-color: var(--ember); }
+.frame { display: grid; justify-items: center; gap: 14px; background: repeating-conic-gradient(rgba(255,255,255,.04) 0 25%, transparent 0 50%) 0 0 / 20px 20px; }
+.frame canvas { display: block; max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 0 0 1px var(--line), 0 20px 50px -20px rgba(0,0,0,.9); cursor: grab; touch-action: none; }
+.frame canvas.dragging { cursor: grabbing; }
+.tools-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; width: 100%; }
+.tools-row label { display: flex; align-items: center; gap: 10px; min-width: min(100%, 260px); }
+.tools-row input[type="range"] { flex: 1; }
+.tools-row output { min-width: 5ch; color: var(--mist); font: 500 12px/1 var(--f-mono); }
+.tools-row .go { padding: 10px 16px; font-size: 13px; }
+#bg-box input[type="color"] { width: 100%; height: 48px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.42); }
+</style>
+<link rel="stylesheet" href="/assets/da.css?v=9">
+<script src="/assets/accent.js?v=1"></script>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Recadrer une <em>image</em></h1>
+    <p class="lede">Une photo pour une cover, une story ou une miniature : dépose-la, choisis les dimensions, elle est recadrée et centrée. Glisse-la pour la placer autrement, puis télécharge.</p>
+
+    <button class="drop" id="drop" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v16h16M2 6h16v16"/></svg>
+      <strong>Dépose une image ici</strong>
+      <span>ou clique pour la choisir · JPG, PNG, WEBP, GIF, AVIF</span>
+    </button>
+    <input id="file" type="file" accept="image/*" hidden>
+    <p class="hint">Sans compte. Le recadrage se fait dans ton navigateur : ton image n’est envoyée nulle part.</p>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <article class="card" id="panel" hidden>
+    <p class="head"><b id="r-file"></b><span id="r-info"></span></p>
+    <div class="opt">
+      <span class="label">Format</span>
+      <div><div class="chips wide" id="formats"></div></div>
+      <div class="dims">
+        <label>Largeur (px)<input id="w" type="number" min="1" max="16384" inputmode="numeric"></label>
+        <button class="swap" id="swap" type="button" title="Inverser largeur et hauteur" aria-label="Inverser largeur et hauteur">⇄</button>
+        <label>Hauteur (px)<input id="h" type="number" min="1" max="16384" inputmode="numeric"></label>
+      </div>
+      <div class="fields">
+        <label>Cadrage<select id="mode"><option value="fill">Remplir le cadre (les bords sont coupés)</option><option value="fit">Image entière (bandes de couleur)</option></select></label>
+        <label id="bg-box" hidden>Couleur des bandes<input id="bg" type="color" value="#000000"></label>
+      </div>
+    </div>
+    <div class="frame">
+      <canvas id="preview" aria-label="Aperçu du recadrage : glisse l’image pour la placer"></canvas>
+      <div class="tools-row">
+        <label>Zoom<input id="zoom" type="range" min="100" max="400" value="100"><output id="zoom-v">100 %</output></label>
+        <button class="go ghost" id="center" type="button">Centrer</button>
+      </div>
+      <p class="muted" id="guide">Glisse l’image pour la placer : elle s’aimante au centre. Molette : zoom.</p>
+    </div>
+    <div class="opt">
+      <span class="label">Fichier</span>
+      <div><div class="chips" id="out-format"><button type="button" data-v="jpg" aria-pressed="true">JPG</button><button type="button" data-v="png" aria-pressed="false">PNG</button><button type="button" data-v="webp" aria-pressed="false">WEBP</button></div></div>
+    </div>
+    <div class="dim split">
+      <p id="r-out"></p>
+      <button class="go" id="go" type="button">Télécharger</button>
+    </div>
+  </article>
+
+  <section class="text">
+    <h2>Les dimensions à connaître</h2>
+    <p><strong>Cover</strong> (Spotify, Apple Music, Deezer, distributeurs) : un carré de 3000 × 3000 pixels. <strong>Post Instagram</strong> : 1080 × 1350 en portrait, le format qui prend le plus de place dans le fil. <strong>Story, reel, TikTok et canvas Spotify</strong> : 1080 × 1920. <strong>Miniature YouTube</strong> : 1280 × 720. <strong>Bannière YouTube</strong> : 2560 × 1440, dont seul le centre (1546 × 423) se voit partout. <strong>Bannière X</strong> : 1500 × 500.</p>
+    <h2>Questions fréquentes</h2>
+    <details><summary>Remplir le cadre ou image entière ?</summary>
+      <p><strong>Remplir le cadre</strong> coupe ce qui dépasse pour qu’il n’y ait aucun bord vide : c’est ce qu’on veut pour une cover ou une story. <strong>Image entière</strong> garde toute la photo et ajoute des bandes de la couleur choisie là où elle ne remplit pas le cadre.</p></details>
+    <details><summary>Comment centrer un visage ou un objet ?</summary>
+      <p>Glisse l’image dans l’aperçu : elle se recale d’elle-même sur le centre quand tu t’en approches, et un trait le montre. Le zoom resserre le cadre ; « Centrer » remet tout au milieu.</p></details>
+    <details><summary>Mon image est trop petite pour la taille choisie</summary>
+      <p>Elle est agrandie, et la page le signale : une image agrandie perd en netteté. Pour une cover, pars d’une image d’au moins 3000 pixels de côté.</p></details>
+    <details><summary>Et pour ajouter du texte, un logo, retoucher ?</summary>
+      <p><a href="photo">ONIRIQUE PHOTO</a> est un éditeur complet avec calques, texte, pinceau et réglages.</p></details>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+// Le cadrage : l'image est mise à l'échelle pour remplir (ou contenir) le cadre de W × H pixels, multipliée par le
+// zoom, et le point (cx, cy) de l'image tombe au centre du cadre. L'aperçu et le fichier sont dessinés par paint().
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const MAX_PX = 16777216; // la plus grande surface de canvas que Safari accepte
+const MIME = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" };
+const SNAP = 10; // distance (pixels d'écran) à laquelle l'image s'aimante au centre
+const FORMATS = [["Cover", 3000, 3000], ["Post Instagram", 1080, 1350], ["Story, TikTok", 1080, 1920], ["Miniature YouTube", 1280, 720], ["Bannière YouTube", 2560, 1440], ["Bannière X", 1500, 500]];
+let file = null, img = null, W = 3000, H = 3000, z = 1, cx = 0, cy = 0, format = "jpg", snapped = { x: false, y: false }, drag = null;
+
+const fit = () => $("mode").value === "fit";
+const scale = () => (fit() ? Math.min : Math.max)(W / img.width, H / img.height) * z;
+
+/** Garde le cadre dans l'image : sur un axe où l'image est plus petite que le cadre, elle reste centrée. */
+function clamp() {
+  const s = scale(), hw = W / s / 2, hh = H / s / 2;
+  cx = hw * 2 >= img.width ? img.width / 2 : Math.min(img.width - hw, Math.max(hw, cx));
+  cy = hh * 2 >= img.height ? img.height / 2 : Math.min(img.height - hh, Math.max(hh, cy));
+}
+
+function paint(c, outW, outH) {
+  const s = scale() * outW / W;
+  c.clearRect(0, 0, outW, outH);
+  if (fit() || format === "jpg") { c.fillStyle = fit() ? $("bg").value : "#fff"; c.fillRect(0, 0, outW, outH); }
+  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = "high";
+  c.drawImage(img, outW / 2 - cx * s, outH / 2 - cy * s, img.width * s, img.height * s);
+}
+
+function draw() {
+  if (!img) return;
+  const view = $("preview"), frame = getComputedStyle(view.parentElement), dpr = devicePixelRatio || 1;
+  const box = view.parentElement.clientWidth - parseFloat(frame.paddingLeft) - parseFloat(frame.paddingRight);
+  const maxH = Math.min(innerHeight * .6, 620);
+  const k = Math.min(box / W, maxH / H);
+  const vw = Math.max(1, Math.round(W * k)), vh = Math.max(1, Math.round(H * k));
+  view.style.width = vw + "px"; // la hauteur suit les proportions du canvas (height: auto)
+  if (view.width !== Math.round(vw * dpr) || view.height !== Math.round(vh * dpr)) { view.width = Math.round(vw * dpr); view.height = Math.round(vh * dpr); }
+  const c = view.getContext("2d");
+  paint(c, view.width, view.height);
+  // Les tiers, et le centre en couleur quand l'image y est aimantée pendant qu'on la glisse
+  c.lineWidth = dpr;
+  c.strokeStyle = "rgba(255,255,255,.28)";
+  c.beginPath();
+  for (const t of [1, 2]) { c.moveTo(view.width * t / 3, 0); c.lineTo(view.width * t / 3, view.height); c.moveTo(0, view.height * t / 3); c.lineTo(view.width, view.height * t / 3); }
+  c.stroke();
+  if (drag && (snapped.x || snapped.y)) {
+    c.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--ember").trim() || "#e5384a";
+    c.lineWidth = 2 * dpr;
+    c.beginPath();
+    if (snapped.x) { c.moveTo(view.width / 2, 0); c.lineTo(view.width / 2, view.height); }
+    if (snapped.y) { c.moveTo(0, view.height / 2); c.lineTo(view.width, view.height / 2); }
+    c.stroke();
+  }
+  describe();
+}
+
+function describe() {
+  const ok = W * H <= MAX_PX;
+  $("go").disabled = !ok;
+  const up = scale();
+  $("r-out").textContent = !ok ? "Trop grand : 16,7 millions de pixels au plus (par exemple 4096 × 4096)."
+    : W + " × " + H + " px, " + format.toUpperCase() + (up > 1.05 ? " · image agrandie ×" + A.decimal(up) + " : elle sera moins nette" : "");
+  $("r-out").className = up > 1.05 && ok ? "warn" : "";
+  document.querySelectorAll("#formats button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === W + "x" + H || (b.dataset.v === "" && !FORMATS.some(([, w, h]) => w === W && h === H)))));
+}
+
+function setSize(w, h) {
+  W = Math.min(16384, Math.max(1, Math.round(w) || 1));
+  H = Math.min(16384, Math.max(1, Math.round(h) || 1));
+  $("w").value = W; $("h").value = H;
+  clamp(); draw();
+}
+function center() { cx = img.width / 2; cy = img.height / 2; clamp(); draw(); }
+function setZoom(v) { z = Math.min(4, Math.max(1, v)); $("zoom").value = Math.round(z * 100); $("zoom-v").textContent = Math.round(z * 100) + " %"; clamp(); draw(); }
+
+FORMATS.forEach(([name, w, h]) => {
+  const b = Object.assign(document.createElement("button"), { type: "button", textContent: name + " · " + w + " × " + h });
+  b.dataset.v = w + "x" + h;
+  b.onclick = () => setSize(w, h);
+  $("formats").append(b);
+});
+const custom = Object.assign(document.createElement("button"), { type: "button", textContent: "Sur mesure" });
+custom.dataset.v = "";
+custom.onclick = () => { $("w").focus(); $("w").select(); };
+$("formats").append(custom);
+
+$("w").oninput = () => { if (+$("w").value >= 1) setSize(+$("w").value, H); };
+$("h").oninput = () => { if (+$("h").value >= 1) setSize(W, +$("h").value); };
+$("w").onchange = $("h").onchange = () => setSize(+$("w").value, +$("h").value);
+$("swap").onclick = () => setSize(H, W);
+$("mode").onchange = () => { $("bg-box").hidden = !fit(); clamp(); draw(); };
+$("bg").oninput = draw;
+$("zoom").oninput = () => setZoom($("zoom").value / 100);
+$("center").onclick = center;
+document.querySelectorAll("#out-format button").forEach((button) => {
+  button.onclick = () => {
+    format = button.dataset.v;
+    document.querySelectorAll("#out-format button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+    draw();
+  };
+});
+
+// Glisser l'image ; près du centre, elle s'y aimante
+const view = $("preview");
+view.addEventListener("pointerdown", (e) => {
+  if (!img) return;
+  view.setPointerCapture(e.pointerId);
+  drag = { x: e.clientX, y: e.clientY, cx, cy };
+  view.classList.add("dragging");
+});
+view.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const s = scale() * view.clientWidth / W; // pixels d'écran par pixel de l'image
+  cx = drag.cx - (e.clientX - drag.x) / s;
+  cy = drag.cy - (e.clientY - drag.y) / s;
+  clamp();
+  // Seulement sur un axe où l'image peut bouger : sinon elle est déjà centrée et le trait ne dirait rien.
+  const free = { x: W / scale() < img.width - .5, y: H / scale() < img.height - .5 };
+  snapped = { x: free.x && Math.abs(cx - img.width / 2) * s < SNAP, y: free.y && Math.abs(cy - img.height / 2) * s < SNAP };
+  if (snapped.x) cx = img.width / 2;
+  if (snapped.y) cy = img.height / 2;
+  clamp();
+  draw();
+});
+const release = () => { if (!drag) return; drag = null; view.classList.remove("dragging"); draw(); };
+view.addEventListener("pointerup", release);
+view.addEventListener("pointercancel", release);
+view.addEventListener("wheel", (e) => { if (!img) return; e.preventDefault(); setZoom(z * Math.exp(-e.deltaY * .0015)); }, { passive: false });
+view.addEventListener("dblclick", center);
+addEventListener("resize", draw);
+
+async function open(chosen) {
+  $("error").textContent = "";
+  const image = new Image(), url = URL.createObjectURL(chosen);
+  image.src = url;
+  try {
+    await image.decode();
+    if (!image.naturalWidth) throw new Error();
+    // Une très grande photo est ramenée sous la limite des canvas, sans perte visible au format de sortie.
+    const s = Math.min(1, Math.sqrt(MAX_PX / (image.naturalWidth * image.naturalHeight)));
+    const c = Object.assign(document.createElement("canvas"), { width: Math.round(image.naturalWidth * s), height: Math.round(image.naturalHeight * s) });
+    c.getContext("2d").drawImage(image, 0, 0, c.width, c.height);
+    file = chosen; img = c;
+    $("r-file").textContent = file.name;
+    $("r-info").textContent = image.naturalWidth + " × " + image.naturalHeight + " px";
+    $("panel").hidden = false;
+    A.busy($("drop"), false, "Choisir une autre image");
+    z = 1; $("zoom").value = 100; $("zoom-v").textContent = "100 %";
+    setSize(W, H); center();
+  } catch {
+    $("error").textContent = "Ce navigateur ne sait pas lire cette image.";
+  } finally { URL.revokeObjectURL(url); }
+}
+
+$("go").onclick = async () => {
+  if (!img) return;
+  $("error").textContent = "";
+  const out = Object.assign(document.createElement("canvas"), { width: W, height: H });
+  paint(out.getContext("2d"), W, H);
+  const blob = await new Promise((done) => out.toBlob(done, MIME[format], .92));
+  // Safari ne sait pas écrire le WEBP : il rendrait un PNG sous un faux nom.
+  if (!blob || blob.type !== MIME[format]) { $("error").textContent = "Ce navigateur ne sait pas écrire du " + format.toUpperCase() + " : choisis un autre format."; return; }
+  A.download(blob, A.baseName(file) + "-" + W + "x" + H + "." + format);
+};
+
+$("w").value = W; $("h").value = H;
+A.dropZone($("drop"), $("file"), (chosen) => {
+  if (!chosen.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif|bmp|avif|svg)$/i.test(chosen.name)) { $("error").textContent = "Ce fichier n’est pas une image."; return; }
+  open(chosen);
+});
+</script>
+<script src="assets/tools-menu.js?v=19"></script>
+<script src="assets/account.js?v=19"></script>
+<script src="assets/site-nav.js?v=25"></script>
+</html>

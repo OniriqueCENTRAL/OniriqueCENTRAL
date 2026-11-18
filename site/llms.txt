@@ -25,6 +25,7 @@
 - [Accordeur](https://onirique.store/accordeur) : note chantée ou jouée au micro et écart en cents.
 - [Tessiture](https://onirique.store/tessiture) : étendue de la voix et zone de confort, au micro.
 - [Convertisseur audio et image](https://onirique.store/convertisseur) : conversion en WAV ou en MP3, et des images en JPG, PNG ou WEBP, dans le navigateur.
+- [Recadrer une image](https://onirique.store/recadrer) : une photo recadrée et centrée aux dimensions choisies (cover 3000 × 3000, story, miniature YouTube…), dans le navigateur.
 - [ONIRIQUE PHOTO](https://onirique.store/photo) : éditeur d’images avec calques dans le navigateur (recadrage aux formats cover, story, miniature, texte, pinceau, réglages, export PNG, JPG ou WEBP).
 - [Découpe et fondu](https://onirique.store/decoupe) : garde un passage d'un morceau, avec fondus, export WAV ou MP3.
 - [Transposer](https://onirique.store/transposition) : change la hauteur ou le tempo d'un morceau, l'un sans l'autre.
