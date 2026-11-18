@@ -32,6 +32,9 @@ window.OniriqueTools = [
     ["Envoi de fichiers", "envoi", "Des fichiers lourds (stems, sessions, clips) envoyés par un lien qui expire, jusqu’à 10 Go, avec mot de passe si tu veux."],
     ["Downloader", "downloader", "Un lien YouTube ou TikTok en MP3, en WAV ou en vidéo MP4 HD, au nom de la vidéo ; option PROD avec BPM et tonalité."],
   ]],
+  ["Image", [
+    ["ONIRIQUE PHOTO", "photo", "Un éditeur d’images avec calques : recadrage aux formats cover, story et miniature, texte, pinceau, réglages, export."],
+  ]],
   ["Sortie", [
     ["Calculateur revenus streaming", "revenus-streaming", "Une fourchette de revenus pour un nombre d'écoutes."],
     ["Partage des droits", "partage", "Qui touche quoi sur un titre, dans une feuille à signer."],

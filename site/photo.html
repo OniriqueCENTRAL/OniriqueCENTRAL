@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=87bf063d"></script>
+<script src="assets/ui.js?v=4"></script>
+<script src="assets/annonce.js?v=6"></script>
+<script src="/api/announce.js" async></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE PHOTO, éditeur photo en ligne gratuit — ONIRIQUE</title>
+<meta name="description" content="Retouche tes covers, miniatures et visuels dans ton navigateur : calques, recadrage aux formats Spotify, Instagram, TikTok et YouTube, texte, pinceau, réglages, export PNG, JPG ou WEBP. Gratuit, sans compte, sans envoi du fichier.">
+<link rel="canonical" href="https://onirique.store/photo">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ONIRIQUE">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="ONIRIQUE PHOTO, éditeur photo en ligne gratuit — ONIRIQUE">
+<meta property="og:description" content="Retouche tes covers, miniatures et visuels dans ton navigateur : calques, recadrage aux formats Spotify, Instagram, TikTok et YouTube, texte, pinceau, réglages, export PNG, JPG ou WEBP. Gratuit, sans compte, sans envoi du fichier.">
+<meta property="og:url" content="https://onirique.store/photo">
+<meta property="og:image" content="https://onirique.store/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"ONIRIQUE PHOTO","url":"https://onirique.store/photo","description":"Retouche tes covers, miniatures et visuels dans ton navigateur : calques, recadrage aux formats Spotify, Instagram, TikTok et YouTube, texte, pinceau, réglages, export PNG, JPG ou WEBP. Gratuit, sans compte, sans envoi du fichier.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"ONIRIQUE PHOTO","item":"https://onirique.store/photo"}]}]}</script>
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
+<style>
+main.ps-main { padding: 0 12px 24px; }
+.ps-hero { padding-block: 18px 14px; }
+.ps-hero h1 { margin: 4px 0 6px; font-size: clamp(24px, 3.6vw, 36px); }
+.ps-hero .lede { margin-block: 0; font-size: 15px; }
+
+/* L'éditeur : barre de menus, options de l'outil, outils | image | panneaux, barre d'état */
+.ps { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: clamp(540px, calc(100dvh - 96px), 1100px); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #0f0c0d; font: 400 13px/1.3 var(--f-body); color: var(--mist); user-select: none; -webkit-user-select: none; }
+.ps button { font: inherit; color: inherit; }
+.ps select, .ps input[type="number"], .ps input[type="text"], .ps textarea, .ps-dlg select, .ps-dlg input[type="number"], .ps-dlg input[type="text"] { padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: #0a0809; color: var(--mist); font: 400 13px/1.3 var(--f-body); }
+.ps input[type="number"] { width: 72px; }
+.ps input[type="range"], .ps-dlg input[type="range"] { accent-color: var(--ember); }
+.ps svg, .ps-drop svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+.ps-menubar { display: flex; align-items: center; gap: 2px; padding: 4px 8px; border-bottom: 1px solid var(--line); background: #151012; overflow-x: auto; }
+.ps-menubar b { margin-right: 10px; font: 600 12px/1 var(--f-mono); letter-spacing: .12em; color: var(--ember-text); white-space: nowrap; }
+.ps-menubar button { padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: var(--soft); cursor: pointer; white-space: nowrap; }
+.ps-menubar button:hover, .ps-menubar button[aria-expanded="true"] { background: rgba(var(--acc),.18); color: var(--mist); }
+.ps-drop { position: fixed; z-index: 90; min-width: 250px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--glass-deep); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); font: 400 13px/1.3 var(--f-body); }
+.ps-drop button { display: flex; justify-content: space-between; gap: 28px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--mist); font: inherit; text-align: left; cursor: pointer; }
+.ps-drop button:hover, .ps-drop button:focus-visible { background: rgba(var(--acc),.2); outline: none; }
+.ps-drop kbd { color: var(--muted); font: 400 11px/1.6 var(--f-mono); }
+.ps-drop hr { margin: 4px 8px; border: 0; border-top: 1px solid var(--line); }
+
+.ps-options { display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: #120e10; overflow-x: auto; white-space: nowrap; }
+.ps-options > b { font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.ps-options label { display: inline-flex; align-items: center; gap: 8px; color: var(--haze); }
+.ps-options input[type="range"] { width: 110px; }
+.ps-options output, .ps-options .info { min-width: 3ch; color: var(--mist); font: 400 12px/1 var(--f-mono); }
+.ps-options textarea { width: 220px; height: 30px; resize: none; }
+.ps-options input[type="color"] { width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
+.ps-btn { padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.04); cursor: pointer; white-space: nowrap; }
+.ps-btn:hover { border-color: rgba(var(--acc-hi),.5); }
+.ps-btn.on { border-color: rgba(var(--acc-hi),.55); background: var(--lit); color: #fff; }
+
+.ps-body { display: grid; grid-template-columns: 48px minmax(0, 1fr) 264px; min-height: 0; }
+.ps-tools { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-right: 1px solid var(--line); background: #120e10; overflow-y: auto; }
+.ps-tools .t { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 0; border-radius: 9px; background: none; color: var(--haze); cursor: pointer; }
+.ps-tools .t:hover { color: var(--mist); background: rgba(255,255,255,.05); }
+.ps-tools .t[aria-pressed="true"] { background: rgba(var(--acc),.24); color: var(--mist); box-shadow: inset 0 0 0 1px rgba(var(--acc-hi),.5); }
+.ps-colors { position: relative; flex: none; width: 38px; height: 46px; margin-top: 10px; }
+.ps-sw { position: absolute; width: 24px; height: 24px; border: 2px solid var(--mist); border-radius: 6px; box-shadow: 0 0 0 1px #000; cursor: pointer; overflow: hidden; }
+.ps-sw input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ps-sw.fg { left: 2px; top: 2px; z-index: 1; }
+.ps-sw.bg { left: 12px; top: 12px; }
+.ps-colors .swap { position: absolute; left: 0; bottom: 0; padding: 0; border: 0; background: none; color: var(--haze); font: 400 11px/1 var(--f-mono); cursor: pointer; }
+
+.ps-stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #1c1618; }
+.ps-stage canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+.ps-stage.over::after { content: ""; position: absolute; inset: 10px; border: 2px dashed var(--ember); border-radius: 14px; background: rgba(var(--acc),.08); pointer-events: none; }
+.ps-start { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 20px; text-align: center; overflow-y: auto; }
+.ps-start strong { font: 700 clamp(16px, 2.4vw, 20px)/1.3 var(--f-display); }
+.ps-start p { margin: 0; color: var(--haze); }
+.ps-start .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.ps-start .chips { justify-content: center; max-width: 620px; border-radius: 22px; }
+.ps-start .chips button { text-transform: none; letter-spacing: .02em; }
+
+.ps-panels { display: grid; grid-template-rows: minmax(110px, 32%) minmax(0, 1fr); min-height: 0; border-left: 1px solid var(--line); background: #120e10; }
+.pn { display: flex; flex-direction: column; min-height: 0; }
+.pn + .pn { border-top: 1px solid var(--line); }
+.pn h2 { margin: 0; padding: 9px 12px; border-bottom: 1px solid var(--line); font: 500 10px/1.4 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+.pn ol { flex: 1; margin: 0; padding: 4px; overflow-y: auto; list-style: none; }
+#history button { width: 100%; padding: 6px 10px; border: 0; border-radius: 7px; background: none; color: var(--soft); text-align: left; cursor: pointer; }
+#history button:hover { background: rgba(255,255,255,.05); }
+#history .now { background: rgba(var(--acc),.18); color: var(--mist); }
+#history .future { opacity: .4; }
+.pn-row { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid var(--line); color: var(--haze); }
+.pn-row select { flex: 1; min-width: 0; }
+.pn-row input[type="range"] { width: 70px; }
+.pn-row output { min-width: 4ch; color: var(--mist); font: 400 11px/1 var(--f-mono); }
+#layers li { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
+#layers li:hover { background: rgba(255,255,255,.04); }
+#layers li.on { background: rgba(var(--acc),.2); }
+#layers .eye { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--mist); cursor: pointer; }
+#layers .eye[aria-pressed="false"] { opacity: .25; }
+#layers canvas { width: 38px; height: 38px; flex: none; border-radius: 4px; box-shadow: 0 0 0 1px var(--line); }
+#layers .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#layers .name input { width: 100%; }
+#layers .kind { color: var(--ember-text); font: 600 11px/1 var(--f-mono); }
+.pn-foot { display: flex; justify-content: flex-end; gap: 2px; padding: 6px; border-top: 1px solid var(--line); }
+.pn-foot button { display: grid; place-items: center; width: 32px; height: 30px; border: 0; border-radius: 7px; background: none; color: var(--haze); cursor: pointer; }
+.pn-foot button:hover { background: rgba(var(--acc),.18); color: var(--mist); }
+.pn-foot svg { width: 18px; height: 18px; }
+
+.ps-status { display: flex; align-items: center; gap: 16px; padding: 5px 12px; border-top: 1px solid var(--line); background: #120e10; color: var(--haze); font: 400 11px/1.4 var(--f-mono); white-space: nowrap; overflow: hidden; }
+.ps-status button { padding: 2px 8px; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
+.ps-status #msg { margin-left: auto; overflow: hidden; text-overflow: ellipsis; color: var(--ember-text); }
+
+.ps-dlg { width: min(440px, calc(100vw - 32px)); padding: 22px; border: 1px solid var(--line); border-radius: 22px; background: var(--glass-deep); color: var(--mist); font: 400 14px/1.4 var(--f-body); }
+.ps-dlg::backdrop { background: rgba(5,3,4,.7); }
+.ps-dlg form { display: grid; gap: 12px; }
+.ps-dlg h2 { margin: 0 0 4px; font: 700 18px/1.3 var(--f-display); }
+.ps-dlg label { display: grid; grid-template-columns: 130px minmax(0, 1fr) 54px; align-items: center; gap: 10px; color: var(--soft); }
+.ps-dlg label.check { grid-template-columns: 130px auto 1fr; }
+.ps-dlg output, .ps-dlg label > span:last-child { color: var(--haze); font: 400 12px/1 var(--f-mono); }
+.ps-dlg .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.ps-dlg .ps-btn { padding: 9px 16px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--mist); cursor: pointer; }
+.ps-dlg .ps-btn.on { background: var(--lit); color: #fff; }
+
+.ps-text { max-width: 980px; margin-inline: auto; padding-inline: clamp(4px, 3vw, 28px); }
+.ps-text table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; font-size: 15px; }
+.ps-text td { padding: 6px 8px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.ps-text td:first-child { width: 40%; font-family: var(--f-mono); font-size: 13px; color: var(--ember-text); }
+
+@media (max-width: 860px) {
+  .ps { height: auto; grid-template-rows: auto auto auto auto; }
+  .ps-body { grid-template-columns: 46px minmax(0, 1fr); }
+  .ps-stage { height: 62vh; min-height: 340px; }
+  .ps-panels { grid-column: 1 / -1; grid-template-rows: auto auto; border-left: 0; border-top: 1px solid var(--line); }
+  .pn ol { max-height: 210px; }
+  .ps-status #pos { display: none; }
+}
+</style>
+<link rel="stylesheet" href="/assets/da.css?v=9">
+<script src="/assets/accent.js?v=1"></script>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="ps-main" id="contenu">
+  <section class="hero ps-hero">
+    <p class="eyebrow">Outil gratuit · sans compte</p>
+    <h1>ONIRIQUE <em>PHOTO</em></h1>
+    <p class="lede">Recadre, retouche et monte tes covers, miniatures et stories avec des calques, sans quitter le site. Ton image reste dans ton navigateur.</p>
+  </section>
+
+  <div class="ps" id="ps">
+    <nav class="ps-menubar" id="menubar" aria-label="Menus de l’éditeur"><b>PHOTO</b></nav>
+    <div class="ps-options" id="options"></div>
+    <div class="ps-body">
+      <div class="ps-tools" id="tools" role="toolbar" aria-label="Outils" aria-orientation="vertical">
+        <div class="ps-colors">
+          <label class="ps-sw fg" id="fg-sw" title="Couleur de premier plan"><input type="color" id="fg" aria-label="Couleur de premier plan"></label>
+          <label class="ps-sw bg" id="bg-sw" title="Couleur d’arrière-plan"><input type="color" id="bg" aria-label="Couleur d’arrière-plan"></label>
+          <button class="swap" id="swap" type="button" title="Inverser les couleurs (X)">⇄</button>
+        </div>
+      </div>
+      <div class="ps-stage" id="stage">
+        <canvas id="view"></canvas>
+        <div class="ps-start" id="start">
+          <strong>Glisse une image ici</strong>
+          <p>ou colle-la avec Ctrl + V. JPG, PNG, WEBP, GIF, AVIF.</p>
+          <div class="row"><button class="go" id="open-btn" type="button">Ouvrir une image</button><button class="go ghost" id="new-btn" type="button">Nouveau projet</button></div>
+          <p class="eyebrow">Ou pars d’un format vide</p>
+          <div class="chips" id="formats"></div>
+        </div>
+      </div>
+      <aside class="ps-panels">
+        <section class="pn" aria-label="Historique"><h2>Historique</h2><ol id="history"></ol></section>
+        <section class="pn" aria-label="Calques">
+          <h2>Calques</h2>
+          <div class="pn-row">
+            <select id="blend" aria-label="Mode de fusion"></select>
+            <input id="opacity" type="range" min="0" max="100" value="100" aria-label="Opacité du calque"><output id="opacity-v">100 %</output>
+          </div>
+          <ol id="layers"></ol>
+          <div class="pn-foot" id="layer-buttons"></div>
+        </section>
+      </aside>
+    </div>
+    <div class="ps-status">
+      <button type="button" id="zoom-out" title="Zoom arrière (Ctrl + -)">−</button><span id="zoom">100 %</span><button type="button" id="zoom-in" title="Zoom avant (Ctrl + +)">+</button><button type="button" id="zoom-fit">Ajuster</button>
+      <span id="size"></span><span id="pos"></span><span id="msg" role="status"></span>
+    </div>
+  </div>
+  <input id="file" type="file" accept="image/*" multiple hidden>
+  <input id="place" type="file" accept="image/*" multiple hidden>
+  <dialog class="ps-dlg" id="dlg"></dialog>
+
+  <section class="text ps-text">
+    <h2>Un éditeur photo dans ton navigateur</h2>
+    <p>ONIRIQUE PHOTO marche comme les logiciels de retouche : une barre de menus (Fichier, Édition, Image, Calque, Sélection, Filtre, Affichage), les outils à gauche, leurs réglages en haut, l’historique et les calques à droite. Ouvre une photo, place ton logo ou une autre image par-dessus, ajoute ton titre, recadre au format voulu et exporte.</p>
+    <p>Le recadrage connaît les formats d’un artiste : cover 3000 × 3000 pour Spotify et Apple Music, post Instagram 1080 × 1350, story, reel et TikTok 1080 × 1920, miniature YouTube 1280 × 720, bannières YouTube et X. Choisis-en un, place le cadre, valide : l’image sort à la bonne taille.</p>
+    <h2>Les raccourcis</h2>
+    <table>
+      <tr><td>V · M · C · I</td><td>Déplacer, sélection, recadrage, pipette</td></tr>
+      <tr><td>B · E · G · T · U</td><td>Pinceau, gomme, pot de peinture, texte, forme</td></tr>
+      <tr><td>H ou Espace · Z · molette</td><td>Déplacer la vue, zoom</td></tr>
+      <tr><td>[ et ]</td><td>Taille du pinceau</td></tr>
+      <tr><td>X · D</td><td>Inverser les couleurs, noir et blanc par défaut</td></tr>
+      <tr><td>Ctrl + Z · Ctrl + Y</td><td>Annuler, rétablir</td></tr>
+      <tr><td>Ctrl + J · Ctrl + E</td><td>Dupliquer le calque, fusionner avec celui du dessous</td></tr>
+      <tr><td>Ctrl + A · Ctrl + D · Suppr</td><td>Tout sélectionner, désélectionner, effacer la sélection</td></tr>
+      <tr><td>Entrée · Échap</td><td>Valider ou annuler le recadrage</td></tr>
+      <tr><td>Ctrl + S</td><td>Exporter</td></tr>
+    </table>
+    <h2>Questions fréquentes</h2>
+    <details><summary>Mes images sont-elles envoyées quelque part ?</summary>
+      <p>Non. Tout se fait dans ton navigateur : rien n’est envoyé sur un serveur, ce qui permet d’y travailler la cover d’un son pas encore sorti.</p></details>
+    <details><summary>Quel format pour une cover ?</summary>
+      <p>Un carré de 3000 × 3000 pixels, en JPG ou en PNG, sans bordure ni texte trop petit. Choisis « Cover Spotify, Apple Music » dans le recadrage, puis exporte en JPG qualité 92 % ou plus.</p></details>
+    <details><summary>Le texte reste-t-il modifiable ?</summary>
+      <p>Oui : choisis l’outil Texte et sélectionne le calque pour changer le texte, la police, la taille ou la couleur. Il devient une image (pixellisé) quand on peint dessus, qu’on lui applique un filtre, qu’on le pivote ou qu’on le déforme.</p></details>
+    <details><summary>Puis-je ouvrir un fichier PSD ?</summary>
+      <p>Non : l’éditeur ouvre les images que lit ton navigateur (JPG, PNG, WEBP, GIF, AVIF, BMP, SVG) et exporte en PNG, JPG ou WEBP. Le projet n’est pas enregistré : exporte avant de fermer la page.</p></details>
+    <details><summary>Pour juste changer de format ?</summary>
+      <p>Le <a href="convertisseur">convertisseur</a> passe une image en JPG, PNG ou WEBP en deux clics.</p></details>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
+  </nav>
+</footer>
+
+<script>
+// ONIRIQUE PHOTO : un document (largeur, hauteur) fait de calques (un canvas chacun, à une position), composés
+// dans l'ordre avec leur opacité et leur mode de fusion. Chaque geste terminé ajoute un état à l'historique.
+// Un état garde les canvas des calques sans les copier : un geste qui modifie des pixels sur place passe d'abord
+// par writable(), qui donne au calque son propre canvas.
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) if (k.startsWith("aria-")) n.setAttribute(k, v); else n[k] = v;
+  n.append(...kids);
+  return n;
+};
+const svg = (inner) => `<svg viewBox="0 0 24 24" aria-hidden="true">${inner}</svg>`;
+const stage = $("stage"), view = $("view"), vc = view.getContext("2d");
+const flat = document.createElement("canvas"), fc = flat.getContext("2d");
+const scratch = document.createElement("canvas");
+const MAX_PX = 16777216; // la plus grande surface de canvas que Safari accepte
+const FILTERS = "filter" in CanvasRenderingContext2D.prototype;
+const MIME = { png: "image/png", jpg: "image/jpeg", webp: "image/webp" };
+
+let doc = null, zoom = 1, panX = 0, panY = 0;
+let tool = "move", fg = "#000000", bg = "#ffffff";
+let selection = null, crop = null, cropPreset = 0, ratio = 0;
+let action = null, pointer = null, spaceDown = false;
+const opts = { size: 30, opacity: 100, tolerance: 32, autoSelect: true, handles: true, shape: "rect", radius: 0, font: "Hanken Grotesk", fontSize: 120, bold: true };
+const states = []; let at = -1;
+
+const FORMATS = [
+  ["Cover Spotify, Apple Music", 3000, 3000],
+  ["Post Instagram", 1080, 1350],
+  ["Story, Reel, TikTok", 1080, 1920],
+  ["Miniature YouTube", 1280, 720],
+  ["Bannière YouTube", 2560, 1440],
+  ["Bannière X", 1500, 500],
+];
+const CROPS = [["Libre", 0], ["Proportions d’origine", "orig"], ["Carré 1:1", 1], ["Portrait 4:5", 4 / 5], ["Vertical 9:16", 9 / 16], ["Paysage 16:9", 16 / 9],
+  ...FORMATS.map(([name, w, h]) => [name + " · " + w + " × " + h, w / h, w, h])];
+const BLENDS = [["source-over", "Normal"], ["multiply", "Produit"], ["screen", "Écran"], ["overlay", "Incrustation"], ["darken", "Obscurcir"], ["lighten", "Éclaircir"],
+  ["color-burn", "Densité couleur +"], ["color-dodge", "Densité couleur -"], ["soft-light", "Lumière tamisée"], ["hard-light", "Lumière crue"], ["difference", "Différence"],
+  ["exclusion", "Exclusion"], ["hue", "Teinte"], ["saturation", "Saturation"], ["color", "Couleur"], ["luminosity", "Luminosité"]];
+const FONTS = ["Hanken Grotesk", "Unbounded", "Grenze Gotisch", "JetBrains Mono", "Arial", "Arial Black", "Impact", "Georgia", "Times New Roman", "Courier New"];
+
+// ——— Canvas et calques ———
+const canvasOf = (w, h) => { const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; };
+function copyOf(src, w = src.width, h = src.height) {
+  const c = canvasOf(w, h), x = c.getContext("2d");
+  x.imageSmoothingQuality = "high";
+  x.drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+function turned(src, cw) {
+  const c = canvasOf(src.height, src.width), x = c.getContext("2d");
+  x.translate(cw ? c.width : 0, cw ? 0 : c.height);
+  x.rotate(cw ? Math.PI / 2 : -Math.PI / 2);
+  x.drawImage(src, 0, 0);
+  return c;
+}
+function flipped(src, horizontal) {
+  const c = canvasOf(src.width, src.height), x = c.getContext("2d");
+  x.translate(horizontal ? c.width : 0, horizontal ? 0 : c.height);
+  x.scale(horizontal ? -1 : 1, horizontal ? 1 : -1);
+  x.drawImage(src, 0, 0);
+  return c;
+}
+function filtered(src, filter, blur) {
+  const c = canvasOf(src.width, src.height), x = c.getContext("2d");
+  if (blur) x.drawImage(src, 0, 0); // sous le flou, l'image nette : les bords ne deviennent pas transparents
+  x.filter = filter;
+  x.drawImage(src, 0, 0);
+  return c;
+}
+const layer = (name, canvas, x = 0, y = 0, extra) => ({ name, canvas, x, y, visible: true, opacity: 1, blend: "source-over", ...extra });
+const cloneLayer = (l) => ({ ...l, text: l.text && { ...l.text } });
+const active = () => doc?.layers[doc.active];
+const boxOf = (l) => ({ x: l.x, y: l.y, w: l.dw ?? l.canvas.width, h: l.dh ?? l.canvas.height });
+const inside = (b, p) => b && p.x >= b.x && p.y >= b.y && p.x < b.x + b.w && p.y < b.y + b.h;
+const corners = (b) => [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]];
+function cornerAt(b, p) {
+  let best = -1, near = 10; // la poignée la plus proche, à 10 pixels d'écran au plus
+  corners(b).forEach(([x, y], i) => { const d = Math.max(Math.abs(x - p.x), Math.abs(y - p.y)) * zoom; if (d <= near) { near = d; best = i; } });
+  return best;
+}
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+function writable(l) { l.canvas = copyOf(l.canvas); return l.canvas.getContext("2d"); }
+function rasterize(l) { delete l.text; }
+
+const fontOf = (t) => (t.bold ? "700 " : "400 ") + t.size + "px \"" + t.font + "\"";
+const fontsTried = new Set();
+function paintText(l) {
+  const t = l.text, lines = t.str.split("\n"), font = fontOf(t);
+  const probe = scratch.getContext("2d");
+  probe.font = font;
+  const lh = Math.round(t.size * 1.2), pad = Math.ceil(t.size * .15);
+  l.canvas = canvasOf(Math.max(...lines.map((s) => probe.measureText(s).width)) + pad * 2, lh * lines.length + pad * 2);
+  const c = l.canvas.getContext("2d");
+  c.font = font; c.fillStyle = t.color; c.textBaseline = "middle";
+  lines.forEach((s, i) => c.fillText(s, pad, pad + i * lh + lh / 2));
+  if (!document.fonts.check(font) && !fontsTried.has(font)) {
+    fontsTried.add(font);
+    document.fonts.load(font).then(() => { if (l.text === t) { paintText(l); render(); refreshLayers(); } });
+  }
+}
+
+// ——— Historique ———
+function commit(label) {
+  states.length = at + 1;
+  states.push({ label, w: doc.w, h: doc.h, active: doc.active, layers: doc.layers.map(cloneLayer) });
+  if (states.length > 60) states.shift();
+  at = states.length - 1;
+  refresh();
+}
+function restore(i) {
+  if (i < 0 || i >= states.length) return;
+  const s = states[i];
+  at = i;
+  Object.assign(doc, { w: s.w, h: s.h, active: s.active, layers: s.layers.map(cloneLayer) });
+  if (tool === "crop") resetCrop();
+  refresh();
+}
+const undo = () => restore(at - 1), redo = () => restore(at + 1);
+
+// ——— Affichage ———
+const checker = (() => { const c = canvasOf(16, 16), x = c.getContext("2d"); x.fillStyle = "#d6d0d1"; x.fillRect(0, 0, 16, 16); x.fillStyle = "#f6f2f2"; x.fillRect(0, 0, 8, 8); x.fillRect(8, 8, 8, 8); return vc.createPattern(c, "repeat"); })();
+let queued = false;
+const render = () => { if (!queued) { queued = true; requestAnimationFrame(draw); } };
+
+function withStroke(l) {
+  if (scratch.width !== l.canvas.width || scratch.height !== l.canvas.height) { scratch.width = l.canvas.width; scratch.height = l.canvas.height; }
+  const c = scratch.getContext("2d");
+  c.clearRect(0, 0, scratch.width, scratch.height);
+  c.drawImage(l.canvas, 0, 0);
+  applyStroke(c, l);
+  return scratch;
+}
+function applyStroke(c, l) {
+  const st = action.stroke;
+  c.save();
+  if (selection) { c.beginPath(); c.rect(selection.x - l.x, selection.y - l.y, selection.w, selection.h); c.clip(); }
+  c.globalAlpha = st.alpha;
+  c.globalCompositeOperation = st.erase ? "destination-out" : "source-over";
+  c.drawImage(st.canvas, 0, 0);
+  c.restore();
+}
+function compose(c, live) {
+  c.clearRect(0, 0, doc.w, doc.h);
+  doc.layers.forEach((l, i) => {
+    if (!l.visible) return;
+    const b = boxOf(l);
+    const src = !live ? l.canvas : l.preview || (action?.stroke && i === doc.active ? withStroke(l) : l.canvas);
+    c.globalAlpha = l.opacity;
+    c.globalCompositeOperation = l.blend;
+    c.drawImage(src, b.x, b.y, b.w, b.h);
+  });
+  c.globalAlpha = 1;
+  c.globalCompositeOperation = "source-over";
+}
+function flatten(live = true) {
+  if (flat.width !== doc.w || flat.height !== doc.h) { flat.width = doc.w; flat.height = doc.h; }
+  compose(fc, live);
+  return flat;
+}
+const scr = (r) => ({ x: panX + r.x * zoom, y: panY + r.y * zoom, w: r.w * zoom, h: r.h * zoom });
+function handles(r) {
+  vc.fillStyle = "#fff"; vc.strokeStyle = "#e5384a"; vc.lineWidth = 1.5;
+  corners(r).forEach(([x, y]) => { vc.fillRect(x - 5, y - 5, 10, 10); vc.strokeRect(x - 5, y - 5, 10, 10); });
+}
+function ants(r) {
+  vc.lineWidth = 1;
+  vc.setLineDash([5, 5]); vc.strokeStyle = "#000"; vc.strokeRect(r.x + .5, r.y + .5, r.w, r.h);
+  vc.lineDashOffset = 5; vc.strokeStyle = "#fff"; vc.strokeRect(r.x + .5, r.y + .5, r.w, r.h);
+  vc.setLineDash([]); vc.lineDashOffset = 0;
+}
+function shapePath(c, r) {
+  c.beginPath();
+  if (opts.shape === "ellipse") c.ellipse(r.x + r.w / 2, r.y + r.h / 2, r.w / 2, r.h / 2, 0, 0, Math.PI * 2);
+  else if (opts.radius && c.roundRect) c.roundRect(r.x, r.y, r.w, r.h, Math.min(opts.radius * (r.zoom || 1), r.w / 2, r.h / 2));
+  else c.rect(r.x, r.y, r.w, r.h);
+}
+
+function draw() {
+  queued = false;
+  const dpr = devicePixelRatio || 1, W = stage.clientWidth, H = stage.clientHeight;
+  if (view.width !== Math.round(W * dpr) || view.height !== Math.round(H * dpr)) { view.width = Math.round(W * dpr); view.height = Math.round(H * dpr); }
+  vc.setTransform(dpr, 0, 0, dpr, 0, 0);
+  vc.clearRect(0, 0, W, H);
+  if (!doc) return;
+  const page = scr({ x: 0, y: 0, w: doc.w, h: doc.h });
+  vc.fillStyle = checker; vc.fillRect(page.x, page.y, page.w, page.h);
+  vc.imageSmoothingEnabled = zoom < 2; vc.imageSmoothingQuality = "high";
+  vc.drawImage(flatten(), page.x, page.y, page.w, page.h);
+  vc.strokeStyle = "rgba(0,0,0,.7)"; vc.lineWidth = 1; vc.strokeRect(page.x - .5, page.y - .5, page.w + 1, page.h + 1);
+  if (action?.shape) { const r = scr(action.shape); vc.fillStyle = fg; vc.globalAlpha = .8; shapePath(vc, { ...r, zoom }); vc.fill(); vc.globalAlpha = 1; }
+  if (selection) ants(scr(selection));
+  if (tool === "move" && opts.handles && active()) {
+    const r = scr(boxOf(active()));
+    vc.strokeStyle = "rgba(229,56,74,.9)"; vc.strokeRect(r.x + .5, r.y + .5, r.w, r.h);
+    handles(r);
+  }
+  if (tool === "crop" && crop) {
+    const r = scr(crop);
+    vc.fillStyle = "rgba(9,8,10,.66)"; vc.beginPath(); vc.rect(0, 0, W, H); vc.rect(r.x, r.y, r.w, r.h); vc.fill("evenodd");
+    vc.strokeStyle = "rgba(255,255,255,.35)"; vc.beginPath();
+    for (const k of [1, 2]) { vc.moveTo(r.x + r.w * k / 3, r.y); vc.lineTo(r.x + r.w * k / 3, r.y + r.h); vc.moveTo(r.x, r.y + r.h * k / 3); vc.lineTo(r.x + r.w, r.y + r.h * k / 3); }
+    vc.stroke();
+    vc.strokeStyle = "#fff"; vc.strokeRect(r.x + .5, r.y + .5, r.w, r.h);
+    handles(r);
+  }
+  if ((tool === "brush" || tool === "eraser") && pointer) {
+    const [x, y] = [panX + pointer.x * zoom, panY + pointer.y * zoom];
+    vc.beginPath(); vc.arc(x, y, Math.max(1, opts.size * zoom / 2), 0, Math.PI * 2);
+    vc.strokeStyle = "rgba(0,0,0,.8)"; vc.lineWidth = 2.5; vc.stroke();
+    vc.strokeStyle = "#fff"; vc.lineWidth = 1; vc.stroke();
+  }
+}
+
+function status() {
+  $("zoom").textContent = Math.round(zoom * 100) + " %";
+  $("size").textContent = doc ? doc.w + " × " + doc.h + " px" : "";
+  const p = pointer && doc ? Math.floor(pointer.x) + ", " + Math.floor(pointer.y) : "";
+  const s = selection ? "sélection " + selection.w + " × " + selection.h : "";
+  $("pos").textContent = [p, s].filter(Boolean).join(" · ");
+}
+let sayTimer = 0;
+function say(text) { $("msg").textContent = text; clearTimeout(sayTimer); sayTimer = setTimeout(() => { $("msg").textContent = ""; }, 5000); }
+let needFit = false;
+function fit() {
+  if (!doc) return;
+  const W = stage.clientWidth, H = stage.clientHeight;
+  needFit = W < 60 || H < 60; // zone pas encore affichée : on ajustera quand elle aura sa taille
+  if (needFit) return;
+  zoom = Math.max(.01, Math.min(1, (W - 48) / doc.w, (H - 48) / doc.h));
+  panX = (W - doc.w * zoom) / 2; panY = (H - doc.h * zoom) / 2;
+  status(); render();
+}
+function zoomAt(f, sx = stage.clientWidth / 2, sy = stage.clientHeight / 2) {
+  if (!doc) return;
+  const z = Math.min(32, Math.max(.01, zoom * f));
+  panX = sx - (sx - panX) * z / zoom; panY = sy - (sy - panY) * z / zoom; zoom = z;
+  status(); render();
+}
+function actualSize() { zoomAt(1 / zoom); fit2center(); }
+function fit2center() { panX = (stage.clientWidth - doc.w * zoom) / 2; panY = (stage.clientHeight - doc.h * zoom) / 2; render(); }
+
+// ——— Panneaux ———
+function thumb(l) {
+  const c = canvasOf(76, 76), x = c.getContext("2d"), s = Math.min(76 / l.canvas.width, 76 / l.canvas.height);
+  x.fillStyle = "#e9e4e5"; x.fillRect(0, 0, 76, 76);
+  x.drawImage(l.canvas, (76 - l.canvas.width * s) / 2, (76 - l.canvas.height * s) / 2, l.canvas.width * s, l.canvas.height * s);
+  return c;
+}
+function refreshLayers() {
+  const list = $("layers");
+  list.replaceChildren();
+  if (!doc) return;
+  doc.layers.forEach((l, i) => {
+    const eye = el("button", { type: "button", className: "eye", innerHTML: svg('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'), title: l.visible ? "Masquer" : "Afficher" });
+    eye.setAttribute("aria-pressed", String(l.visible));
+    eye.onclick = (e) => { e.stopPropagation(); l.visible = !l.visible; commit(l.visible ? "Afficher le calque" : "Masquer le calque"); };
+    const name = el("span", { className: "name", textContent: l.name, title: "Double-clic pour renommer" });
+    name.ondblclick = () => {
+      const input = el("input", { type: "text", value: l.name });
+      const done = () => { const v = input.value.trim(); if (v && v !== l.name) { l.name = v; commit("Renommer le calque"); } else refreshLayers(); };
+      input.onkeydown = (e) => { if (e.key === "Enter") input.blur(); if (e.key === "Escape") { input.value = l.name; input.blur(); } };
+      input.onblur = done;
+      name.replaceChildren(input); input.focus(); input.select();
+    };
+    const li = el("li", { className: i === doc.active ? "on" : "" }, eye, thumb(l), name, el("span", { className: "kind", textContent: l.text ? "T" : "" }));
+    li.onclick = () => { if (doc.active !== i) { doc.active = i; refresh(); } };
+    list.prepend(li);
+  });
+  const l = active();
+  $("blend").value = l.blend;
+  $("opacity").value = Math.round(l.opacity * 100);
+  $("opacity-v").textContent = Math.round(l.opacity * 100) + " %";
+}
+function refreshHistory() {
+  const list = $("history");
+  list.replaceChildren(...states.map((s, i) => el("li", {}, el("button", { type: "button", className: i === at ? "now" : i > at ? "future" : "", textContent: s.label, onclick: () => restore(i) }))));
+  list.querySelector(".now")?.scrollIntoView({ block: "nearest" });
+}
+function refresh() {
+  $("start").hidden = !!doc;
+  refreshLayers(); refreshHistory(); options(); status(); render();
+}
+
+// ——— Outils ———
+const TOOLS = [
+  ["move", "Déplacer", "V", '<path d="M12 3v18M3 12h18M12 3 9.5 5.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/>'],
+  ["select", "Sélection rectangulaire", "M", '<rect x="4" y="5" width="16" height="14" stroke-dasharray="3 2.6"/>'],
+  ["crop", "Recadrage", "C", '<path d="M6 2v16h16M2 6h16v16"/>'],
+  ["pick", "Pipette", "I", '<path d="m14 4 6 6M17.5 2.5l4 4-3 3-4-4zM15.5 8.5 6 18l-3 3M6 18H4.5v-1.5L14 7"/>'],
+  ["brush", "Pinceau", "B", '<path d="M19 3 9.5 12.5l2 2L21 5zM9.5 12.5c-2.5 0-4 1.5-4 3.5S4.5 19.5 3 20c4 1 8.5 0 8.5-5.5"/>'],
+  ["eraser", "Gomme", "E", '<path d="M4 15.5 13.5 6l5.5 5.5L11 19.5H8zM9 20h11"/>'],
+  ["fill", "Pot de peinture", "G", '<path d="m4 11 7-7 8 8-7 7zM4 11h15M20 15.5s1.8 2.2 1.8 3.4a1.8 1.8 0 0 1-3.6 0c0-1.2 1.8-3.4 1.8-3.4"/>'],
+  ["text", "Texte", "T", '<path d="M5 7V4h14v3M12 4v16M9 20h6"/>'],
+  ["shape", "Forme", "U", '<rect x="3" y="3" width="11" height="11" rx="1"/><circle cx="15.5" cy="15.5" r="5.5"/>'],
+  ["hand", "Main", "H", '<path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v6M17 9.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a7 7 0 0 1-5.8-3.1L3.8 13.5a1.5 1.5 0 0 1 2.5-1.7L8 13"/>'],
+  ["zoom", "Zoom", "Z", '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5.5 5.5M10.5 7.5v6M7.5 10.5h6"/>'],
+];
+const CURSORS = { move: "default", hand: "grab", zoom: "zoom-in", text: "text", brush: "none", eraser: "none" };
+const toolButtons = {};
+TOOLS.forEach(([id, name, key, icon]) => {
+  const b = el("button", { type: "button", className: "t", title: name + " (" + key + ")", innerHTML: svg(icon) });
+  b.setAttribute("aria-label", name);
+  b.onclick = () => setTool(id);
+  toolButtons[id] = b;
+  $("tools").insertBefore(b, $("tools").querySelector(".ps-colors"));
+});
+function setTool(id) {
+  tool = id;
+  Object.entries(toolButtons).forEach(([k, b]) => b.setAttribute("aria-pressed", String(k === id)));
+  view.style.cursor = CURSORS[id] || "crosshair";
+  if (id === "crop") resetCrop(); else crop = null;
+  options(); render();
+}
+function resetCrop() {
+  if (!doc) return;
+  const c = CROPS[cropPreset];
+  ratio = c[1] === "orig" ? doc.w / doc.h : c[1];
+  let w = doc.w, h = doc.h;
+  if (ratio) { h = w / ratio; if (h > doc.h) { h = doc.h; w = h * ratio; } }
+  crop = { x: Math.round((doc.w - w) / 2), y: Math.round((doc.h - h) / 2), w: Math.round(w), h: Math.round(h) };
+}
+function rectFrom(ax, ay, bx, by, r) {
+  let w = bx - ax, h = by - ay;
+  if (r) { if (Math.abs(w) / r > Math.abs(h)) h = Math.sign(h || 1) * Math.abs(w) / r; else w = Math.sign(w || 1) * Math.abs(h) * r; }
+  return { x: Math.round(Math.min(ax, ax + w)), y: Math.round(Math.min(ay, ay + h)), w: Math.round(Math.abs(w)), h: Math.round(Math.abs(h)) };
+}
+function pick(p) {
+  for (let i = doc.layers.length - 1; i >= 0; i--) {
+    const l = doc.layers[i];
+    if (!l.visible || !inside(boxOf(l), p)) continue;
+    if (l.canvas.getContext("2d").getImageData(Math.floor(p.x - l.x), Math.floor(p.y - l.y), 1, 1).data[3] > 0) {
+      if (doc.active !== i) { doc.active = i; refreshLayers(); options(); }
+      return;
+    }
+  }
+}
+function paintable() {
+  const l = active();
+  if (!l.visible) { say("Ce calque est masqué : affiche-le pour peindre dessus."); return null; }
+  // Un calque plus petit que l'image (texte, image placée) s'agrandit d'abord jusqu'à la couvrir : on peut peindre partout.
+  const w = l.canvas.width, h = l.canvas.height, x0 = Math.min(0, l.x), y0 = Math.min(0, l.y);
+  const x1 = Math.max(doc.w, l.x + w), y1 = Math.max(doc.h, l.y + h);
+  if (x0 < l.x || y0 < l.y || x1 > l.x + w || y1 > l.y + h) {
+    const c = canvasOf(x1 - x0, y1 - y0);
+    c.getContext("2d").drawImage(l.canvas, l.x - x0, l.y - y0);
+    rasterize(l); Object.assign(l, { canvas: c, x: x0, y: y0 });
+  }
+  return l;
+}
+function dab(p) {
+  const { stroke: st, l, last } = action, c = st.canvas.getContext("2d");
+  c.beginPath(); c.moveTo(last.x - l.x, last.y - l.y); c.lineTo(p.x - l.x, p.y - l.y); c.stroke();
+  action.last = p;
+}
+function floodFill(l, x0, y0) {
+  const w = l.canvas.width, h = l.canvas.height;
+  if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return false;
+  const c = writable(l), img = c.getImageData(0, 0, w, h), d = img.data;
+  const [r, g, b] = rgb(fg), tol = opts.tolerance, s = (y0 * w + x0) * 4, ref = [d[s], d[s + 1], d[s + 2], d[s + 3]];
+  const sel = selection && { x0: selection.x - l.x, y0: selection.y - l.y, x1: selection.x - l.x + selection.w, y1: selection.y - l.y + selection.h };
+  const seen = new Uint8Array(w * h), stack = [y0 * w + x0];
+  while (stack.length) {
+    const p = stack.pop();
+    if (seen[p]) continue;
+    seen[p] = 1;
+    const k = p * 4, x = p % w, y = (p - x) / w;
+    if (sel && (x < sel.x0 || y < sel.y0 || x >= sel.x1 || y >= sel.y1)) continue;
+    if (Math.abs(d[k] - ref[0]) > tol || Math.abs(d[k + 1] - ref[1]) > tol || Math.abs(d[k + 2] - ref[2]) > tol || Math.abs(d[k + 3] - ref[3]) > tol) continue;
+    d[k] = r; d[k + 1] = g; d[k + 2] = b; d[k + 3] = 255;
+    if (x > 0) stack.push(p - 1);
+    if (x < w - 1) stack.push(p + 1);
+    if (y > 0) stack.push(p - w);
+    if (y < h - 1) stack.push(p + w);
+  }
+  c.putImageData(img, 0, 0);
+  return true;
+}
+
+const paint = (erase) => ({
+  down(p) {
+    const l = paintable();
+    if (!l) return;
+    const st = { canvas: canvasOf(l.canvas.width, l.canvas.height), erase, alpha: opts.opacity / 100 };
+    const c = st.canvas.getContext("2d");
+    c.lineCap = c.lineJoin = "round"; c.lineWidth = opts.size; c.strokeStyle = c.fillStyle = fg;
+    c.beginPath(); c.arc(p.x - l.x, p.y - l.y, opts.size / 2, 0, Math.PI * 2); c.fill();
+    action = { stroke: st, l, last: p };
+  },
+  move: dab,
+  up() { const l = action.l; rasterize(l); applyStroke(writable(l), l); commit(erase ? "Gomme" : "Pinceau"); },
+});
+const HANDLERS = {
+  move: {
+    down(p) {
+      const l = active(), b = boxOf(l), k = opts.handles ? cornerAt(b, p) : -1;
+      if (k >= 0) { const [ax, ay] = corners(b)[3 - k]; action = { scale: true, l, b, ax, ay }; return; }
+      if (opts.autoSelect) pick(p);
+      const m = active();
+      action = { l: m, ox: p.x - m.x, oy: p.y - m.y, moved: false };
+    },
+    move(p, e) {
+      const l = action.l;
+      if (!action.scale) { l.x = Math.round(p.x - action.ox); l.y = Math.round(p.y - action.oy); action.moved = true; return; }
+      const { b, ax, ay } = action;
+      let w = Math.abs(p.x - ax), h = Math.abs(p.y - ay);
+      action.free = e.shiftKey;
+      if (!e.shiftKey) { const s = Math.max(w / b.w, h / b.h); w = b.w * s; h = b.h * s; }
+      l.dw = Math.max(1, w); l.dh = Math.max(1, h);
+      l.x = p.x < ax ? ax - l.dw : ax; l.y = p.y < ay ? ay - l.dh : ay;
+    },
+    up() {
+      const l = action.l;
+      if (!action.scale) { if (action.moved) commit("Déplacement"); return; }
+      if (l.dw == null) return;
+      if (l.text && !action.free) { l.text.size = Math.max(1, Math.round(l.text.size * l.dh / action.b.h)); paintText(l); }
+      else { rasterize(l); l.canvas = copyOf(l.canvas, l.dw, l.dh); }
+      l.x = Math.round(l.x); l.y = Math.round(l.y);
+      delete l.dw; delete l.dh;
+      commit("Transformation");
+    },
+  },
+  select: {
+    down(p) { action = { ax: p.x, ay: p.y }; selection = null; },
+    move(p, e) { selection = rectFrom(action.ax, action.ay, p.x, p.y, e.shiftKey ? 1 : 0); },
+    up() { if (selection && (selection.w < 1 || selection.h < 1)) selection = null; status(); },
+  },
+  crop: {
+    down(p) {
+      const k = cornerAt(crop, p);
+      if (k >= 0) { const [ax, ay] = corners(crop)[3 - k]; action = { ax, ay }; }
+      else if (inside(crop, p)) action = { drag: true, ox: p.x - crop.x, oy: p.y - crop.y };
+      else action = { ax: p.x, ay: p.y };
+    },
+    move(p, e) {
+      if (action.drag) { crop.x = Math.round(p.x - action.ox); crop.y = Math.round(p.y - action.oy); }
+      else { const r = rectFrom(action.ax, action.ay, p.x, p.y, ratio || (e.shiftKey ? 1 : 0)); if (r.w && r.h) crop = r; }
+      cropInfo();
+    },
+    up() {},
+  },
+  pick: {
+    down(p, e) {
+      if (!inside({ x: 0, y: 0, w: doc.w, h: doc.h }, p)) return;
+      const d = flatten(false).getContext("2d").getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
+      if (!d[3]) return say("Pixel transparent : rien à prendre.");
+      const hex = "#" + [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, "0")).join("");
+      if (e.altKey) bg = hex; else fg = hex;
+      colors();
+    },
+  },
+  brush: paint(false),
+  eraser: paint(true),
+  fill: {
+    down(p) {
+      const l = paintable();
+      if (l && floodFill(l, Math.floor(p.x - l.x), Math.floor(p.y - l.y))) { rasterize(l); commit("Pot de peinture"); }
+    },
+  },
+  text: {
+    down(p) {
+      const l = active();
+      if (l.text && inside(boxOf(l), p)) return focusText();
+      const t = { str: "Ton texte", font: opts.font, size: opts.fontSize, bold: opts.bold, color: fg };
+      const n = layer("Ton texte", null, 0, 0, { text: t });
+      paintText(n);
+      n.x = Math.round(p.x); n.y = Math.round(p.y - n.canvas.height / 2);
+      insert(n); commit("Texte");
+      focusText();
+    },
+  },
+  shape: {
+    down(p) { action = { ax: p.x, ay: p.y, shape: null }; },
+    move(p, e) { action.shape = rectFrom(action.ax, action.ay, p.x, p.y, e.shiftKey ? 1 : 0); },
+    up() {
+      const r = action.shape;
+      if (!r || r.w < 2 || r.h < 2) return;
+      const n = layer(opts.shape === "ellipse" ? "Ellipse" : "Rectangle", canvasOf(r.w, r.h), r.x, r.y), c = n.canvas.getContext("2d");
+      c.fillStyle = fg; shapePath(c, { x: 0, y: 0, w: r.w, h: r.h }); c.fill();
+      insert(n); commit(n.name);
+    },
+  },
+  zoom: { down(p, e) { zoomAt(e.altKey ? 1 / 1.6 : 1.6, p.sx, p.sy); } },
+};
+
+const docPoint = (e) => { const r = view.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top; return { x: (sx - panX) / zoom, y: (sy - panY) / zoom, sx, sy }; };
+view.addEventListener("pointerdown", (e) => {
+  if (!doc) return;
+  closeMenu();
+  view.setPointerCapture(e.pointerId);
+  const p = docPoint(e);
+  if (e.button === 1 || tool === "hand" || spaceDown) { action = { pan: true, x: e.clientX - panX, y: e.clientY - panY }; view.style.cursor = "grabbing"; return; }
+  if (e.button !== 0) return;
+  HANDLERS[tool]?.down(p, e);
+  render();
+});
+view.addEventListener("pointermove", (e) => {
+  if (!doc) return;
+  const p = docPoint(e);
+  pointer = p;
+  if (action?.pan) { panX = e.clientX - action.x; panY = e.clientY - action.y; }
+  else if (action) {
+    const h = HANDLERS[tool];
+    if (action.stroke) for (const c of e.getCoalescedEvents?.() || [e]) dab(docPoint(c));
+    else h?.move?.(p, e);
+  } else if (tool === "move" || tool === "crop") {
+    const b = tool === "crop" ? crop : opts.handles && boxOf(active()), k = b ? cornerAt(b, p) : -1;
+    view.style.cursor = k >= 0 ? (k === 0 || k === 3 ? "nwse-resize" : "nesw-resize") : tool === "crop" && inside(crop, p) ? "move" : spaceDown ? "grab" : CURSORS[tool] || "crosshair";
+  }
+  status(); render();
+});
+function release() {
+  if (!action) return;
+  if (action.pan) view.style.cursor = spaceDown ? "grab" : CURSORS[tool] || "crosshair";
+  else HANDLERS[tool]?.up?.();
+  action = null;
+  render();
+}
+view.addEventListener("pointerup", release);
+view.addEventListener("pointercancel", release);
+view.addEventListener("pointerleave", () => { pointer = null; status(); render(); });
+view.addEventListener("wheel", (e) => {
+  if (!doc) return;
+  e.preventDefault();
+  const p = docPoint(e);
+  zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0015)), p.sx, p.sy);
+}, { passive: false });
+new ResizeObserver(() => (needFit ? fit() : render())).observe(stage);
+
+// ——— Options de l'outil ———
+function options() {
+  const o = $("options"), name = TOOLS.find(([id]) => id === tool)[1];
+  o.replaceChildren(el("b", { textContent: name }));
+  const add = (...n) => o.append(...n);
+  const button = (label, fn, on) => el("button", { type: "button", className: "ps-btn" + (on ? " on" : ""), textContent: label, onclick: fn });
+  const range = (label, key, min, max, unit = "") => {
+    const out = el("output", { textContent: opts[key] + unit }), input = el("input", { type: "range", min, max, value: opts[key] });
+    input.oninput = () => { opts[key] = +input.value; out.textContent = input.value + unit; render(); };
+    return el("label", {}, label, input, out);
+  };
+  const check = (label, key, then) => {
+    const input = el("input", { type: "checkbox", checked: opts[key] });
+    input.onchange = () => { opts[key] = input.checked; then?.(); render(); };
+    return el("label", {}, input, label);
+  };
+  if (!doc) return add(el("span", { className: "info", textContent: "Ouvre une image ou crée un projet pour commencer." }));
+  if (tool === "move") add(check("Sélection automatique", "autoSelect"), check("Poignées de transformation", "handles"),
+    button("Centrer", D(centerLayer)), el("span", { className: "info", textContent: "Coin : redimensionner · Maj : sans garder les proportions · flèches : 1 px" }));
+  if (tool === "select") add(button("Tout sélectionner", D(selectAll)), button("Désélectionner", D(deselect)), button("Recadrer à la sélection", D(cropToSelection)),
+    el("span", { className: "info", textContent: "Maj : carré" }));
+  if (tool === "crop") {
+    const sel = el("select", { "aria-label": "Format du recadrage" }, ...CROPS.map(([label], i) => el("option", { value: i, textContent: label })));
+    sel.value = cropPreset;
+    sel.onchange = () => { cropPreset = +sel.value; resetCrop(); cropInfo(); render(); };
+    add(sel, el("span", { className: "info", id: "crop-info" }), button("Valider", D(applyCrop), true), button("Annuler", D(() => { resetCrop(); cropInfo(); render(); })));
+    cropInfo();
+  }
+  if (tool === "brush" || tool === "eraser") add(range("Taille", "size", 1, 400, " px"), range("Opacité", "opacity", 1, 100, " %"));
+  if (tool === "fill") add(range("Tolérance", "tolerance", 0, 255));
+  if (tool === "pick") add(el("span", { className: "info", textContent: "Clic : premier plan · Alt + clic : arrière-plan" }));
+  if (tool === "shape") {
+    const sel = el("select", { "aria-label": "Forme" }, el("option", { value: "rect", textContent: "Rectangle" }), el("option", { value: "ellipse", textContent: "Ellipse" }));
+    sel.value = opts.shape; sel.onchange = () => { opts.shape = sel.value; };
+    add(sel, range("Arrondi", "radius", 0, 200, " px"), el("span", { className: "info", textContent: "Couleur : premier plan · Maj : carré ou cercle" }));
+  }
+  if (tool === "text") textOptions(add);
+  if (tool === "hand" || tool === "zoom") add(button("Ajuster à l’écran", fit), button("100 %", D(actualSize)), el("span", { className: "info", textContent: tool === "zoom" ? "Clic : zoom avant · Alt + clic : zoom arrière" : "" }));
+}
+function textOptions(add) {
+  const l = active(), t = l.text || { str: "", font: opts.font, size: opts.fontSize, bold: opts.bold, color: fg };
+  const update = (key, value) => {
+    if (key === "font") opts.font = value; if (key === "size") opts.fontSize = value; if (key === "bold") opts.bold = value;
+    const a = active();
+    if (!a.text) return;
+    a.text[key] = value;
+    if (key === "str") a.name = value.split("\n")[0].slice(0, 40) || "Texte";
+    paintText(a); render();
+  };
+  const save = () => { if (active().text) commit("Modifier le texte"); };
+  const str = el("textarea", { id: "text-str", rows: 1, value: t.str, placeholder: "Clique sur l’image pour écrire", disabled: !l.text });
+  str.setAttribute("aria-label", "Texte");
+  str.oninput = () => update("str", str.value);
+  str.onchange = save;
+  const font = el("select", { "aria-label": "Police" }, ...FONTS.map((f) => el("option", { value: f, textContent: f })));
+  font.value = t.font; font.onchange = () => { update("font", font.value); save(); };
+  const size = el("input", { type: "number", min: 4, max: 2000, value: t.size, "aria-label": "Taille du texte" });
+  size.onchange = () => { update("size", Math.min(2000, Math.max(4, +size.value || 12))); save(); };
+  const bold = el("input", { type: "checkbox", checked: t.bold });
+  bold.onchange = () => { update("bold", bold.checked); save(); };
+  const color = el("input", { type: "color", value: t.color, title: "Couleur du texte" });
+  color.oninput = () => update("color", color.value);
+  color.onchange = save;
+  add(str, font, el("label", {}, size, "px"), el("label", {}, bold, "Gras"), color,
+    el("span", { className: "info", textContent: l.text ? "" : "Clic sur l’image : nouveau texte · clic sur un texte : le modifier" }));
+}
+function focusText() { setTimeout(() => { const t = $("text-str"); if (t) { t.focus(); t.select(); } }); }
+function cropInfo() { const i = $("crop-info"); if (i && crop) i.textContent = crop.w + " × " + crop.h + " px" + (CROPS[cropPreset][2] ? " → " + CROPS[cropPreset][2] + " × " + CROPS[cropPreset][3] : ""); }
+
+// ——— Commandes ———
+const D = (fn) => (...a) => (doc ? fn(...a) : say("Ouvre d’abord une image ou crée un projet."));
+function insert(l) { doc.layers.splice(doc.active + 1, 0, l); doc.active += 1; }
+function newDoc(w, h, name, canvas) {
+  doc = { name, w, h, active: 0, layers: [layer("Arrière-plan", canvas)] };
+  states.length = 0; at = -1; selection = null;
+  commit(canvas.dataset?.blank ? "Nouveau" : "Ouvrir");
+  if (tool === "crop") resetCrop();
+  fit();
+}
+function blankDoc(w, h, fill) {
+  const c = canvasOf(w, h);
+  if (fill) { const x = c.getContext("2d"); x.fillStyle = fill; x.fillRect(0, 0, w, h); }
+  c.dataset.blank = "1";
+  newDoc(w, h, "sans-titre", c);
+}
+const sizeOk = (w, h) => (w >= 1 && h >= 1 && w <= 16384 && h <= 16384 && w * h <= MAX_PX) || (say("Taille impossible : 16 384 px de côté et 16,7 millions de pixels au plus."), false);
+async function readImage(file) {
+  const img = new Image(), url = URL.createObjectURL(file);
+  img.src = url;
+  try {
+    await img.decode();
+    if (!img.naturalWidth) throw new Error();
+    const s = Math.min(1, Math.sqrt(MAX_PX / (img.naturalWidth * img.naturalHeight)));
+    if (s < 1) say("Image très grande : réduite à " + Math.round(img.naturalWidth * s) + " × " + Math.round(img.naturalHeight * s) + " px.");
+    return copyOf(img, img.naturalWidth * s, img.naturalHeight * s);
+  } catch { throw new Error("Ce navigateur ne sait pas lire « " + file.name + " »."); }
+  finally { URL.revokeObjectURL(url); }
+}
+async function openFiles(files, place) {
+  const images = [...files].filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|avif|svg)$/i.test(f.name));
+  if (!images.length) return say("Ce fichier n’est pas une image.");
+  for (const f of images) {
+    try {
+      const c = await readImage(f), name = f.name.replace(/\.[^.]+$/, "");
+      if (!doc || (!place && f === images[0])) newDoc(c.width, c.height, name, c);
+      else placeCanvas(c, name);
+    } catch (error) { say(error.message); }
+  }
+}
+function placeCanvas(c, name) {
+  const s = Math.min(1, doc.w / c.width, doc.h / c.height);
+  if (s < 1) c = copyOf(c, c.width * s, c.height * s);
+  insert(layer(name, c, Math.round((doc.w - c.width) / 2), Math.round((doc.h - c.height) / 2)));
+  commit("Placer « " + name + " »");
+}
+function download(blob, name) {
+  const a = el("a", { href: URL.createObjectURL(blob), download: name });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function exportBlob(format, quality, scale) {
+  const out = canvasOf(doc.w * scale, doc.h * scale), c = out.getContext("2d");
+  if (format === "jpg") { c.fillStyle = "#fff"; c.fillRect(0, 0, out.width, out.height); } // le JPG n'a pas de transparence
+  c.imageSmoothingQuality = "high";
+  c.drawImage(flatten(false), 0, 0, out.width, out.height);
+  return new Promise((done) => out.toBlob(done, MIME[format], quality));
+}
+async function exportDialog() {
+  const v = await ask("Exporter", [
+    { k: "format", label: "Format", type: "select", options: [["png", "PNG (sans perte, transparence)"], ["jpg", "JPG (le plus léger)"], ["webp", "WEBP"]] },
+    { k: "quality", label: "Qualité (JPG, WEBP)", type: "range", min: 50, max: 100, value: 92, unit: " %" },
+    { k: "scale", label: "Taille (100 % = " + doc.w + " × " + doc.h + ")", type: "number", min: 1, max: 400, value: 100, unit: "%" },
+    { k: "name", label: "Nom du fichier", type: "text", value: doc.name },
+  ]);
+  if (!v) return;
+  const s = v.scale / 100;
+  if (!sizeOk(Math.round(doc.w * s), Math.round(doc.h * s))) return;
+  const blob = await exportBlob(v.format, v.quality / 100, s);
+  // Safari ne sait pas écrire le WEBP : il rendrait un PNG sous un faux nom.
+  if (!blob || blob.type !== MIME[v.format]) return say("Ce navigateur ne sait pas écrire du " + v.format.toUpperCase() + " : choisis un autre format.");
+  download(blob, (v.name.trim() || "image") + "." + v.format);
+  say("Exporté : " + Math.round(doc.w * s) + " × " + Math.round(doc.h * s) + " px, " + (blob.size < 1e6 ? Math.ceil(blob.size / 1e3) + " Ko" : (blob.size / 1e6).toFixed(1).replace(".", ",") + " Mo") + ".");
+}
+async function copyImage() {
+  try { await navigator.clipboard.write([new ClipboardItem({ "image/png": exportBlob("png", 1, 1) })]); say("Image copiée : colle-la où tu veux."); }
+  catch { say("Ce navigateur ne permet pas de copier l’image : exporte-la."); }
+}
+async function newDialog() {
+  const v = await ask("Nouveau projet", [
+    { k: "format", label: "Format", type: "select", options: [["", "Sur mesure"], ...FORMATS.map(([n, w, h]) => [w + "x" + h, n + " · " + w + " × " + h])] },
+    { k: "w", label: "Largeur", type: "number", min: 1, max: 16384, value: doc?.w || 3000, unit: "px" },
+    { k: "h", label: "Hauteur", type: "number", min: 1, max: 16384, value: doc?.h || 3000, unit: "px" },
+    { k: "fill", label: "Fond", type: "select", options: [["#ffffff", "Blanc"], ["#000000", "Noir"], ["", "Transparent"], ["fg", "Couleur de premier plan"]] },
+  ], (v, f, key) => { if (key === "format" && v.format) { const [w, h] = v.format.split("x"); f.elements.w.value = w; f.elements.h.value = h; } });
+  if (v && sizeOk(v.w, v.h)) blankDoc(v.w, v.h, v.fill === "fg" ? fg : v.fill);
+}
+function resizeLayers(nw, nh) {
+  const sx = nw / doc.w, sy = nh / doc.h;
+  doc.layers.forEach((l) => {
+    if (l.text && Math.abs(sx - sy) < .01) { l.text.size = Math.max(1, Math.round(l.text.size * sy)); paintText(l); }
+    else { rasterize(l); l.canvas = copyOf(l.canvas, l.canvas.width * sx, l.canvas.height * sy); }
+    l.x = Math.round(l.x * sx); l.y = Math.round(l.y * sy);
+  });
+  doc.w = nw; doc.h = nh; selection = null;
+}
+async function resizeDialog() {
+  const v = await ask("Taille de l’image", [
+    { k: "w", label: "Largeur", type: "number", min: 1, max: 16384, value: doc.w, unit: "px" },
+    { k: "h", label: "Hauteur", type: "number", min: 1, max: 16384, value: doc.h, unit: "px" },
+    { k: "keep", label: "Garder les proportions", type: "checkbox", value: true },
+  ], (v, f, key) => {
+    if (!v.keep) return;
+    if (key === "w") f.elements.h.value = Math.max(1, Math.round(v.w * doc.h / doc.w));
+    if (key === "h") f.elements.w.value = Math.max(1, Math.round(v.h * doc.w / doc.h));
+  });
+  if (!v || !sizeOk(v.w, v.h) || (v.w === doc.w && v.h === doc.h)) return;
+  resizeLayers(v.w, v.h); commit("Taille de l’image"); fit();
+}
+async function canvasDialog() {
+  const v = await ask("Taille de la zone de travail", [
+    { k: "w", label: "Largeur", type: "number", min: 1, max: 16384, value: doc.w, unit: "px" },
+    { k: "h", label: "Hauteur", type: "number", min: 1, max: 16384, value: doc.h, unit: "px" },
+  ]);
+  if (!v || !sizeOk(v.w, v.h)) return;
+  const dx = Math.round((v.w - doc.w) / 2), dy = Math.round((v.h - doc.h) / 2);
+  doc.layers.forEach((l) => { l.x += dx; l.y += dy; });
+  doc.w = v.w; doc.h = v.h; selection = null;
+  commit("Taille de la zone de travail"); fit();
+}
+function applyCrop() {
+  if (!crop || crop.w < 1 || crop.h < 1) return;
+  doc.layers.forEach((l) => { l.x -= crop.x; l.y -= crop.y; });
+  doc.w = crop.w; doc.h = crop.h; selection = null;
+  const [, , w, h] = CROPS[cropPreset];
+  if (w) resizeLayers(w, h);
+  commit("Recadrage");
+  say("Recadré : " + doc.w + " × " + doc.h + " px.");
+  resetCrop(); fit();
+}
+function cropToSelection() {
+  if (!selection) return say("Fais d’abord une sélection.");
+  crop = { ...selection }; cropPreset = 0; applyCrop();
+  if (tool !== "crop") crop = null;
+}
+function rotateImage(turns, label) {
+  for (let k = 0; k < Math.abs(turns); k++) {
+    const cw = turns > 0, W = doc.w, H = doc.h;
+    doc.layers.forEach((l) => {
+      const lw = l.canvas.width, lh = l.canvas.height;
+      rasterize(l); l.canvas = turned(l.canvas, cw);
+      [l.x, l.y] = cw ? [H - l.y - lh, l.x] : [l.y, W - l.x - lw];
+    });
+    doc.w = H; doc.h = W;
+  }
+  selection = null; commit(label); if (tool === "crop") resetCrop(); fit();
+}
+function flipImage(horizontal) {
+  doc.layers.forEach((l) => {
+    rasterize(l); l.canvas = flipped(l.canvas, horizontal);
+    if (horizontal) l.x = doc.w - l.x - l.canvas.width; else l.y = doc.h - l.y - l.canvas.height;
+  });
+  commit(horizontal ? "Symétrie horizontale" : "Symétrie verticale");
+}
+function rotateLayer(cw) {
+  const l = active(), cx = l.x + l.canvas.width / 2, cy = l.y + l.canvas.height / 2;
+  rasterize(l); l.canvas = turned(l.canvas, cw);
+  l.x = Math.round(cx - l.canvas.width / 2); l.y = Math.round(cy - l.canvas.height / 2);
+  commit("Rotation du calque");
+}
+function flipLayer(horizontal) { const l = active(); rasterize(l); l.canvas = flipped(l.canvas, horizontal); commit("Symétrie du calque"); }
+function centerLayer() { const l = active(); l.x = Math.round((doc.w - l.canvas.width) / 2); l.y = Math.round((doc.h - l.canvas.height) / 2); commit("Centrer le calque"); }
+function newLayer() { insert(layer("Calque " + (doc.layers.length + 1), canvasOf(doc.w, doc.h))); commit("Nouveau calque"); }
+function duplicate() { const l = cloneLayer(active()); l.name += " copie"; insert(l); commit("Dupliquer le calque"); }
+function removeLayer() {
+  if (doc.layers.length < 2) return say("L’image garde au moins un calque.");
+  doc.layers.splice(doc.active, 1); doc.active = Math.max(0, doc.active - 1);
+  commit("Supprimer le calque");
+}
+function shiftLayer(d) {
+  const i = doc.active, j = i + d;
+  if (j < 0 || j >= doc.layers.length) return;
+  [doc.layers[i], doc.layers[j]] = [doc.layers[j], doc.layers[i]];
+  doc.active = j; commit(d > 0 ? "Monter le calque" : "Descendre le calque");
+}
+function mergeDown() {
+  const i = doc.active;
+  if (i < 1) return say("Pas de calque en dessous.");
+  const lo = doc.layers[i - 1], up = doc.layers[i], c = canvasOf(doc.w, doc.h), x = c.getContext("2d");
+  for (const l of [lo, up]) {
+    if (!l.visible) continue;
+    x.globalAlpha = l.opacity; x.globalCompositeOperation = l === lo ? "source-over" : l.blend;
+    x.drawImage(l.canvas, l.x, l.y);
+  }
+  doc.layers.splice(i - 1, 2, layer(lo.name, c)); doc.active = i - 1;
+  commit("Fusionner les calques");
+}
+function flattenImage() {
+  const c = canvasOf(doc.w, doc.h);
+  c.getContext("2d").drawImage(flatten(false), 0, 0);
+  doc.layers = [layer("Arrière-plan", c)]; doc.active = 0;
+  commit("Aplatir l’image");
+}
+function selectAll() { selection = { x: 0, y: 0, w: doc.w, h: doc.h }; status(); render(); }
+function deselect() { selection = null; status(); render(); }
+function clearSelection() {
+  if (!selection) return say("Fais d’abord une sélection (outil Sélection, M).");
+  const l = paintable();
+  if (!l) return;
+  rasterize(l); writable(l).clearRect(selection.x - l.x, selection.y - l.y, selection.w, selection.h);
+  commit("Effacer");
+}
+function fillSelection() {
+  const l = paintable();
+  if (!l) return;
+  const r = selection ? { x: selection.x - l.x, y: selection.y - l.y, w: selection.w, h: selection.h } : { x: 0, y: 0, w: l.canvas.width, h: l.canvas.height };
+  rasterize(l);
+  const c = writable(l); c.fillStyle = fg; c.fillRect(r.x, r.y, r.w, r.h);
+  commit("Remplir");
+}
+function filterLayer(filter, label, blur) {
+  if (!FILTERS) return say("Ce navigateur ne sait pas appliquer de filtre : essaie Chrome, Edge, Firefox ou un Safari récent.");
+  const l = active();
+  rasterize(l); l.canvas = filtered(l.canvas, filter, blur);
+  commit(label);
+}
+const ADJUST = [["b", "Luminosité", 0, 200, 100, " %", "brightness(#%)"], ["c", "Contraste", 0, 200, 100, " %", "contrast(#%)"], ["s", "Saturation", 0, 300, 100, " %", "saturate(#%)"],
+  ["h", "Teinte", -180, 180, 0, "°", "hue-rotate(#deg)"], ["g", "Noir et blanc", 0, 100, 0, " %", "grayscale(#%)"], ["sp", "Sépia", 0, 100, 0, " %", "sepia(#%)"],
+  ["i", "Négatif", 0, 100, 0, " %", "invert(#%)"], ["bl", "Flou", 0, 60, 0, " px", "blur(#px)"]];
+async function adjustDialog(only) {
+  if (!FILTERS) return say("Ce navigateur ne sait pas appliquer de filtre : essaie Chrome, Edge, Firefox ou un Safari récent.");
+  const l = active(), rows = ADJUST.filter((a) => !only || a[0] === only);
+  const css = (v) => rows.filter(([k, , , , neutral]) => v[k] !== neutral).map(([k, , , , , , f]) => f.replace("#", v[k])).join(" ") || "none";
+  const v = await ask((only ? "Flou" : "Réglages") + " · « " + l.name + " »", rows.map(([k, label, min, max, value, unit]) => ({ k, label, type: "range", min, max, value, unit })),
+    (v) => { l.preview = filtered(l.canvas, css(v), v.bl > 0); render(); });
+  delete l.preview;
+  if (v && css(v) !== "none") filterLayer(css(v), only ? "Flou" : "Réglages", v.bl > 0); else render();
+}
+
+// ——— Fenêtres de dialogue ———
+function ask(title, fields, live) {
+  const d = $("dlg"), f = el("form", { method: "dialog" });
+  f.append(el("h2", { textContent: title }));
+  for (const q of fields) {
+    const input = q.type === "select"
+      ? el("select", { name: q.k }, ...q.options.map(([value, text]) => el("option", { value, textContent: text })))
+      : el("input", { name: q.k, type: q.type, ...(q.min != null ? { min: q.min, max: q.max, required: true } : {}), value: q.value ?? "", ...(q.type === "checkbox" ? { checked: !!q.value } : {}) });
+    const out = el(q.type === "range" ? "output" : "span", { textContent: q.type === "range" ? input.value + q.unit : q.unit || "" });
+    if (q.type === "range") input.addEventListener("input", () => { out.textContent = input.value + q.unit; });
+    f.append(el("label", { className: q.type === "checkbox" ? "check" : "" }, el("span", { textContent: q.label }), input, out));
+  }
+  const values = () => Object.fromEntries(fields.map((q) => { const i = f.elements[q.k]; return [q.k, q.type === "checkbox" ? i.checked : q.type === "number" || q.type === "range" ? +i.value : i.value]; }));
+  const cancel = el("button", { type: "button", className: "ps-btn", textContent: "Annuler" });
+  f.append(el("div", { className: "acts" }, cancel, el("button", { className: "ps-btn on", textContent: "OK" })));
+  d.replaceChildren(f);
+  return new Promise((done) => {
+    const end = (v) => { d.close(); done(v); };
+    f.addEventListener("input", (e) => live?.(values(), f, e.target.name));
+    f.onsubmit = (e) => { e.preventDefault(); end(values()); };
+    cancel.onclick = () => end(null);
+    d.oncancel = (e) => { e.preventDefault(); end(null); };
+    d.showModal();
+  });
+}
+
+// ——— Menus ———
+const MENUS = [
+  ["Fichier", [["Nouveau…", newDialog, "Ctrl+Alt+N"], ["Ouvrir…", () => $("file").click(), "Ctrl+O"], ["Placer une image…", D(() => $("place").click()), "Ctrl+Maj+O"], "-",
+    ["Exporter…", D(exportDialog), "Ctrl+S"], ["Copier l’image", D(copyImage), "Ctrl+Maj+C"]]],
+  ["Édition", [["Annuler", D(undo), "Ctrl+Z"], ["Rétablir", D(redo), "Ctrl+Y"], "-", ["Remplir avec la couleur", D(fillSelection), "Alt+Suppr"], ["Effacer la sélection", D(clearSelection), "Suppr"]]],
+  ["Image", [["Réglages…", D(() => adjustDialog()), "Ctrl+U"], "-", ["Taille de l’image…", D(resizeDialog), "Ctrl+Alt+I"], ["Taille de la zone de travail…", D(canvasDialog), "Ctrl+Alt+C"],
+    ["Recadrer à la sélection", D(cropToSelection)], "-", ["Rotation 90° horaire", D(() => rotateImage(1, "Rotation 90° horaire"))], ["Rotation 90° antihoraire", D(() => rotateImage(-1, "Rotation 90° antihoraire"))],
+    ["Rotation 180°", D(() => rotateImage(2, "Rotation 180°"))], ["Symétrie horizontale", D(() => flipImage(true))], ["Symétrie verticale", D(() => flipImage(false))]]],
+  ["Calque", [["Nouveau calque", D(newLayer), "Ctrl+Maj+N"], ["Dupliquer le calque", D(duplicate), "Ctrl+J"], ["Supprimer le calque", D(removeLayer)], "-",
+    ["Monter", D(() => shiftLayer(1)), "Ctrl+]"], ["Descendre", D(() => shiftLayer(-1)), "Ctrl+["], ["Fusionner avec le calque du dessous", D(mergeDown), "Ctrl+E"], ["Aplatir l’image", D(flattenImage)], "-",
+    ["Centrer dans l’image", D(centerLayer)], ["Rotation 90° horaire", D(() => rotateLayer(true))], ["Rotation 90° antihoraire", D(() => rotateLayer(false))],
+    ["Symétrie horizontale", D(() => flipLayer(true))], ["Symétrie verticale", D(() => flipLayer(false))], ["Pixelliser le texte", D(() => { if (active().text) { rasterize(active()); commit("Pixelliser le texte"); } })]]],
+  ["Sélection", [["Tout sélectionner", D(selectAll), "Ctrl+A"], ["Désélectionner", D(deselect), "Ctrl+D"]]],
+  ["Filtre", [["Noir et blanc", D(() => filterLayer("grayscale(100%)", "Noir et blanc"))], ["Sépia", D(() => filterLayer("sepia(100%)", "Sépia"))],
+    ["Négatif", D(() => filterLayer("invert(100%)", "Négatif")), "Ctrl+I"], ["Flou…", D(() => adjustDialog("bl"))]]],
+  ["Affichage", [["Zoom avant", D(() => zoomAt(1.25)), "Ctrl++"], ["Zoom arrière", D(() => zoomAt(.8)), "Ctrl+-"], ["Ajuster à l’écran", D(fit), "Ctrl+0"], ["Taille réelle (100 %)", D(actualSize), "Ctrl+1"]]],
+];
+const KEYS = { "Ctrl+Maj+Z": D(redo), "Ctrl+Maj++": D(() => zoomAt(1.25)), "Ctrl+Maj+-": D(() => zoomAt(.8)), "Alt+Backspace": D(fillSelection) };
+let openMenu = null;
+function closeMenu() { if (!openMenu) return; openMenu.box.remove(); openMenu.button.setAttribute("aria-expanded", "false"); openMenu = null; }
+function showMenu(button, items) {
+  closeMenu();
+  const r = button.getBoundingClientRect(), box = el("div", { className: "ps-drop", role: "menu" });
+  for (const item of items) {
+    if (item === "-") { box.append(el("hr")); continue; }
+    const b = el("button", { type: "button", onclick: () => { closeMenu(); item[1](); } }, el("span", { textContent: item[0] }), el("kbd", { textContent: item[2] || "" }));
+    b.setAttribute("role", "menuitem");
+    box.append(b);
+  }
+  document.body.append(box);
+  box.style.left = Math.max(8, Math.min(r.left, innerWidth - box.offsetWidth - 8)) + "px";
+  box.style.top = r.bottom + 4 + "px";
+  button.setAttribute("aria-expanded", "true");
+  openMenu = { box, button };
+}
+for (const [name, items] of MENUS) {
+  const b = el("button", { type: "button", textContent: name });
+  b.setAttribute("aria-haspopup", "menu"); b.setAttribute("aria-expanded", "false");
+  b.onclick = (e) => { e.stopPropagation(); openMenu?.button === b ? closeMenu() : showMenu(b, items); };
+  b.onmouseenter = () => { if (openMenu && openMenu.button !== b) showMenu(b, items); };
+  $("menubar").append(b);
+  for (const item of items) if (item[2]) KEYS[item[2]] = item[1];
+}
+document.addEventListener("click", (e) => { if (openMenu && !openMenu.box.contains(e.target)) closeMenu(); });
+addEventListener("resize", closeMenu);
+addEventListener("scroll", closeMenu, { passive: true });
+
+// ——— Clavier ———
+const keyName = (e) => /^(Digit|Numpad)\d$/.test(e.code) ? e.code.slice(-1)
+  : e.altKey && /^Key[A-Z]$/.test(e.code) ? e.code.slice(3)
+  : e.key === "=" ? "+" : e.key === "Delete" ? "Suppr" : e.key.length === 1 ? e.key.toUpperCase() : e.key;
+const TOOL_KEYS = Object.fromEntries(TOOLS.map(([id, , key]) => [key.toLowerCase(), id]));
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeMenu();
+  if (e.target.closest?.("input, textarea, select, dialog") || $("dlg").open) return;
+  const combo = (e.ctrlKey || e.metaKey ? "Ctrl+" : "") + (e.altKey ? "Alt+" : "") + (e.shiftKey ? "Maj+" : "") + keyName(e);
+  // Sans image, la page garde ses raccourcis (Ctrl + A sélectionne le texte, etc.), sauf ouvrir et créer.
+  if (KEYS[combo] && (doc || combo === "Ctrl+O" || combo === "Ctrl+Alt+N")) { e.preventDefault(); KEYS[combo](); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.code === "Space" && doc) { e.preventDefault(); if (!spaceDown) { spaceDown = true; if (!action) view.style.cursor = "grab"; } return; }
+  const k = e.key.toLowerCase();
+  if (TOOL_KEYS[k]) return setTool(TOOL_KEYS[k]);
+  if (k === "x") { [fg, bg] = [bg, fg]; return colors(); }
+  if (k === "d") { fg = "#000000"; bg = "#ffffff"; return colors(); }
+  if (!doc) return;
+  if (k === "[" || k === "]") { opts.size = Math.max(1, Math.min(400, Math.round(opts.size * (k === "]" ? 1.2 : 1 / 1.2)))); options(); render(); return; }
+  if (e.key === "Enter" && tool === "crop") return applyCrop();
+  if (e.key === "Escape") { if (tool === "crop") { resetCrop(); cropInfo(); } else selection = null; status(); render(); return; }
+  if (e.key === "Suppr" || e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); return clearSelection(); }
+  const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+  if (arrows && tool === "move") {
+    e.preventDefault();
+    const l = active(), n = e.shiftKey ? 10 : 1;
+    l.x += arrows[0] * n; l.y += arrows[1] * n;
+    clearTimeout(nudgeTimer); nudgeTimer = setTimeout(() => commit("Déplacement"), 400);
+    render();
+  }
+});
+let nudgeTimer = 0;
+addEventListener("keyup", (e) => { if (e.code === "Space") { spaceDown = false; if (!action) view.style.cursor = CURSORS[tool] || "crosshair"; } });
+
+// ——— Couleurs ———
+function colors() {
+  $("fg").value = fg; $("bg").value = bg;
+  $("fg-sw").style.background = fg; $("bg-sw").style.background = bg;
+}
+$("fg").oninput = () => { fg = $("fg").value; colors(); };
+$("bg").oninput = () => { bg = $("bg").value; colors(); };
+$("swap").onclick = () => { [fg, bg] = [bg, fg]; colors(); };
+
+// ——— Panneau des calques ———
+BLENDS.forEach(([value, text]) => $("blend").append(el("option", { value, textContent: text })));
+$("blend").onchange = D(() => { active().blend = $("blend").value; commit("Mode de fusion"); });
+$("opacity").oninput = D(() => { active().opacity = $("opacity").value / 100; $("opacity-v").textContent = $("opacity").value + " %"; render(); });
+$("opacity").onchange = D(() => commit("Opacité"));
+[["Nouveau calque", newLayer, '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/>'],
+  ["Dupliquer le calque", duplicate, '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'],
+  ["Monter", () => shiftLayer(1), '<path d="M12 19V5M6 11l6-6 6 6"/>'],
+  ["Descendre", () => shiftLayer(-1), '<path d="M12 5v14M6 13l6 6 6-6"/>'],
+  ["Supprimer le calque", removeLayer, '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>']].forEach(([title, fn, icon]) => {
+  const b = el("button", { type: "button", title, innerHTML: svg(icon), onclick: D(fn) });
+  b.setAttribute("aria-label", title);
+  $("layer-buttons").append(b);
+});
+
+// ——— Ouvrir, glisser, coller ———
+$("open-btn").onclick = () => $("file").click();
+$("new-btn").onclick = newDialog;
+$("file").onchange = () => { openFiles($("file").files, false); $("file").value = ""; };
+$("place").onchange = () => { openFiles($("place").files, true); $("place").value = ""; };
+FORMATS.forEach(([name, w, h]) => $("formats").append(el("button", { type: "button", textContent: name + " · " + w + " × " + h, onclick: () => blankDoc(w, h, "#ffffff") })));
+const editor = $("ps");
+editor.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); stage.classList.add("over"); } });
+editor.addEventListener("dragleave", (e) => { if (!editor.contains(e.relatedTarget)) stage.classList.remove("over"); });
+editor.addEventListener("drop", (e) => { e.preventDefault(); stage.classList.remove("over"); openFiles(e.dataTransfer.files, !!doc); });
+document.addEventListener("paste", (e) => {
+  if (e.target.closest?.("input, textarea")) return;
+  const files = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith("image/"));
+  if (files.length) { e.preventDefault(); openFiles(files, !!doc); }
+});
+addEventListener("beforeunload", (e) => { if (at > 0) e.preventDefault(); });
+$("zoom-in").onclick = D(() => zoomAt(1.25));
+$("zoom-out").onclick = D(() => zoomAt(.8));
+$("zoom-fit").onclick = D(fit);
+
+colors(); setTool("move"); refresh();
+</script>
+<script src="assets/tools-menu.js?v=18"></script>
+<script src="assets/account.js?v=19"></script>
+<script src="assets/site-nav.js?v=25"></script>
+</html>
