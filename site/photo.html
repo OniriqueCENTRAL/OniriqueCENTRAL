@@ -42,10 +42,18 @@ main.ps-main { padding: 0 12px 24px; }
 .ps-menubar b { margin-right: 10px; font: 600 12px/1 var(--f-mono); letter-spacing: .12em; color: var(--ember-text); white-space: nowrap; }
 .ps-menubar button { padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: var(--soft); cursor: pointer; white-space: nowrap; }
 .ps-menubar button:hover, .ps-menubar button[aria-expanded="true"] { background: rgba(var(--acc),.18); color: var(--mist); }
+.ps-menubar .full-btn { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; }
+.ps-menubar .full-btn svg { width: 16px; height: 16px; }
+/* Plein écran : l'éditeur couvre toute la fenêtre (les menus déroulants, ajoutés à la page, restent par-dessus) */
+.ps.full { position: fixed; inset: 0; z-index: 85; height: 100dvh; border: 0; border-radius: 0; overflow-y: auto; }
+body:has(.ps.full) { overflow: hidden; }
+body:has(.ps.full) #rocky { display: none; }
 .ps-drop { position: fixed; z-index: 90; min-width: 250px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--glass-deep); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); font: 400 13px/1.3 var(--f-body); }
 .ps-drop button { display: flex; justify-content: space-between; gap: 28px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--mist); font: inherit; text-align: left; cursor: pointer; }
 .ps-drop button:hover, .ps-drop button:focus-visible { background: rgba(var(--acc),.2); outline: none; }
 .ps-drop kbd { color: var(--muted); font: 400 11px/1.6 var(--f-mono); }
+.ps-drop button:disabled { color: var(--muted); cursor: default; background: none; }
+.ps-drop .sec { margin: 4px 0 0; padding: 9px 10px 3px; border-top: 1px solid var(--line); font: 500 10px/1.4 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .ps-drop hr { margin: 4px 8px; border: 0; border-top: 1px solid var(--line); }
 
 .ps-options { display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: #120e10; overflow-x: auto; white-space: nowrap; }
@@ -165,7 +173,7 @@ main.ps-main { padding: 0 12px 24px; }
   </section>
 
   <div class="ps" id="ps">
-    <nav class="ps-menubar" id="menubar" aria-label="Menus de l’éditeur"><b>PHOTO</b></nav>
+    <nav class="ps-menubar" id="menubar" aria-label="Menus de l’éditeur"><b>PHOTO</b><button class="full-btn" id="full" type="button" title="Plein écran (F)" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="full-icon" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span id="full-label">Plein écran</span></button></nav>
     <div class="ps-options" id="options"></div>
     <div class="ps-body">
       <div class="ps-tools" id="tools" role="toolbar" aria-label="Outils" aria-orientation="vertical">
@@ -224,6 +232,7 @@ main.ps-main { padding: 0 12px 24px; }
       <tr><td>Ctrl + A · Ctrl + D · Suppr</td><td>Tout sélectionner, désélectionner, effacer la sélection</td></tr>
       <tr><td>Entrée · Échap</td><td>Valider ou annuler le recadrage</td></tr>
       <tr><td>Ctrl + S</td><td>Exporter</td></tr>
+      <tr><td>F · clic droit</td><td>Plein écran, menu des commandes à l’endroit cliqué</td></tr>
     </table>
     <h2>Questions fréquentes</h2>
     <details><summary>Mes images sont-elles envoyées quelque part ?</summary>
@@ -1114,35 +1123,97 @@ const MENUS = [
   ["Sélection", [["Tout sélectionner", D(selectAll), "Ctrl+A"], ["Désélectionner", D(deselect), "Ctrl+D"]]],
   ["Filtre", [["Noir et blanc", D(() => filterLayer("grayscale(100%)", "Noir et blanc"))], ["Sépia", D(() => filterLayer("sepia(100%)", "Sépia"))],
     ["Négatif", D(() => filterLayer("invert(100%)", "Négatif")), "Ctrl+I"], ["Flou…", D(() => adjustDialog("bl"))]]],
-  ["Affichage", [["Zoom avant", D(() => zoomAt(1.25)), "Ctrl++"], ["Zoom arrière", D(() => zoomAt(.8)), "Ctrl+-"], ["Ajuster à l’écran", D(fit), "Ctrl+0"], ["Taille réelle (100 %)", D(actualSize), "Ctrl+1"]]],
+  ["Affichage", [["Zoom avant", D(() => zoomAt(1.25)), "Ctrl++"], ["Zoom arrière", D(() => zoomAt(.8)), "Ctrl+-"], ["Ajuster à l’écran", D(fit), "Ctrl+0"], ["Taille réelle (100 %)", D(actualSize), "Ctrl+1"], "-", ["Plein écran", () => toggleFull(), "F"]]],
 ];
 const KEYS = { "Ctrl+Maj+Z": D(redo), "Ctrl+Maj++": D(() => zoomAt(1.25)), "Ctrl+Maj+-": D(() => zoomAt(.8)), "Alt+Backspace": D(fillSelection) };
 let openMenu = null;
-function closeMenu() { if (!openMenu) return; openMenu.box.remove(); openMenu.button.setAttribute("aria-expanded", "false"); openMenu = null; }
-function showMenu(button, items) {
+function closeMenu() { if (!openMenu) return; openMenu.box.remove(); openMenu.button?.setAttribute("aria-expanded", "false"); openMenu = null; }
+/** Un menu sous un bouton de la barre, ou au pointeur ({ x, y } : le clic droit). */
+function showMenu(anchor, items) {
   closeMenu();
-  const r = button.getBoundingClientRect(), box = el("div", { className: "ps-drop", role: "menu" });
+  const box = el("div", { className: "ps-drop", role: "menu" });
   for (const item of items) {
     if (item === "-") { box.append(el("hr")); continue; }
-    const b = el("button", { type: "button", onclick: () => { closeMenu(); item[1](); } }, el("span", { textContent: item[0] }), el("kbd", { textContent: item[2] || "" }));
+    if (typeof item === "string") { box.append(el("p", { className: "sec", textContent: item.slice(1) })); continue; }
+    const b = el("button", { type: "button", disabled: item[3] === false, onclick: () => { closeMenu(); item[1](); } }, el("span", { textContent: item[0] }), el("kbd", { textContent: item[2] || "" }));
     b.setAttribute("role", "menuitem");
     box.append(b);
   }
   document.body.append(box);
+  const button = anchor instanceof Element ? anchor : null, r = button ? button.getBoundingClientRect() : { left: anchor.x, bottom: anchor.y };
+  box.style.maxHeight = innerHeight - 16 + "px"; box.style.overflowY = "auto";
   box.style.left = Math.max(8, Math.min(r.left, innerWidth - box.offsetWidth - 8)) + "px";
-  box.style.top = r.bottom + 4 + "px";
-  button.setAttribute("aria-expanded", "true");
+  box.style.top = Math.max(8, Math.min(r.bottom + (button ? 4 : 0), innerHeight - box.offsetHeight - 8)) + "px";
+  button?.setAttribute("aria-expanded", "true");
   openMenu = { box, button };
 }
 for (const [name, items] of MENUS) {
   const b = el("button", { type: "button", textContent: name });
+  $("menubar").insertBefore(b, $("full"));
   b.setAttribute("aria-haspopup", "menu"); b.setAttribute("aria-expanded", "false");
   b.onclick = (e) => { e.stopPropagation(); openMenu?.button === b ? closeMenu() : showMenu(b, items); };
-  b.onmouseenter = () => { if (openMenu && openMenu.button !== b) showMenu(b, items); };
-  $("menubar").append(b);
+  b.onmouseenter = () => { if (openMenu?.button && openMenu.button !== b) showMenu(b, items); };
   for (const item of items) if (item[2]) KEYS[item[2]] = item[1];
 }
 document.addEventListener("click", (e) => { if (openMenu && !openMenu.box.contains(e.target)) closeMenu(); });
+
+/** Les calques visibles qui ont un pixel au point p, du dessus vers le dessous. */
+function layersAt(p) {
+  const found = [];
+  for (let i = doc.layers.length - 1; i >= 0; i--) {
+    const l = doc.layers[i], b = boxOf(l);
+    if (!l.visible || !inside(b, p)) continue;
+    const c = l.canvas, x = Math.floor((p.x - b.x) * c.width / b.w), y = Math.floor((p.y - b.y) * c.height / b.h);
+    if (c.getContext("2d").getImageData(x, y, 1, 1).data[3] > 0) found.push(i);
+  }
+  return found;
+}
+function contextItems(p) {
+  const fullItem = [full ? "Quitter le plein écran" : "Plein écran", toggleFull, "F"];
+  if (!doc) return [["Ouvrir une image…", () => $("file").click(), "Ctrl+O"], ["Nouveau projet…", newDialog, "Ctrl+Alt+N"], "-", fullItem];
+  const onImage = inside({ x: 0, y: 0, w: doc.w, h: doc.h }, p), l = active(), under = onImage ? layersAt(p) : [];
+  const items = [["Annuler", undo, "Ctrl+Z", at > 0], ["Rétablir", redo, "Ctrl+Y", at < states.length - 1]];
+  if (tool === "crop") items.push("#Recadrage", ["Valider le recadrage", applyCrop, "Entrée"], ["Réinitialiser le cadre", () => { resetCrop(); cropInfo(); render(); }, "Échap"]);
+  // Plusieurs calques sous le pointeur : on choisit lequel travailler, comme dans les logiciels de retouche.
+  if (under.length > 1) items.push("#Calques ici", ...under.slice(0, 5).map((i) => [(i === doc.active ? "✓ " : "") + doc.layers[i].name, () => { doc.active = i; refresh(); }]));
+  items.push("#Calque « " + (l.name.length > 22 ? l.name.slice(0, 21) + "…" : l.name) + " »",
+    ["Dupliquer", duplicate, "Ctrl+J"], ["Supprimer", removeLayer, "", doc.layers.length > 1],
+    ["Fusionner avec le dessous", mergeDown, "Ctrl+E", doc.active > 0], ["Centrer dans l’image", centerLayer]);
+  if (l.text) items.push(["Modifier le texte", () => { setTool("text"); focusText(); }]);
+  if (selection) items.push("#Sélection", ["Désélectionner", deselect, "Ctrl+D"], ["Effacer", clearSelection, "Suppr"], ["Recadrer à la sélection", cropToSelection]);
+  items.push("#Image");
+  if (!selection) items.push(["Tout sélectionner", selectAll, "Ctrl+A"]);
+  if (onImage) items.push(["Prendre la couleur ici", () => HANDLERS.pick.down(p, {}), "I"]);
+  items.push(["Aplatir l’image", flattenImage, "", doc.layers.length > 1], ["Exporter…", exportDialog, "Ctrl+S"], fullItem);
+  return items;
+}
+stage.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  if (action) return;
+  showMenu({ x: e.clientX, y: e.clientY }, contextItems(docPoint(e)));
+});
+
+// ——— Plein écran : l'éditeur prend toute la page, et la fenêtre passe en plein écran quand le navigateur le permet ———
+let full = false;
+function setFull(on) {
+  if (full === on) return;
+  full = on;
+  $("ps").classList.toggle("full", on);
+  $("full").setAttribute("aria-pressed", String(on));
+  $("full-label").textContent = on ? "Quitter" : "Plein écran";
+  $("full-icon").setAttribute("d", on ? "M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" : "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5");
+  closeMenu();
+  requestAnimationFrame(() => (doc ? fit() : render()));
+}
+function toggleFull() {
+  const on = !full;
+  setFull(on);
+  if (on && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+  if (!on && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+}
+$("full").onclick = (e) => { e.stopPropagation(); toggleFull(); };
+// Échap ferme le plein écran du navigateur : l'éditeur reprend sa place dans la page.
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) setFull(false); });
 addEventListener("resize", closeMenu);
 addEventListener("scroll", closeMenu, { passive: true });
 
@@ -1161,6 +1232,7 @@ addEventListener("keydown", (e) => {
   if (e.code === "Space" && doc) { e.preventDefault(); if (!spaceDown) { spaceDown = true; if (!action) view.style.cursor = "grab"; } return; }
   const k = e.key.toLowerCase();
   if (TOOL_KEYS[k]) return setTool(TOOL_KEYS[k]);
+  if (k === "f") return toggleFull();
   if (k === "x") { [fg, bg] = [bg, fg]; return colors(); }
   if (k === "d") { fg = "#000000"; bg = "#ffffff"; return colors(); }
   if (!doc) return;
