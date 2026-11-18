@@ -58,6 +58,7 @@ import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
 import { mountTraductions, fichesEn, translateMissing } from './traductions.js';
 import { planSaleOf, saleOf } from './soldes.js';
+import { noelView, offrirNoel } from './noel.js';
 import { mountVocalBrain } from './vocalbrain.js';
 import { applyPluginFiches, applyRetouches } from './fiches.js';
 import { autoriser as autoriserVpn, jetonVpn, VPN_RELAIS } from './vpn.js';
@@ -534,6 +535,7 @@ export function createApp() {
   });
 
   app.get('/api/me', requireUser, (req, res) => {
+    offrirNoel(undefined, req.user.id); // un compte créé pendant les fêtes reçoit son cadeau dès sa première ouverture
     const licenses = all(
       `SELECT l.*, p.name AS product_name FROM licenses l JOIN products p ON p.id = l.product_id
        WHERE l.user_id = ? ORDER BY l.created_at DESC`, req.user.id);
@@ -559,6 +561,7 @@ export function createApp() {
       trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
       referral: referralView(req.user),
       rights: rightsOf(req.user), // ce que ce compte peut ouvrir : ONIRIQUE CLOUD, page de liens, profil d'ingé…
+      noel: noelView(req.user.id), // le cadeau de Noël, pour l'animation de l'application
     });
   });
 

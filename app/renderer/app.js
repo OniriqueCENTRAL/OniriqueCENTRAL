@@ -8,6 +8,7 @@ import { adminView, fillMissingDemos } from './views/admin.js';
 import { supportView } from './views/support.js';
 import { supportAdminView } from './views/support-admin.js';
 import { clipsView } from './views/clips.js';
+import { showNoel } from './noel.js';
 
 const central = window.central;
 
@@ -45,14 +46,15 @@ export async function refresh() {
   lastLoad = Date.now();
   render();
   fillMissingDemos();
-  showNews();
+  // Le cadeau de Noël passe avant la fenêtre « nouveauté » (une seule animation à la fois).
+  if (!showNoel(state.data?.me?.noel, state.data?.me?.user?.id, { media: (path) => call('media', path), open: (id) => go('plugins', id) })) showNews();
 }
 
 /** La fenêtre « nouveauté » (réglée dans le panel, la même que sur le site) : une fois par nouveauté, à l'ouverture,
     une fois connecté. Le bouton ouvre la fiche du plugin dans l'application. */
 function showNews() {
   const p = state.data?.popup;
-  if (!p || !p.id || !state.data.me || document.getElementById('overlay').hasChildNodes()) return;
+  if (!p || !p.id || !state.data.me || document.getElementById('overlay').hasChildNodes() || document.querySelector('.noel')) return;
   try {
     if (localStorage.getItem('onirique.popup.seen') === p.id) return;
     localStorage.setItem('onirique.popup.seen', p.id);
