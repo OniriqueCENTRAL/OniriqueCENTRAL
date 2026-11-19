@@ -73,7 +73,15 @@
     patterns = [];
     translated = new Set();
     // Les fiches traduites par le serveur passent avant : une traduction faite à la main garde la priorité.
-    for (const [source, en] of Object.entries({ ...window.ONIRIQUE_EN_FICHES, ...extra, ...dict })) {
+    // Une page peut avoir son propre sens pour un mot (<html data-i18n="photo"> : « photo::Rayon » y donne Radius, quand
+    // « Rayon » est un rayon de la boutique ailleurs). Les clés d'une autre page sont ignorées.
+    const scope = document.documentElement.getAttribute("data-i18n"), merged = {}, local = {};
+    for (const [key, en] of Object.entries({ ...window.ONIRIQUE_EN_FICHES, ...extra, ...dict })) {
+      const cut = key.indexOf("::");
+      if (cut < 0) merged[key] = en;
+      else if (scope && key.slice(0, cut) === scope) local[key.slice(cut + 2)] = en;
+    }
+    for (const [source, en] of Object.entries({ ...merged, ...local })) {
       const fr = plain(source);
       translated.add(en);
       if (fr.includes("{}")) {

@@ -1,7 +1,7 @@
 <!doctype html>
-<html lang="fr" data-rocky="off">
+<html data-i18n="photo" lang="fr" data-rocky="off">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=3fb1add5"></script>
+<script src="assets/i18n.js?v=b81375d7"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -887,7 +887,7 @@ function textOptions(add) {
     paintText(a); render();
   };
   const save = () => { if (active().text) commit("Modifier le texte"); };
-  const str = el("textarea", { id: "text-str", rows: 1, value: t.str, placeholder: "Clique sur l’image pour écrire", disabled: !l.text });
+  const str = el("textarea", { id: "text-str", rows: 1, value: t.str, placeholder: window.OniriqueI18n?.t("Clique sur l’image pour écrire") ?? "Clique sur l’image pour écrire", disabled: !l.text });
   str.setAttribute("aria-label", "Texte");
   str.oninput = () => update("str", str.value);
   str.onchange = save;
@@ -1450,6 +1450,7 @@ const MENUS = [
 ];
 const KEYS = { "Ctrl+Maj+Z": D(redo), "Ctrl+Maj++": D(() => zoomAt(1.25)), "Ctrl+Maj+-": D(() => zoomAt(.8)), "Alt+Backspace": D(fillSelection) };
 let openMenu = null;
+const MENU_EN = { "Annuler": "Undo", "Rétablir": "Redo" };
 function closeMenu() { if (!openMenu) return; openMenu.box.remove(); openMenu.button?.setAttribute("aria-expanded", "false"); openMenu = null; }
 /** Un menu sous un bouton de la barre, ou au pointeur ({ x, y } : le clic droit). */
 function showMenu(anchor, items) {
@@ -1458,7 +1459,11 @@ function showMenu(anchor, items) {
   for (const item of items) {
     if (item === "-") { box.append(el("hr")); continue; }
     if (typeof item === "string") { box.append(el("p", { className: "sec", textContent: item.slice(1) })); continue; }
-    const b = el("button", { type: "button", disabled: item[3] === false, onclick: () => { closeMenu(); item[1](); } }, el("span", { textContent: item[0] }), el("kbd", { textContent: item[2] || "" }));
+    // « Annuler » veut dire Cancel partout ailleurs sur le site : dans ce menu, c’est Undo (et Rétablir, Redo).
+    const en = window.OniriqueI18n?.lang === "en" && MENU_EN[item[0]], label = el("span", { textContent: en || item[0] });
+    if (en) label.setAttribute("data-no-translate", "");
+    const b = el("button", { type: "button", disabled: item[3] === false, onclick: () => { closeMenu(); item[1](); } },
+      label, el("kbd", { textContent: item[2] || "" }));
     b.setAttribute("role", "menuitem");
     box.append(b);
   }
