@@ -1509,12 +1509,13 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // La cloche : les 60 dernières notifications des types choisis, avec la pochette du projet quand le membre y a encore accès.
   app.get('/api/me/sounds/notices', ...me, (req, res) => {
     const shown = Object.entries(prefsOf(req.user.id).inbox).filter(([, on]) => on).map(([kind]) => kind);
-    const rows = all(`SELECT n.*, u.name AS actor_name, u.avatar AS actor_avatar, p.cover, p.id AS pid FROM sound_notices n
-      LEFT JOIN users u ON u.id = n.actor_id LEFT JOIN sound_projects p ON p.id = n.project_id AND ${ACCESS}
+    const rows = all(`SELECT n.*, u.id AS actor_uid, u.name AS actor_name, u.avatar AS actor_avatar, p.cover, p.id AS pid FROM sound_notices n
+      LEFT JOIN users u ON u.id = COALESCE(n.actor_id, CASE WHEN n.kind IN ('play', 'comment', 'save')
+        THEN (SELECT MIN(x.id) FROM users x WHERE x.name = n.who HAVING COUNT(*) = 1) END) LEFT JOIN sound_projects p ON p.id = n.project_id AND ${ACCESS}
       WHERE n.user_id = ? AND n.kind IN (${shown.map(() => '?').join(',') || "''"}) ORDER BY n.at DESC, n.id DESC LIMIT 60`,
     req.user.id, req.user.id, req.user.id, ...shown);
     res.json({ items: rows.map((n) => ({ id: n.id, kind: n.kind, who: n.who, text: n.text, at: n.at, seen: !!n.seen, projectId: n.pid || null, cover: media(n.cover),
-      actor: n.actor_id ? person({ id: n.actor_id, name: n.actor_name, avatar: n.actor_avatar }) : null })) });
+      actor: n.actor_uid ? person({ id: n.actor_uid, name: n.actor_name, avatar: n.actor_avatar }) : null })) });
   });
   app.post('/api/me/sounds/notices/seen', ...me, (req, res) => {
     run('UPDATE sound_notices SET seen = 1 WHERE user_id = ? AND seen = 0', req.user.id);
@@ -1612,7 +1613,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // Prévient celui qui a partagé le lien, sur ses appareils et par e-mail, selon ses réglages. Un même geste d'une même
   // personne ne prévient qu'une fois par jour ; l'e-mail attend de savoir qui c'est (compte ou nom donné).
   const told = new Map();
-  function tell(link, event, { who, title, key }) {
+  function tell(link, event, { who, title, key, actor = null }) {
     const k = `${event}:${link.id}:${key}`;
     if (told.get(k) > now()) return;
     if (told.size > 20000) told.clear();
@@ -1625,7 +1626,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       save: `a ajouté « ${title} » à son ONIRIQUE CLOUD`,
     }[event];
     const text = `${who || "Quelqu'un"} ${verb}`;
-    notice([link.user_id], event, { who, text: verb + where, projectId: link.project_id || get('SELECT project_id FROM sound_tracks WHERE id = ?', link.track_id)?.project_id });
+    notice([link.user_id], event, { actor, who, text: verb + where, projectId: link.project_id || get('SELECT project_id FROM sound_tracks WHERE id = ?', link.track_id)?.project_id });
     if (wants(link.user_id, event, 'push')) push(link.user_id, { title: 'ONIRIQUE CLOUD', body: text + where, url: '/mes-sons' });
     if (who && wants(link.user_id, event, 'mail')) {
       sendMail(link.owner_email, `${text} — ONIRIQUE`, `${text}${where}.\n\n${config.siteUrl}/mes-sons\n\nONIRIQUE`,
@@ -1644,7 +1645,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!saveState(req, link).canSave) throw new HttpError(400, "Ce projet est déjà dans ONIRIQUE CLOUD : c'est le tien, ou tu y collabores.");
     run('INSERT OR IGNORE INTO sound_saves (user_id, link_id, pass, created_at) VALUES (?, ?, ?, ?)',
       req.user.id, link.id, link.password_hash ? passFor(link) : null, now());
-    tell(link, 'save', { who: nameOf(req.user), title: linkTitle(link), key: req.user.id });
+    tell(link, 'save', { actor: req.user, who: nameOf(req.user), title: linkTitle(link), key: req.user.id });
     res.status(201).json({ saved: true });
   });
   app.delete('/api/sounds/share/:token/save', ...me, (req, res) => {
@@ -1700,7 +1701,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const play = run('INSERT INTO sound_plays (link_id, track_id, user_id, listener, created_at) VALUES (?, ?, ?, ?, ?)', link.id, t.id, listenerId, who, now()).lastInsertRowid;
     const contact = contactOf(link, req);
     trackRecipient(contact, 'play', t.title);
-    if (listener?.id !== link.user_id) tell(link, 'play', { who: contactName(contact) || nameOf(listener), title: t.title, key: `${t.id}:${listenerId || contact?.id || req.ip}` });
+    if (listener?.id !== link.user_id) tell(link, 'play', { actor: contactName(contact) ? null : listener, who: contactName(contact) || nameOf(listener), title: t.title, key: `${t.id}:${listenerId || contact?.id || req.ip}` });
     res.json({ ok: true, play });
   });
   // Jusqu'où l'écoute est allée : envoyé pendant la lecture, seul le point le plus loin est gardé.
@@ -1726,7 +1727,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const at = Math.max(0, Math.min(Number(req.body.at) || 0, t.duration || 86400));
     const cid = run(`INSERT INTO sound_comments (track_id, version_id, link_id, user_id, author, at, body, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       t.id, t.vid, link.id, listener?.id ?? null, author, at, body, now()).lastInsertRowid;
-    if (listener?.id !== link.user_id) tell(link, 'comment', { who: author, title: t.title, key: `c${cid}` });
+    if (listener?.id !== link.user_id) tell(link, 'comment', { actor: listener, who: author, title: t.title, key: `c${cid}` });
     res.status(201).json(commentView(get('SELECT * FROM sound_comments WHERE id = ?', cid)));
   });
 

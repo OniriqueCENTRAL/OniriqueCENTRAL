@@ -488,6 +488,10 @@ try {
       ['join', 'ami-collab', 'a rejoint « SEMINAIRE »', false]]);
     assert.equal(bell[0].projectId, pid);
     assert.deepEqual((await call('GET', '/api/me/sounds/notices', { token: friend.token })).items.map((n) => [n.kind, n.text]), [['play', 'écoute « Couplet »']]);
+    // Une écoute d'un membre connecté arrive avec son compte (sa photo dans la cloche).
+    await call('POST', `/api/sounds/share/${shareToken(shared.url)}/play`, { token: owner.token, body: { trackId: added.id } });
+    const byMember = (await call('GET', '/api/me/sounds/notices', { token: friend.token })).items[0];
+    assert.deepEqual([byMember.kind, byMember.who, byMember.actor?.name], ['play', 'auteur-collab', 'auteur-collab']);
     await call('PUT', '/api/me/notifications', { token: owner.token, body: { inbox: { rename: false } } });
     await call('POST', '/api/me/sounds/notices/seen', { token: owner.token });
     bell = (await call('GET', '/api/me/sounds/notices', { token: owner.token })).items;
