@@ -971,7 +971,10 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
     <section class="cloud-page" id="cloud-page" hidden aria-label="Mes vidéos CUT">
       <header class="cloud-head">
         <div><h2>Mes vidéos CUT</h2><p class="muted" id="lib-info"></p></div>
-        <button class="mini" type="button" id="cloud-close">Fermer ✕</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="mini" type="button" id="lib-clean" hidden title="Les vidéos dont le Short (et le Reel, s’il y en a un) est déjà publié">Supprimer les vidéos publiées</button>
+          <button class="mini" type="button" id="cloud-close">Fermer ✕</button>
+        </div>
       </header>
       <div class="cloud-plan" id="cloud-plan" hidden>
         <h3>Créneaux de publication</h3>
@@ -4029,6 +4032,26 @@ async function renderLibrary() {
     if (!response.ok) throw new Error();
     const { videos } = await response.json();
     $("lib-info").textContent = videos.length ? videos.length + " vidéo" + (videos.length > 1 ? "s" : "") + " · touche une vidéo pour la lire, « ⋮ » pour tout le reste." : "Aucune vidéo pour l’instant : coche « Garder aussi dans mon cloud CUT » avant d’exporter.";
+    // Déjà publiées partout où elles étaient prévues : on peut les retirer du cloud pour faire de la place
+    // (le Short et le Reel restent en ligne, et leur phrase reste « déjà prise »).
+    const slotsOf = (v) => [inShorts.has(v.id) && shortSlots[v.id], inReels.has(v.id) && reelSlots[v.id]].filter((s) => s !== false);
+    const done = videos.filter((v) => { const s = slotsOf(v); return s.length && s.every((x) => x && x.status === "published"); });
+    const clean = $("lib-clean"), freed = done.reduce((n, v) => n + v.size, 0);
+    clean.hidden = !done.length;
+    clean.textContent = "Supprimer les vidéos publiées (" + done.length + " · " + mo(freed) + ")";
+    clean.onclick = async () => {
+      if (!confirm("Supprimer de ton cloud CUT les " + done.length + " vidéo" + (done.length > 1 ? "s" : "") + " déjà publiée" + (done.length > 1 ? "s" : "") + " (" + mo(freed) + ") ?\nElles restent en ligne sur YouTube et Instagram, mais ne pourront plus être rééditées ni téléchargées d’ici.")) return;
+      clean.disabled = true;
+      let failed = 0;
+      for (const [k, v] of done.entries()) {
+        clean.textContent = "Suppression… " + (k + 1) + " / " + done.length;
+        const r = await fetch("/api/cut/library/" + v.id, { method: "DELETE", headers: { Authorization: "Bearer " + TOKEN } }).catch(() => null);
+        if (!r || !r.ok) failed++;
+      }
+      clean.disabled = false;
+      if (failed) alert(failed + " vidéo" + (failed > 1 ? "s n’ont" : " n’a") + " pas pu être supprimée" + (failed > 1 ? "s" : "") + ". Réessaie dans un instant.");
+      renderLibrary();
+    };
     $("lib-list").replaceChildren(...videos.map((v) => {
       const thumb = el("div", { className: "vthumb", title: "Lire" }, el("img", { src: v.poster, alt: "", loading: "lazy", onerror: (event) => event.target.replaceWith(el("video", { src: v.url + "#t=1", muted: true, preload: "metadata", playsInline: true })) }), el("span", { className: "vdur", textContent: OniriqueAudio.clock(v.duration) }),
         el("div", { className: "vbadges" }, inShorts.has(v.id) ? el("span", { className: "yt", textContent: slotText("Short", shortSlots[v.id]) }) : null, inReels.has(v.id) ? el("span", { className: "ig", textContent: slotText("Reel", reelSlots[v.id]) }) : null));
