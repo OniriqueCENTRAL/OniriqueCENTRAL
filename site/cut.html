@@ -728,6 +728,9 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <button class="mini" type="button" id="intro-hear">Écouter la réplique</button>
             </div>
             <label class="grow">Volume du film<input type="range" id="filmVol" min="0" max="200" step="5"></label>
+            <label class="check"><input type="checkbox" id="filmDialog"> Retirer la musique de l’extrait : ne garder que les dialogues (IA SPLIT)</label>
+            <label class="grow">Volume des dialogues<input type="range" id="dialogVol" min="0" max="300" step="5"></label>
+            <p class="muted" id="dialog-status">Les dialogues sont séparés de la musique du film dans ton navigateur par l’IA SPLIT (Demucs) : rien n’est envoyé.</p>
 
             <p class="sub-title">Paroles de la réplique</p>
             <label>Ce qui est dit dans l’extrait (une phrase par ligne)
@@ -1072,7 +1075,7 @@ const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 10
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62,
   introVoices: false, voice1: "#ffffff", voice2: "#ffd23f", stackMax: "0" };
-const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introType: false, stackX: .5, stackY: .4, stackSize: 70, introGaps: true, introFade: false, transition: "flash", transAmt: 100,
+const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, filmDialog: false, dialogVol: 100, introLyrics: "", introSubMode: "sub", introType: false, stackX: .5, stackY: .4, stackSize: 70, introGaps: true, introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", igAuto: false, igTime: "18:30", igTrial: "", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
@@ -2073,7 +2076,7 @@ function clipAudio(c) {
 const trackFade = (track, which, def) => { const f = (prefs.trackFades || {})[track]; return f && f[which] != null ? Math.max(.004, f[which]) : def; };
 const filmActive = () => Object.keys(prefs.trackFades || {}).length > 0 || introLen() > 0 || prefs.musicVol !== 100 || (prefs.clipVol > 0 && clips.some((c) => c.kind === "video")) || extras.length > 0 || mutedTracks.size > 0;
 let mix = null, mixing = null, mixTimer = 0;
-const mixKey = () => JSON.stringify([sound.start, span(), prefs.musicVol, prefs.clipVol, prefs.introOn, prefs.introClip, prefs.introIn, introLen(), prefs.filmVol, prefs.introFade,
+const mixKey = () => JSON.stringify([sound.start, span(), prefs.musicVol, prefs.clipVol, prefs.introOn, prefs.introClip, prefs.introIn, introLen(), prefs.filmVol, prefs.filmDialog, prefs.dialogVol, prefs.introFade,
   prefs.dropGap, prefs.underPart, prefs.underVol, prefs.trackFades,
   prefs.slowmo, clips.map((c) => c.url), segments.map((x) => [x.t0, x.t1, x.clip, x.from, !!x.hold]),
   extras.map((e) => [e.id, e.at, e.offset, e.length, e.vol, e.fadeIn, e.fadeOut, e.track]), [...mutedTracks]]);
@@ -2095,7 +2098,16 @@ async function buildMix(key) {
   const gap = prefs.dropGap ? .22 : 0; // « Silence juste avant le drop »
   if (intro) {
     const a = await clipAudio(introClip());
-    if (a) add(a, 0, prefs.introIn, intro - gap + (prefs.introFade && !gap ? .2 : 0), vol("film", prefs.filmVol), trackFade("film", "in", .01), trackFade("film", "out", gap ? .03 : crossfade), false);
+    const filmLen = intro - gap + (prefs.introFade && !gap ? .2 : 0), filmIn = trackFade("film", "in", .01), filmOut = trackFade("film", "out", gap ? .03 : crossfade);
+    // Dialogues seuls, ou plus forts : la réplique séparée par l’IA (voix d’un côté, musique et bruits de l’autre).
+    const voice = a && (prefs.filmDialog || prefs.dialogVol !== 100) ? await ensureDialog(a) : null;
+    if (voice) {
+      add(voice.vocals, 0, 0, filmLen, vol("film", prefs.filmVol) * prefs.dialogVol / 100, filmIn, filmOut, false);
+      if (!prefs.filmDialog) add(voice.rest, 0, 0, filmLen, vol("film", prefs.filmVol), filmIn, filmOut, false);
+    } else if (a) {
+      if (prefs.filmDialog || prefs.dialogVol !== 100) missing = true; // l’IA a échoué : le son d’origine, retenté à la prochaine lecture
+      add(a, 0, prefs.introIn, filmLen, vol("film", prefs.filmVol), filmIn, filmOut, false);
+    }
     const tailCut = prefs.loop && segments.find((x) => x.tail && x.clip === prefs.introClip);
     if (a && tailCut) add(a, intro + tailCut.t0, tailCut.from, tailCut.t1 - tailCut.t0, vol("film", prefs.filmVol), .15, .004, false);
     // Sous la réplique : la musique qui mène au drop (le son entier, ou une seule piste séparée).
@@ -2138,8 +2150,8 @@ async function ensureMix() {
 let demucs = null, demucsQueue = Promise.resolve(), demucsIdle = 0;
 const AI_RATE = 44100; // ce que le modèle attend
 /** Les échantillons [a, a + n[ du son, en stéréo à 44 100 Hz. */
-async function at44k(a, n) {
-  const b = sound.buffer, slice = new AudioBuffer({ length: n, numberOfChannels: 2, sampleRate: b.sampleRate });
+async function at44k(a, n, b = sound.buffer) {
+  const slice = new AudioBuffer({ length: n, numberOfChannels: 2, sampleRate: b.sampleRate });
   for (let c = 0; c < 2; c++) slice.copyToChannel(b.getChannelData(Math.min(c, b.numberOfChannels - 1)).subarray(a, a + n), c);
   if (b.sampleRate === AI_RATE) return [slice.getChannelData(0), slice.getChannelData(1)];
   const off = new OfflineAudioContext(2, Math.ceil(n * AI_RATE / b.sampleRate), AI_RATE), src = off.createBufferSource();
@@ -2149,17 +2161,17 @@ async function at44k(a, n) {
 }
 const pct = (x) => Math.round(x * 100) + " %";
 /** Les pistes des échantillons [a, a + n[ par IA ({ device, parts } à 44 100 Hz, chaque piste en [gauche, droite]) ; une à la fois. */
-function aiStems(a, n, what) {
+function aiStems(a, n, what, b = sound.buffer, status = "stem-status") {
   clearTimeout(demucsIdle);
   const job = demucsQueue.then(() => aiWork(async () => {
-    const [L, R] = await at44k(a, n);
+    const [L, R] = await at44k(a, n, b);
     if (!demucs) { try { navigator.storage.persist().catch(() => {}); } catch { /* navigateur trop ancien */ } } // que le navigateur garde l’IA téléchargée
     demucs = demucs || new Worker("assets/demucs-worker.js?v=2", { type: "module" });
     const out = await new Promise((resolve, reject) => {
       demucs.onmessage = ({ data }) => {
         if (data.type === "done") resolve(data);
         else if (data.type === "error") reject(new Error(data.message));
-        else $("stem-status").textContent = data.phase === "download"
+        else $(status).textContent = data.phase === "download"
           ? "Téléchargement de l’IA de séparation (172 Mo, une seule fois sur cet appareil)… " + pct(data.value)
           : data.phase === "load" ? "IA de séparation déjà sur cet appareil : chargement…"
           : "Séparation par IA de " + what + "… " + pct(data.value);
@@ -2183,6 +2195,29 @@ caches.open("onirique-demucs").then((c) => c.keys()).then((k) => {
 }).catch(() => {});
 const aiDone = (device) => "Pistes séparées par IA (Demucs" + (device === "gpu" ? ", sur la carte graphique)." : ", sur le processeur).");
 const FAST_NOTE = " L’IA n’a pas pu tourner dans ce navigateur : séparation rapide, approchée (essaie Chrome ou Edge à jour).";
+
+// Les dialogues de la réplique (option « Retirer la musique de l’extrait » et « Volume des dialogues ») : le passage du clip
+// séparé une fois par l’IA, { vocals, rest } calés sur le début de la réplique ; null si l’IA n’a pas pu tourner.
+let dialog = null, dialogJob = null;
+function ensureDialog(a) {
+  const key = JSON.stringify([introClip().url, prefs.introIn, introLen()]);
+  if (dialog && dialog.key === key) return Promise.resolve(dialog);
+  if (!dialogJob || dialogJob.key !== key) {
+    const job = dialogJob = { key };
+    const from = Math.floor(prefs.introIn * a.sampleRate), n = Math.min(a.length - from, Math.ceil((introLen() + .3) * a.sampleRate));
+    job.done = (n > 0 ? aiStems(from, n, "la réplique", a, "dialog-status") : Promise.reject(new Error("vide"))).then((out) => {
+      const buf = ([l, r]) => { const x = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: AI_RATE }); x.copyToChannel(l, 0); x.copyToChannel(r, 1); return x; };
+      $("dialog-status").textContent = "Dialogues séparés de la musique par l’IA SPLIT (Demucs" + (out.device === "gpu" ? ", sur la carte graphique)." : ", sur le processeur).");
+      if (dialogJob === job) dialog = { key, vocals: buf(out.parts.vocals), rest: buf(out.parts.prod) };
+      return dialog;
+    }).catch(() => {
+      $("dialog-status").textContent = "L’IA n’a pas pu séparer les dialogues dans ce navigateur (essaie Chrome ou Edge à jour) : le son du film reste d’origine.";
+      if (dialogJob === job) dialogJob = null; // retenté à la prochaine lecture
+      return null;
+    });
+  }
+  return dialogJob.done;
+}
 
 // Les pistes séparées de la musique qui mène au drop, calculées une fois par passage.
 let stems = null, stemJob = null;
@@ -4299,8 +4334,8 @@ function filmUi() {
   $("afterClip").disabled = !!prefs.filmContinue; // « la suite de l’extrait » garde le clip de la réplique
   drawAfterWave();
   $("introOn").checked = !!prefs.introOn; $("intro-box").hidden = !prefs.introOn;
-  for (const id of ["filmVol", "musicVol", "clipVol", "stackSize"]) $(id).value = prefs[id];
-  for (const id of ["introFade", "introGaps", "introType", "dropGap", "filmContinue"]) $(id).checked = !!prefs[id];
+  for (const id of ["filmVol", "dialogVol", "musicVol", "clipVol", "stackSize"]) $(id).value = prefs[id];
+  for (const id of ["introFade", "introGaps", "introType", "dropGap", "filmContinue", "filmDialog"]) $(id).checked = !!prefs[id];
   $("underVol").value = prefs.underVol;
   if (document.activeElement !== $("introLyrics")) $("introLyrics").value = prefs.introLyrics;
   renderVoices();
@@ -4410,7 +4445,7 @@ function start() {
     if (playing && source && source.monitor) source.monitor.gain.setTargetAtTime(prefs.previewVol / 100, ctx.currentTime, .02);
   };
   // Options de films : la réplique change la durée de la vidéo (tout se recalcule) ; les volumes ne changent que le mixage.
-  for (const id of ["introOn", "introClip", "afterClip", "filmVol", "introFade", "introGaps", "introType", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
+  for (const id of ["introOn", "introClip", "afterClip", "filmVol", "filmDialog", "dialogVol", "introFade", "introGaps", "introType", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
     $(id).addEventListener("change", () => {
       const el = $(id);
       prefs[id] = el.type === "checkbox" ? el.checked : el.type === "range" || el.tagName === "SELECT" ? Number(el.value) : el.value;
