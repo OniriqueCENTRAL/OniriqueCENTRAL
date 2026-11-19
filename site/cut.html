@@ -2881,13 +2881,14 @@ function stackedLine(words, t, typing, color) {
     row.size = row.small ? big * .6 : big;
     g.font = `${weight} ${row.size}px "${family}"`;
     row.w = g.measureText(up(row.words.map((w) => w.text).join(" "))).width;
-    if (row.w > W - 80) { row.size *= (W - 80) / row.w; row.w = W - 80; }
+    if (row.w > SAFE_W) { row.size *= SAFE_W / row.w; row.w = SAFE_W; }
   }
   // Trop de lignes pour la hauteur de l’image : tout le bloc rapetisse au lieu de déborder.
   const fit = Math.min(1, (H - 60) / rows.reduce((n, r) => n + r.size * .92, 0));
   rows.forEach((r) => { r.size *= fit; r.w *= fit; });
   const bw = Math.max(...rows.map((r) => r.w)), bh = rows.reduce((n, r) => n + r.size * .92, 0);
-  const left = Math.min(W - 30 - bw, Math.max(30, prefs.stackX * W - bw / 2)), top = Math.min(H - 30 - bh, Math.max(30, prefs.stackY * H - bh / 2));
+  // Les marges SAFE à gauche et à droite : un téléphone plus allongé que le 9:16 (iPhone 15…) coupe les côtés de la vidéo.
+  const left = Math.min(W - SAFE - bw, Math.max(SAFE, prefs.stackX * W - bw / 2)), top = Math.min(H - 30 - bh, Math.max(30, prefs.stackY * H - bh / 2));
   stackBox = { x: left, y: top, w: bw, h: bh };
   let y = top;
   rows.forEach((row, k) => {
@@ -2972,7 +2973,7 @@ function vhs(a) {
   g.fillStyle = `rgba(0,0,0,${.28 * a})`;
   for (let y = 0; y < H; y += 6) g.fillRect(0, y, W, 2);
   g.fillStyle = `rgba(255,255,255,${.18 * a})`; g.fillRect(0, H * .3 + (1 - a) * 540, W, 46);
-  g.font = `400 84px "VT323", monospace`; g.fillStyle = `rgba(255,255,255,${a})`; g.textAlign = "left"; g.textBaseline = "top"; g.fillText("◀◀ REW", 70, 140);
+  g.font = `400 84px "VT323", monospace`; g.fillStyle = `rgba(255,255,255,${a})`; g.textAlign = "left"; g.textBaseline = "top"; g.fillText("◀◀ REW", SAFE, 140);
 }
 /** La transition entre la réplique et la musique ; d : secondes depuis le drop (négatif juste avant). */
 function transitionAt(d) {
