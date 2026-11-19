@@ -251,6 +251,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .sub-title { margin: 0; font: 600 14px/1.2 var(--f-display); }
 .strong-words { display: flex; flex-wrap: wrap; gap: 8px; }
 .strong-words button { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--mist); font: 500 14px var(--f-body); cursor: pointer; }
+.strong-words.cut-words button[aria-pressed="true"] { background: rgba(0,0,0,.3); box-shadow: none; color: var(--mist); font-weight: 500; text-transform: none; text-decoration: line-through; opacity: .45; }
 .strong-words button[aria-pressed="true"] { background: var(--lit); border-color: transparent; box-shadow: var(--lit-shadow); color: #fff; font-weight: 800; text-transform: uppercase; }
 .bpm { display: flex; align-items: center; gap: 8px; }
 .bpm output { min-width: 3.4em; text-align: center; font: 800 30px/1 var(--f-display); font-variant-numeric: tabular-nums; }
@@ -656,6 +657,11 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <label>Lueur<input type="color" id="strongGlowColor"></label>
               <label class="grow">Force de la lueur<input type="range" id="strongGlow" min="0" max="100"></label>
             </div>
+        </div>
+        <div class="stack">
+          <h3 class="sub-title">Mots retirés de la vidéo</h3>
+            <p class="muted">Touche un mot du passage pour qu’il n’apparaisse pas dans la vidéo : le bout de la phrase d’avant au début, celui de la suivante à la fin. Touche-le encore pour le remettre. Ça ne change pas les paroles du titre.</p>
+            <div class="strong-words cut-words" id="cut-words"></div>
         </div>
         <div class="stack">
           <h3 class="sub-title">Titre et accroche</h3>
@@ -1096,7 +1102,7 @@ const I_FX = {
 const FILM = { ...ILOOK, iFx: "", trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, filmDialog: false, dialogVol: 100, introLyrics: "", introSubMode: "sub", introType: false, stackX: .5, stackY: .4, stackSize: 70, introGaps: true, introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", igAuto: false, igTime: "18:30", igTrial: "", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
-  preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, hookSize: 100, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
+  preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, hookSize: 100, hiddenWords: {}, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
   strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "", strongFx: "none" };
 // Les styles rapides : des montages de TikTok de rap qui marchent, réglés d’un clic. Le titre et l’accroche y partent masqués.
@@ -1129,7 +1135,7 @@ prefs.afterClip = -1; prefs.afterLen = 0; // les clips ne restent pas d’une vi
 const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } };
 
 const sound = { name: "", buffer: null, env: null, rms: null, bpm: 0, phase: 0, start: 0 };
-let clips = [], segments = [], lyrics = [], seed = 1, focus = 0; // focus : le fond montré, en « une vidéo par fond »
+let clips = [], segments = [], lyrics = [], lyricsAll = [], seed = 1, focus = 0; // focus : le fond montré, en « une vidéo par fond »
 // Le titre de ONIRIQUE CLOUD en cours (null pour un fichier) et ses paroles telles que CLOUD les a.
 let cloud = null;
 let isFounder = false; // membres ONIRIQUE, admins et fondateurs (pas les abonnés) : un cloud CUT pour garder leurs vidéos et les Shorts
@@ -2495,17 +2501,30 @@ function lineEnd(line, list) {
   const end = line.end ?? (line.words ? line.words.at(-1).at + 1 : line.at + line.plain.length * .45 + .9);
   return next ? Math.min(end, next.at) : end;
 }
-function readLyrics() { lyrics = parseLrc($("lyrics").value); renderStrong(); }
+// Les mots retirés de la vidéo, par son : « moment de la phrase|place du mot » (ne bouge pas quand on marque un mot FORT).
+const wordKey = (l, w) => l.at.toFixed(2) + "|" + w.ti;
+const hiddenKeys = () => new Set((prefs.hiddenWords || {})[sound.name] || []);
+/** Les paroles sans les mots retirés ; une phrase dont tous les mots sont retirés disparaît. */
+function withoutHidden(list) {
+  const off = hiddenKeys();
+  if (!off.size) return list;
+  return list.map((l) => {
+    const keep = (ws) => ws && ws.filter((w) => !off.has(wordKey(l, w)));
+    const words = keep(l.words), plain = keep(l.plain);
+    return { ...l, words, plain, text: (words || plain).map((w) => w.text).join(" ") };
+  }).filter((l) => (l.words || l.plain).length);
+}
+function readLyrics() { lyricsAll = parseLrc($("lyrics").value); lyrics = withoutHidden(lyricsAll); renderStrong(); }
 // Les paroles de la réplique, lues une fois par texte.
 let introParsed = { text: null, lines: [] };
 const introLines = () => (introParsed.text === prefs.introLyrics ? introParsed.lines : (introParsed = { text: prefs.introLyrics, lines: parseLrc(prefs.introLyrics) }).lines);
 const bareLine = (l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(VOICE2, "").replace(/<[^>]*>\s*/g, "").trim();
-/** Les mots du passage, à toucher pour les mettre en FORT (ou les remettre normaux). */
+/** Les mots du passage, à toucher pour les mettre en FORT (ou les remettre normaux), et pour les retirer de la vidéo. */
 function renderStrong() {
   const box = $("strong-words");
   if (!box) return;
   const from = sound.start, to = sound.start + span(), items = [];
-  if (sound.buffer) for (const l of lyrics) {
+  if (sound.buffer) for (const l of lyricsAll) {
     if (l.words) l.words.forEach((w) => { if (w.at >= from - .05 && w.at < to) items.push({ l, w, tagged: true }); });
     else if (l.at >= from - .05 && l.at < to) l.plain.forEach((w) => items.push({ l, w, tagged: false }));
   }
@@ -2513,6 +2532,22 @@ function renderStrong() {
     ariaPressed: String(!!w.strong), title: w.strong ? "Mot FORT : touche pour le remettre normal" : "Touche pour le mettre en FORT",
     onclick: () => toggleStrong(l.row, w, tagged) })));
   if (!items.length) box.append(Object.assign(document.createElement("p"), { className: "muted", style: "margin:0", textContent: "Pas de paroles synchronisées dans ce passage." }));
+  // Ici, toute phrase à l’écran pendant le passage, même commencée avant : c’est souvent la fin de celle d’avant qui dépasse.
+  const off = hiddenKeys(), seen = sound.buffer ? lyricsAll.filter((l) => l.at < to && lineEnd(l, lyricsAll) > from)
+    .flatMap((l) => (l.words || l.plain).map((w) => ({ l, w }))) : [];
+  $("cut-words").replaceChildren(...seen.map(({ l, w }) => {
+    const key = wordKey(l, w), out = off.has(key);
+    return Object.assign(document.createElement("button"), { type: "button", textContent: w.text, ariaPressed: String(out),
+      title: out ? "Retiré de la vidéo : touche pour le remettre" : "Touche pour le retirer de la vidéo",
+      onclick: () => {
+        const keys = hiddenKeys();
+        if (keys.has(key)) keys.delete(key); else keys.add(key);
+        prefs.hiddenWords = { ...prefs.hiddenWords, [sound.name]: [...keys] };
+        if (!keys.size) delete prefs.hiddenWords[sound.name];
+        savePrefs(); readLyrics(); restyle();
+      } });
+  }));
+  if (!seen.length) $("cut-words").append(Object.assign(document.createElement("p"), { className: "muted", style: "margin:0", textContent: "Pas de paroles synchronisées dans ce passage." }));
 }
 /** Met le mot w de la ligne row en FORT (ou l’enlève), directement dans les paroles : « Enregistrer dans CLOUD » le garde sur le titre.
  *  Les étoiles entourent le mot lui-même, sa ponctuation reste à côté. */
@@ -3276,7 +3311,7 @@ function refresh() {
   if (sound.buffer) sound.start = clampStart(sound.start);
   remember();
   build();
-  renderStrong();
+  readLyrics(); // les mots retirés dépendent du son
   renderClips();
   drawZoneBox();
   $("bpm").textContent = sound.bpm ? (Math.round(sound.bpm * 10) / 10).toString().replace(".", ",") : "—";
@@ -4714,7 +4749,7 @@ function start() {
   syncAll = () => { syncControls(); [prefs.lyricFont, prefs.titleFont, prefs.strongFont].forEach(loadFont); redraw(); };
   $("fx-reset").onclick = () => { Object.assign(prefs, FX); savePrefs(); syncControls(); restyle(); };
   // Mes styles : tous les réglages d’image, d’effets et de texte, gardés dans ce navigateur.
-  const STYLES = "onirique.cut.styles", NOT_STYLE = ["duration", "order", "snap", "loop", "mute", "batch", "artist", "hook", "sign", "shuffle", "v"];
+  const STYLES = "onirique.cut.styles", NOT_STYLE = ["duration", "order", "snap", "loop", "mute", "batch", "artist", "hook", "sign", "shuffle", "v", "hiddenWords"];
   const myStyles = () => { try { return JSON.parse(localStorage.getItem(STYLES) || "[]"); } catch { return []; } };
   const keepStyles = (list) => { try { localStorage.setItem(STYLES, JSON.stringify(list)); } catch { alert("Ce navigateur ne permet pas d’enregistrer de style."); } };
   const renderStyles = () => {
