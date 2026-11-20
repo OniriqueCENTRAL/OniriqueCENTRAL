@@ -85,6 +85,8 @@ tr.detail td { background: rgba(0,0,0,.18); color: var(--label); font-size: 13px
 .chain { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .chain .tag { margin: 0; }
 .chain .arrow { color: var(--haze); font-size: 12px; }
+.chain .tag.gone { background: rgba(255,255,255,.04); color: var(--haze); text-decoration: line-through; opacity: .75; }
+.chain .tag.plus { background: rgba(244,236,236,.12); color: #fff; }
 
 .prop { border: 1px solid rgba(var(--acc-hi), .35); }
 .prop .kind { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ember-text); }
@@ -152,7 +154,11 @@ const PARAMS = { fetAttack: "attaque", fetRelease: "release", fetIn: "entrée", 
   nsAmount: "quantité", drive: "drive", tuneRetune: "vitesse (retune)", tuneHumanize: "humanize", dbrReduction: "réduction", dclkAmount: "quantité", drvAmount: "quantité",
   cl1bThreshold: "seuil", cl1bGain: "gain", preampGain: "gain", gateThr: "seuil", plosive: "quantité", input: "niveau d’entrée",
   macroPresence: "PRÉSENCE", macroWarmth: "CHALEUR", macroHold: "TENUE", macroSpace: "ESPACE" };
-const paramLabel = (id) => { const m = id.match(/^peq(\d)(Gain|Freq|Q|On)$/); return PARAMS[id] || (m ? `bande ${m[1]} ${({ Gain: "gain", Freq: "fréquence", Q: "Q", On: "on" })[m[2]]}` : id); };
+// Tous les réglages de VOCALBOX (Source/Parameters.h), nommés comme sur le plugin, sans le nom du module (déjà écrit devant).
+const PARAMS_ALL = {"input":"entrée","low":"low","mud":"Mud Cleaner","high":"HI","air":"AIR","deessFreq":"De-Ess fréquence","deessAmt":"De-Ess quantité","deess2On":"De-Esser 2 (on/off)","deess2Freq":"De-Ess 2 fréquence","deess2Amt":"De-Ess 2 quantité","drive":"drive","satType":"type","output":"sortie","autoGain":"Auto gain","bypass":"Bypass","oversampling":"Oversampling","plosive":"Plosives","resoListen":"écoute","processOrder":"ordre","lowFreq":"low fréquence","lowCut":"coupe-bas 85 Hz","compMaster":"compression (on/off)","parallelOn":"on/off","parallelAmount":"quantité","compOn":"compression (on/off)","compMode":"mode","compOrder":"ordre","fetInput":"entrée","fetOutput":"sortie","fetAttack":"attaque","fetRelease":"release","fetRatio":"ratio","parallelAuto":"Auto","parallelThreshold":"seuil","parallelAttack":"attaque","parallelRelease":"release","laGain":"gain","laPeakReduction":"peak reduction","laLimit":"mode","mbOn":"on/off","mbAttack":"attaque","mbRelease":"release","nsAmount":"quantité","mbOutput":"sortie","parallelDeEssAmount":"de-ess quantité","parallelDeEssFreq":"de-ess fréquence","peqListen":"écoute","peqListenBand":"bande écoutée","fxDelayNote":"note","fxReverbMode":"mode","gateOn":"on/off","gateThreshold":"seuil","gateRange":"plage","gateAttack":"attaque","gateHold":"maintien","gateRelease":"release","gateHysteresis":"hystérésis","peqPower":"on/off","resoAmount":"quantité","resoLow":"low","resoMid":"mid","resoHigh":"high","nsOn":"on/off","plosOn":"on/off","fetOn":"on/off","optoOn":"on/off","satMix":"mix","satOutput":"sortie","satTone":"couleur","satWarmth":"chaleur","satAir":"AIR","satBias":"bias","satDynamics":"dynamique","deessS":"S","deessT":"T","deessCH":"CH","deessF":"F","deessClarity":"clarté","preampOn":"on/off","preampMic":"micro","preampGain":"gain","preampOutput":"sortie","cl1bOn":"on/off","cl1bThreshold":"seuil","cl1bRatio":"ratio","cl1bAttack":"attaque","cl1bRelease":"release","cl1bGain":"gain","cl1bMix":"mix","tuneOn":"on/off","tuneKey":"tonalité","tuneScale":"gamme","tuneRetune":"vitesse (retune)","tuneHumanize":"humanize","tuneFlex":"flex-tune","tuneVibrato":"vibrato naturel","tuneFormant":"formant","tuneVoice":"voix","tuneHard":"hard tune","tuneMix":"mix","plosListen":"écoute","dclkOn":"on/off","dclkSens":"sensibilité","dclkAmount":"quantité","dclkListen":"écoute","dbrOn":"on/off","dbrReduction":"réduction","dbrSens":"sensibilité","dbrListen":"écoute","drvOn":"on/off","drvAmount":"quantité","drvTail":"queue","drvAuto":"queue auto","drvListen":"écoute","pchOn":"on/off","pchPitch":"pitch","pchFormant":"formant","pchDetune":"fin","pchDrive":"drive","pchRobot":"robot","pchSnap":"snap","pchMix":"mix","fetRevision":"version","voiceRole":"rôle de la voix","outPan":"pan","fxChorusOn":"on/off","fxChorusRate":"vitesse","fxChorusDepth":"profondeur","fxChorusMix":"mix","fxFlangerOn":"on/off","fxFlangerRate":"vitesse","fxFlangerDepth":"profondeur","fxFlangerFeedback":"feedback","fxFlangerMix":"mix","fxDelayOn":"on/off","fxDelaySync":"sync","fxDelayTime":"temps","fxDelayFeedback":"feedback","fxDelayMix":"envoi","fxDelayPingPong":"ping-pong","fxDelayLowCut":"coupe-bas","fxDelayHighCut":"coupe-haut","fxDelayDucking":"ducking","fxReverbOn":"on/off","fxReverbPreDelay":"pré-délai","fxReverbDecay":"durée","fxReverbSize":"taille","fxReverbDiffusion":"diffusion","fxReverbModRate":"modulation vitesse","fxReverbModDepth":"modulation profondeur","fxReverbMix":"envoi","fxReverbLowCut":"coupe-bas","fxReverbHighCut":"coupe-haut","fxReverbDucking":"ducking","fxReverbWidth":"largeur","fxReverbClean":"clean","fxPhoneOn":"on/off","fxPhoneAmount":"quantité","fxDoublerOn":"on/off","fxDoublerAmount":"quantité","fxCreativeOn":"on/off"};
+const paramLabel = (id) => { const m = id.match(/^peq(\d)(Gain|Freq|Q|On)$/), mb = id.match(/^mb(Thresh|Gain|Xover)(\d)$/);
+  if (mb) return ({ Thresh: "seuil", Gain: "gain", Xover: "coupure" })[mb[1]] + " bande " + mb[2];
+  return PARAMS[id] || PARAMS_ALL[id] || (m ?`bande ${m[1]} ${({ Gain: "gain", Freq: "fréquence", Q: "Q", On: "on" })[m[2]]}` : id); };
 const ROLES = ["LEAD", "BACKS", "ADLIBS", "DOUBLES"];
 const RESULT = { kept: ["gardée telle quelle", "good"], tweaked: ["retouchée", "plain"], rebuilt: ["démontée", "bad"] };
 const ENDED = { newmix: "nouveau mix demandé", remix: "autre voix essayée", community: "chaîne de la communauté essayée", usual: "chaîne habituelle montée" };
@@ -418,7 +424,11 @@ function artistes(v) {
 }
 
 //------------------------------------------------------------------------------ Chaînes partagées
-const chainTags = (mods) => mods.flatMap((m, i) => [i ? el("span", { className: "arrow", textContent: "→" }) : null, el("span", { className: "tag", textContent: m.type })]);
+// removed / added : les modules retirés ensuite (barrés) ou ajoutés ensuite (+) par la personne
+const chainTags = (mods, removed = [], added = []) => [
+  ...mods.flatMap((m, i) => { const gone = (removed || []).includes(m.type);
+    return [i ? el("span", { className: "arrow", textContent: "→" }) : null, el("span", { className: "tag" + (gone ? " gone" : ""), title: gone ? "retiré ensuite" : "", textContent: m.type })]; }),
+  ...(added || []).map((t) => el("span", { className: "tag plus", title: "ajouté ensuite", textContent: "+ " + t }))];
 // un fondateur marque une chaîne officielle, ou la retire de la bibliothèque (et inversement)
 async function chainAction(c, what, value, box) {
   for (const b of box.querySelectorAll("button")) b.disabled = true;
@@ -482,6 +492,11 @@ function chaines(v) {
 }
 
 //------------------------------------------------------------------------------ Retours
+// une chaîne presque entièrement retirée se lit mieux par ce qui reste
+function keptLine(f, removed) {
+  const all = (f.plan?.modules || []).map((m) => m.type), kept = all.filter((t) => !removed.includes(t));
+  return kept.length && removed.length > all.length / 2 ? "Gardé seulement : " + kept.join(", ") + " (tout le reste retiré)" : "Retirés ensuite : " + removed.join(", ");
+}
 function retours(v) {
   const input = el("input", { className: "search", type: "search", placeholder: "Chercher un artiste, un mot, un module…" });
   const list = el("div");
@@ -493,7 +508,10 @@ function retours(v) {
     for (const f of rows) {
       const out = f.extra?.outcome, res = out && RESULT[out.result];
       const tw = Object.entries(f.final || {}).slice(0, 8).map(([id, val]) => { const h = moduleOfParam(f, id);
-        return (h ? h.m.type + " " + paramLabel(h.base) : paramLabel(id.replace(/_\d+$/, ""))) + " " + (h && h.before != null ? num(Number(h.before)) + " → " : "") + num(Number(val)); });
+        // assez de décimales pour que l'avant et l'après se distinguent (1,62 → 1,58 et non 1,6 → 1,6)
+        const a = h && h.before != null ? Number(h.before) : null, b = Number(val);
+        let d = 1; while (a != null && d < 3 && num(a, d) === num(b, d)) d++;
+        return (h ? h.m.type + " " + paramLabel(h.base) : paramLabel(id.replace(/_\d+$/, ""))) + " " + (a != null ? num(a, d) + " → " : "→ ") + num(b, d); });
       list.append(el("div", { className: "card fb", style: "margin-bottom:10px" },
         el("div", { className: "meta" },
           f.rating > 0 ? el("span", { className: "tag good", textContent: "OUI" }) : f.rating < 0 ? el("span", { className: "tag bad", textContent: "BOF" }) : el("span", { className: "tag plain", textContent: "pas de note" }),
@@ -504,8 +522,8 @@ function retours(v) {
           f.extra?.ended ? el("span", { className: "tag plain", textContent: ENDED[f.extra.ended] || f.extra.ended }) : null,
           el("span", { className: "tag plain", textContent: date(f.at) + " · v" + (f.version || "?") })),
         el("div", { className: "q", textContent: f.request ? "« " + f.request + " »" : "(pas de demande écrite)" }),
-        el("div", { className: "chain" }, chainTags(f.plan?.modules || [])),
-        out?.removedModules?.length ? el("div", { className: "tw", textContent: "Retirés ensuite : " + out.removedModules.join(", ") }) : null,
+        el("div", { className: "chain" }, chainTags(f.plan?.modules || [], out?.removedModules, out?.addedModules)),
+        out?.removedModules?.length ? el("div", { className: "tw", textContent: keptLine(f, out.removedModules) }) : null,
         out?.addedModules?.length ? el("div", { className: "tw", textContent: "Ajoutés ensuite : " + out.addedModules.join(", ") }) : null,
         tw.length ? el("div", { className: "tw", textContent: "Retouché : " + tw.join(" · ") }) : null,
         (f.extra?.refine || []).length ? el("div", { className: "tw", textContent: "A dit : " + f.extra.refine.map((w) => "« " + w + " »").join(", ") }) : null));
