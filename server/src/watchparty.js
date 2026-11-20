@@ -9,6 +9,12 @@
 // Ce qu'on regarde : une vidéo YouTube, une vidéo en ligne (adresse https d'un fichier), ou un partage (écran, caméra
 // ou fichier de l'ordinateur) envoyé en WebRTC de pair à pair par celui qui partage : le serveur ne relaie que la
 // négociation (/signal), jamais l'image.
+//
+// La scène : le créateur parle toujours ; il (ou un co-hôte) fait monter qui demande la parole, et ceux qui sont montés
+// parlent à tous par leur micro, envoyé de pair à pair comme les caméras. Qui partage son écran monte de lui-même.
+//
+// Un redémarrage du serveur (mise en ligne) ne coupe pas la salle : les connexions de pair à pair continuent, chacun
+// rouvre son flux avec le même identifiant (peer), et le partage, les caméras et les micros l'attendent une minute.
 import crypto from 'node:crypto';
 import { config } from './config.js';
 import { db, get, run, now } from './db.js';
@@ -39,6 +45,8 @@ const clamp = (v, max) => Math.max(0, Math.min(max, Math.trunc(Number(v)) || 0))
 const COUNTDOWN = 3000; // « Prêt ? » : tout le monde est prêt, la vidéo part 3 s plus tard, au même instant chez tous
 const MAX_MEMBERS = 30; // un partage d'écran part vers chacun : au-delà, l'envoi de celui qui partage ne suit plus
 const MAX_CHAT = 150;
+const MAX_STAGE = 8; // sur scène en plus du créateur : chaque micro part vers chacun
+const GRACE = 60_000; // après un redémarrage, le temps de revenir pour un partage, une caméra ou un micro
 const IDLE_DAYS = 2;
 
 const clean = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
@@ -108,13 +116,26 @@ function playNext(room, t) {
 
 export function newRoom(owner, name = '') {
   return { code: code(), owner: owner.id, name: clean(name, 60) || `WATCHPARTY de ${owner.name || 'membre'}`,
-    perms: { ...DEFAULT_PERMS }, cohosts: [], kicked: [], media: null, pos: 0, playing: false, at: 0, chat: [], queue: [], ready: null, cams: [] };
+    perms: { ...DEFAULT_PERMS }, cohosts: [], kicked: [], media: null, pos: 0, playing: false, at: 0, chat: [], queue: [], ready: null, cams: [],
+    stage: [], hands: [], mics: [] };
 }
 
 const need = (room, uid, perm) => {
   if (!allowed(room, uid, perm)) throw new HttpError(403, "Le créateur de la WATCHPARTY ne t'a pas donné ce droit.");
 };
 export const positionOf = (r, t) => r.pos + (r.playing ? (t - r.at) / 1000 : 0);
+/** Peut parler à tous : le créateur, et ceux qui sont montés sur scène. */
+export const speaks = (room, uid) => uid === room.owner || (room.stage || []).includes(uid);
+
+/** Retire ce qui vivait dans un flux (le partage, une caméra, un micro) quand keep(peer) refuse ce flux. Vrai si la salle change. */
+export function drop(room, keep) {
+  const share = room.media?.kind === 'share' && !keep(room.media.peer);
+  if (share) room.media = null;
+  const cams = (room.cams || []).filter((c) => keep(c.peer)), mics = (room.mics || []).filter((c) => keep(c.peer));
+  const changed = share || cams.length !== (room.cams || []).length || mics.length !== (room.mics || []).length;
+  Object.assign(room, { cams, mics });
+  return changed;
+}
 
 /** Une action d'un participant sur la salle (modifiée sur place). `peer` : le flux en direct d'où vient l'action. */
 export function act(room, user, action, body = {}, t = now(), peer = null, present = []) {
@@ -123,6 +144,7 @@ export function act(room, user, action, body = {}, t = now(), peer = null, prese
   room.perms.queue ||= DEFAULT_PERMS.queue; // les salles d'avant la file
   room.queue ||= [];
   room.cams ||= [];
+  room.stage ||= []; room.hands ||= []; room.mics ||= []; // les salles d'avant la scène
   const entry = (qid) => {
     const x = room.queue.find((e) => e.qid === qid);
     if (!x) throw new HttpError(404, "Cette vidéo n'est plus dans la file.");
@@ -215,6 +237,33 @@ export function act(room, user, action, body = {}, t = now(), peer = null, prese
       if (!peer) throw new HttpError(400, 'Ouvre la WATCHPARTY avant de partager.');
       room.media = { kind: 'share', by: uid, byName: clean(user.name, 60) || 'Membre', peer, what: ['screen', 'camera', 'file'].includes(body.what) ? body.what : 'screen' };
       Object.assign(room, { pos: 0, playing: true, at: t });
+      if (!speaks(room, uid) && room.stage.length < MAX_STAGE) room.stage.push(uid); // il peut commenter au micro
+      return;
+    }
+    case 'hand':
+      // Demander la parole (ou retirer sa demande) : le créateur et les co-hôtes le voient et font monter.
+      room.hands = room.hands.filter((x) => x !== uid);
+      if (body.on && !speaks(room, uid)) room.hands.push(uid);
+      return;
+    case 'stage': {
+      // Faire monter quelqu'un sur scène, ou le faire descendre (son micro se coupe) ; chacun peut redescendre seul.
+      const target = Number(body.userId), on = !!body.on;
+      if ((on || target !== uid) && !host && !room.cohosts.includes(uid)) throw new HttpError(403, 'Seuls le créateur et les co-hôtes font monter sur scène.');
+      if (on && !speaks(room, target) && room.stage.length >= MAX_STAGE) throw new HttpError(400, `${MAX_STAGE} personnes au plus sur scène : fais-en descendre une.`);
+      room.hands = room.hands.filter((x) => x !== target);
+      room.stage = room.stage.filter((x) => x !== target);
+      if (on && target !== room.owner) room.stage.push(target);
+      if (!speaks(room, target)) room.mics = room.mics.filter((c) => c.id !== target);
+      return;
+    }
+    case 'mic': {
+      // Son micro, entendu de tous : depuis ce flux-là, sur scène seulement ; un seul par personne.
+      if (!peer) throw new HttpError(400, 'Ouvre la WATCHPARTY avant d\'allumer ton micro.');
+      room.mics = room.mics.filter((c) => c.peer !== peer && c.id !== uid);
+      if (body.on) {
+        if (!speaks(room, uid)) throw new HttpError(403, 'Monte sur scène pour parler : demande la parole au créateur.');
+        room.mics.push({ peer, id: uid, name: clean(user.name, 60) || 'Membre' });
+      }
       return;
     }
     case 'unshare':
@@ -257,7 +306,8 @@ export function act(room, user, action, body = {}, t = now(), peer = null, prese
       if (!room.kicked.includes(target)) room.kicked.push(target);
       room.cohosts = room.cohosts.filter((x) => x !== target);
       if (room.media?.kind === 'share' && room.media.by === target) room.media = null;
-      room.cams = (room.cams || []).filter((c) => c.id !== target);
+      room.cams = room.cams.filter((c) => c.id !== target); room.mics = room.mics.filter((c) => c.id !== target);
+      room.stage = room.stage.filter((x) => x !== target); room.hands = room.hands.filter((x) => x !== target);
       return;
     }
     default:
@@ -278,14 +328,18 @@ export function mountWatchparty(app) {
   const member = (req, res, next) => requireUser(req, res, (error) => next(error
     || (isMember(req.user) ? undefined : new HttpError(403, 'Ouvrir une WATCHPARTY est réservé aux membres ONIRIQUE, aux beta-testeurs et à l’équipe ; tout compte peut en rejoindre une par son lien.'))));
 
+  const started = now();
+  const peersOf = (c) => new Set([...(streams.get(c) || [])].map((s) => s.peer));
   const load = (c) => {
     if (rooms.has(c)) return rooms.get(c);
     const row = get('SELECT data, updated_at FROM watchparty_rooms WHERE code = ?', String(c));
     if (!row || row.updated_at < now() - IDLE_DAYS * 86400_000) return null;
     const r = JSON.parse(row.data);
-    if (r.media?.kind === 'share') r.media = null; // le partage vivait dans un flux qui n'existe plus
-    r.cams = [];
     rooms.set(c, r);
+    // Juste après un redémarrage, le partage, les caméras et les micros attendent que leur flux revienne (leur image et
+    // leur son, de pair à pair, n'ont pas été coupés) ; ceux qui ne reviennent pas sont retirés. Plus tard, ils sont périmés.
+    if (now() - started > GRACE) drop(r, () => false);
+    else setTimeout(() => { if (rooms.get(c) === r && drop(r, (p) => peersOf(c).has(p))) changed(r); }, GRACE).unref();
     return r;
   };
   const room = (req) => {
@@ -301,17 +355,17 @@ export function mountWatchparty(app) {
     const seen = new Map();
     for (const s of streams.get(r.code) || []) {
       const m = seen.get(s.user.id) || { id: s.user.id, name: s.user.name || 'Membre', avatar: s.user.avatar ? `/api/media/${s.user.avatar}` : null,
-        host: s.user.id === r.owner, cohost: r.cohosts.includes(s.user.id), peers: [] };
+        host: s.user.id === r.owner, cohost: r.cohosts.includes(s.user.id), stage: (r.stage || []).includes(s.user.id), peers: [] };
       m.peers.push(s.peer);
       seen.set(s.user.id, m);
     }
-    return [...seen.values()].sort((a, b) => b.host - a.host || b.cohost - a.cohost || a.name.localeCompare(b.name));
+    return [...seen.values()].sort((a, b) => b.host - a.host || b.cohost - a.cohost || b.stage - a.stage || a.name.localeCompare(b.name));
   };
   const view = (r, user, peer) => ({
     code: r.code, name: r.name, url: `${config.siteUrl}/watchparty#${r.code}`, t: now(), owner: r.owner,
     perms: r.perms, cohosts: r.cohosts, members: members(r), media: r.media, pos: r.pos, playing: r.playing, at: r.at, chat: r.chat,
     queue: (r.queue || []).map((x) => ({ qid: x.qid, item: x.item, by: { id: x.by, name: x.byName }, votes: x.votes.length, voted: x.votes.includes(user.id) })),
-    ready: r.ready || null, cams: r.cams || [],
+    ready: r.ready || null, cams: r.cams || [], stage: r.stage || [], hands: r.hands || [], mics: r.mics || [],
     kc: isKc(r.media) ? (({ kc, opp, oppName, votes }) => ({ kc, opp, oppName,
       votes: { kc: Object.values(votes).filter((v) => v === 'kc').length, opp: Object.values(votes).filter((v) => v === 'opp').length }, mine: votes[user.id] || null }))(r.kc || { kc: 0, opp: 0, oppName: 'T1', votes: {} }) : null,
     you: { id: user.id, peer, host: user.id === r.owner, can: Object.fromEntries(PERMS.map((p) => [p, allowed(r, user.id, p)])) },
@@ -364,22 +418,25 @@ export function mountWatchparty(app) {
 
   app.get('/api/watchparty/:code', requireUser, (req, res) => res.set('Cache-Control', 'no-store').json(view(room(req), req.user, null)));
 
-  // Le flux en direct : être connecté, c'est être présent. Chaque flux a son identifiant (peer) pour le WebRTC.
+  // Le flux en direct : être connecté, c'est être présent. Chaque flux a son identifiant (peer) pour le WebRTC ; revenu
+  // après une coupure (?peer=), il reprend le sien s'il est libre et que ce qui y vit (partage, caméra, micro) est à lui.
   app.get('/api/watchparty/:code/live', requireUser, (req, res) => {
     const r = room(req);
     const set = streams.get(r.code) || new Set();
     if (!members(r).some((m) => m.id === req.user.id) && members(r).length >= MAX_MEMBERS) throw new HttpError(403, 'Cette WATCHPARTY est complète.');
+    const back = String(req.query.peer || '');
+    const theirs = (p) => (r.media?.kind === 'share' && r.media.peer === p && r.media.by !== req.user.id) || [...(r.cams || []), ...(r.mics || [])].some((c) => c.peer === p && c.id !== req.user.id);
+    const peer = /^[\w-]{8}$/.test(back) && !peersOf(r.code).has(back) && !theirs(back) ? back : code();
     res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', Connection: 'keep-alive' });
     res.flushHeaders();
-    const s = { user: req.user, res, peer: code() };
+    const s = { user: req.user, res, peer };
     streams.set(r.code, set.add(s));
     const ping = setInterval(() => res.write(': ping\n\n'), 25_000);
     req.on('close', () => {
       clearInterval(ping);
       set.delete(s);
       if (rooms.get(r.code) !== r) return;
-      if (r.media?.kind === 'share' && r.media.peer === s.peer) { r.media = null; save(r); } // celui qui partageait est parti
-      if ((r.cams || []).some((c) => c.peer === s.peer)) { r.cams = r.cams.filter((c) => c.peer !== s.peer); save(r); }
+      if (drop(r, (p) => p !== s.peer)) save(r); // son partage, sa caméra, son micro s'arrêtent avec lui
       broadcast(r);
     });
     broadcast(r);

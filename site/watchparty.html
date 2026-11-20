@@ -76,8 +76,14 @@ select { padding: 8px 12px; font-size: 13px; background: var(--deep); }
 .wp-bar > * { pointer-events: auto; }
 .stage:not(.show):not(.paused):not(:focus-within) .wp-bar > * { pointer-events: none; }
 .wp-chatbox { pointer-events: none; }
-.wp-chatbox .wp-fschat { pointer-events: auto; }
+/* Le champ et les réactions posés sur la vidéo en plein écran : visibles et cliquables avec la barre ; cachés, le clic
+   passe à la vidéo (double clic pour sortir du plein écran compris). */
+.wp-chatbox :is(.wp-fschat, .wp-reacts) { pointer-events: none; opacity: 0; transition: opacity .25s; }
+.stage:is(.show, .paused) .wp-chatbox :is(.wp-fschat, .wp-reacts), .wp-chatbox:focus-within :is(.wp-fschat, .wp-reacts) { pointer-events: auto; opacity: 1; }
 .wp-bar button { all: unset; cursor: pointer; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: #fff; flex: none; }
+/* all: unset leur faisait hériter le « none » de la barre : plein écran, son et réglages ne prenaient aucun clic. */
+.wp-bar > button { pointer-events: auto; }
+.wp-bar button.on { color: rgb(var(--acc-hi)); }
 .wp-bar button:hover, .wp-bar button:focus-visible { background: rgba(255,255,255,.1); }
 .wp-bar button:disabled { opacity: .4; cursor: default; }
 .wp-bar svg { width: 18px; height: 18px; }
@@ -109,7 +115,7 @@ select { padding: 8px 12px; font-size: 13px; background: var(--deep); }
 .stage.tw:fullscreen .wp-chatbox { grid-area: chat; display: flex; position: relative; left: auto !important; top: auto !important; bottom: auto !important; width: auto; margin: 0 12px 12px;
   justify-content: flex-end; pointer-events: auto; }
 .stage.tw:fullscreen .wp-chatbox .wp-reacts { display: flex; flex-wrap: wrap; }
-.stage.tw:fullscreen .wp-fschat { opacity: 1 !important; }
+.stage.tw:fullscreen .wp-chatbox :is(.wp-fschat, .wp-reacts) { opacity: 1 !important; pointer-events: auto !important; }
 .stage.tw:fullscreen .wp-overchat div { animation-duration: 120s; }
 .stage.tw:fullscreen .kc-wave, .stage.tw:fullscreen .kc-confetti, .stage.tw:fullscreen .kc-flash { left: auto; right: 0; width: 360px; }
 .stage.tw:fullscreen .kc-wave b, .stage.tw:fullscreen .kc-confetti b { font-size: 26px; }
@@ -146,9 +152,7 @@ select { padding: 8px 12px; font-size: 13px; background: var(--deep); }
 .stage.chat-off .wp-chatbox { display: none !important; }
 .wp-chatbox .wp-overchat { position: static; max-width: none; }
 .wp-fschat { display: none; gap: 6px; }
-.stage:fullscreen .wp-fschat { display: flex; opacity: 0; transition: opacity .25s; }
-.stage:fullscreen.chat-nobg .wp-fschat { opacity: 0; }
-.stage:fullscreen.show .wp-fschat, .stage:fullscreen.paused .wp-fschat, .stage:fullscreen .wp-fschat:focus-within { opacity: 1; }
+.stage:fullscreen .wp-fschat { display: flex; }
 .wp-fschat input { flex: 1; min-width: 0; background: rgba(9,8,10,.78); border-color: rgba(255,255,255,.18); }
 
 .wp-fstop { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5; display: none; align-items: center; gap: 10px; max-width: calc(100% - 340px);
@@ -167,8 +171,8 @@ select { padding: 8px 12px; font-size: 13px; background: var(--deep); }
 .stage.chat-nobg .wp-fschat input { background: rgba(9,8,10,.35); }
 /* HUD déverrouillé : les éléments s'entourent et s'attrapent ; le champ et la vidéo ne prennent plus les clics */
 .stage.hud-edit .hud { outline: 2px dashed rgba(var(--acc-hi), .85); outline-offset: 4px; cursor: move; pointer-events: auto; opacity: 1 !important; }
-.stage.hud-edit .hud * { pointer-events: none; }
-.stage.hud-edit .wp-fschat { display: flex !important; opacity: 1 !important; }
+.stage.hud-edit .hud * { pointer-events: none !important; }
+.stage.hud-edit .wp-chatbox :is(.wp-fschat, .wp-reacts) { display: flex !important; opacity: 1 !important; }
 .stage.hud-edit .wp-overchat:empty::before { content: "Le chat s'affiche ici"; padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 13px; color: var(--haze); }
 .stage.hud-edit::after { content: "HUD déverrouillé : glisse le score et le chat, puis verrouille-le dans les réglages du lecteur"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4;
   padding: 8px 14px; border-radius: 12px; background: rgba(9,8,10,.8); font: 500 11px var(--mono); letter-spacing: .1em; color: #fff; pointer-events: none; }
@@ -280,9 +284,11 @@ section.kc { margin: 0 0 14px; padding: 16px 18px; border-radius: 20px; display:
 .side { display: grid; gap: 14px; }
 .side .glass { padding: 16px; }
 .people { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.people li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 12px; background: rgba(255,255,255,.03); }
+.people li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 6px 8px; border-radius: 12px; background: rgba(255,255,255,.03); }
 .people img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: var(--deep-2); flex: none; }
-.people .grow { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.people .grow { flex: 1 1 90px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.people .spk { display: inline-grid; color: var(--haze); }
+.people .spk.on { color: rgb(var(--acc-hi)); }
 .tag { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--acc-hi)); border: 1px solid rgba(var(--acc),.6); border-radius: 999px; padding: 2px 8px; }
 .led { width: 8px; height: 8px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 10px var(--ember); flex: none; }
 .chat { display: flex; flex-direction: column; height: min(52vh, 460px); padding: 0 !important; overflow: hidden; }
@@ -359,6 +365,8 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
           </div>
           <div class="row" id="room-actions">
             <button class="btn" type="button" id="cam-btn">Ma vignette caméra</button>
+            <button class="btn" type="button" id="mic-btn" hidden>Activer mon micro</button>
+            <button class="btn" type="button" id="hand-btn" hidden>Demander à monter</button>
             <button class="btn" type="button" id="ready-btn">Prêt ?</button>
           </div>
           <details id="adv-box" hidden><summary>Réglages avancés du partage</summary>
@@ -446,7 +454,8 @@ const quiet = (fn) => { quietUntil = Date.now() + 1200; fn(); };
 
 // ——— Le flux en direct (comme le HM) ———
 async function listen(c) {
-  const response = await fetch("/api/watchparty/" + c + "/live", { headers: { Authorization: "Bearer " + token } }).catch(() => null);
+  // Au retour d’une coupure, le même identifiant : le serveur rend le partage, la caméra et le micro, sans renégocier.
+  const response = await fetch("/api/watchparty/" + c + "/live" + (state ? "?peer=" + state.you.peer : ""), { headers: { Authorization: "Bearer " + token } }).catch(() => null);
   if (!response || !response.ok) {
     const data = response ? await response.json().catch(() => ({})) : {};
     if (response && response.status >= 400 && response.status < 500) return leave(data.error || "Cette WATCHPARTY n’est plus disponible.");
@@ -466,7 +475,7 @@ async function listen(c) {
       const m = JSON.parse(b.slice(6));
       if (m.kicked) return leave("Le créateur t’a retiré de la WATCHPARTY.");
       if (m.ended) return leave("Le créateur a fermé la WATCHPARTY.");
-      if (m.signal) (m.signal.data.cam ? onCamSignal(m.signal) : onSignal(m.signal)).catch(() => {});
+      if (m.signal) (m.signal.data.cam ? onMeshSignal("cam", m.signal) : m.signal.data.mic ? onMeshSignal("mic", m.signal) : onSignal(m.signal)).catch(() => {});
       else if (m.reaction) { if (!state || m.reaction.by !== state.you.id) floatReaction(m.reaction); }
       else receive(m);
     }
@@ -476,6 +485,7 @@ async function listen(c) {
 function leave(text) {
   stopLocal();
   closePeers();
+  stopCam(); stopMic(); closeMesh("cam"); closeMesh("mic");
   clearStage(); // sinon YouTube (ou la vidéo) continue de jouer, cachée
   document.body.classList.remove("kc"); $("kc").hidden = true; kcWall(false); setReactionSet(false);
   $("kc-title-mark").hidden = true; $("kc-logo-bg").hidden = true; $("r-eyebrow").textContent = "WATCHPARTY";
@@ -506,7 +516,13 @@ function draw() {
   $("sh-stop").hidden = !(sharing && (s.media.by === s.you.id || can("source")));
   $("adv-box").hidden = !can("source");
   if (can("control")) hold = false;
-  $("hint").textContent = can("control") ? "Lecture, pause et avance partent chez tout le monde." : "Le créateur garde la main sur la lecture : ta pause ne vaut que pour toi.";
+  $("hint").textContent = (can("control") ? "Lecture, pause et avance partent chez tout le monde." : "Le créateur garde la main sur la lecture : ta pause ne vaut que pour toi.")
+    + (myMic ? " Ton micro est entendu de tous : mets un casque, sinon il renvoie aussi le son de la vidéo." : "");
+  // La scène : qui y est parle par son micro ; les autres demandent à monter.
+  $("mic-btn").hidden = !speaks() || !navigator.mediaDevices;
+  $("hand-btn").hidden = s.you.host;
+  $("hand-btn").textContent = speaks() ? "Descendre de la scène" : (s.hands || []).includes(s.you.id) ? "Annuler ma demande" : "Demander à monter";
+  drawHands(s);
   drawStage();
   keepOnStage();
   drawAdfree();
@@ -515,6 +531,7 @@ function draw() {
   drawQueue();
   drawReady();
   syncCams();
+  syncVoices();
   drawKc();
   drawFsTop();
   if ((!sharing || s.media.peer !== s.you.peer) && Date.now() > shareGrace) stopLocal(); // shareGrace : le temps que la salle apprenne mon partage
@@ -543,17 +560,34 @@ async function drawAdfree() {
       el("a", { className: "btn small", href: which === "twitch" ? "https://www.twitch.tv/login" : "https://www.youtube.com/", target: "_blank", rel: "noopener", textContent: "Ouvrir " + name }));
   }
 }
+// Une nouvelle demande pour monter passe sur la vidéo chez le créateur et les co-hôtes (aussi en plein écran).
+let handsSeen = null;
+function drawHands(s) {
+  const now = new Set(s.hands || []);
+  if (handsSeen && (s.you.host || s.cohosts.includes(s.you.id))) for (const id of now) {
+    const m = !handsSeen.has(id) && s.members.find((x) => x.id === id);
+    if (m) floatReaction({ emoji: "✋", name: m.name + " veut monter" });
+  }
+  handsSeen = now;
+}
 // Le compte vient d’être connecté (fenêtre refermée) : le lecteur est rechargé pour le reconnaître.
 const reloadStage = () => { if (state) { clearStage(); drawStage(); } };
 window.onOniriqueAccounts = () => { accounts = null; reloadStage(); if (state) drawAdfree(); };
 function drawPeople() {
-  const s = state;
-  $("p-title").textContent = "Présents · " + s.members.length;
+  const s = state, mod = s.you.host || s.cohosts.includes(s.you.id), hands = new Set(s.hands || []);
+  const asking = s.members.filter((m) => hands.has(m.id) && !speaks(m.id)).length;
+  $("p-title").textContent = "Présents · " + s.members.length + (asking ? " · " + asking + (asking > 1 ? " demandes" : " demande") + " pour monter" : "");
   $("people").replaceChildren(...s.members.map((m) => el("li", {},
     el("img", { src: m.avatar ? m.avatar + "?w=80" : "assets/favicon.png?v=2", alt: "" }),
     el("span", { className: "grow", textContent: m.name + (m.id === s.you.id ? " (toi)" : "") }),
     s.media && s.media.kind === "share" && s.media.by === m.id ? el("i", { className: "led", title: "Partage en cours" }) : null,
+    // Sur scène : le micro, allumé quand il est ouvert.
+    speaks(m.id) ? el("span", { className: "spk" + ((s.mics || []).some((c) => c.id === m.id) ? " on" : ""), title: (s.mics || []).some((c) => c.id === m.id) ? "Sur scène · micro ouvert" : "Sur scène · micro coupé" }, svg("mic")) : null,
+    hands.has(m.id) && !speaks(m.id) ? el("span", { className: "tag", textContent: "Veut monter" }) : null,
     m.host ? el("span", { className: "tag", textContent: "Hôte" }) : m.cohost ? el("span", { className: "tag", textContent: "Co-hôte" }) : null,
+    mod && !m.host ? el("button", { className: "btn small" + (hands.has(m.id) && !speaks(m.id) ? " btn-primary" : ""), type: "button", textContent: speaks(m.id) ? "Descendre" : "Monter",
+      title: speaks(m.id) ? "Faire descendre " + m.name + " de la scène (son micro se coupe)" : "Faire monter " + m.name + " sur scène : tout le monde l’entendra",
+      onclick: () => send("stage", { userId: m.id, on: !speaks(m.id) }) }) : null,
     s.you.host && !m.host ? el("button", { className: "btn small", type: "button", textContent: m.cohost ? "− co" : "+ co", title: m.cohost ? "Retirer des co-hôtes" : "Faire co-hôte",
       onclick: () => send("cohost", { userId: m.id, on: !m.cohost }) }) : null,
     can("kick") && !m.host && m.id !== s.you.id && (s.you.host || !m.cohost) ? el("button", { className: "btn small", type: "button", textContent: "Retirer", title: "Retirer " + m.name + " de la salle",
@@ -685,6 +719,7 @@ const ICONS = {
   users: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7M18 14a7 7 0 0 1 4 7",
   smile: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14a5 5 0 0 0 8 0M9 9.5h.01M15 9.5h.01",
   check: "M5 12.5l4.5 4.5L19 7", reload: "M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4", up: "M6 15l6-6 6 6", close: "M6 6l12 12M18 6L6 18",
+  mic: "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM19 11a7 7 0 0 1-14 0M12 18v3", micoff: "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM19 11a7 7 0 0 1-14 0M12 18v3M4 4l16 16",
   gear: "M12 15a3 3 0 1 0 0-6a3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3a1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8a1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z", full: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5", info: "M12 8h.01M11 12h1v5h1M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z",
 };
 const svg = (name) => { const b = el("span"); b.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[name]}"/></svg>`; return b.firstChild; };
@@ -783,9 +818,12 @@ function drawStage() {
   }
   // Un partage : celui qui partage voit son aperçu (ou son fichier, avec ses commandes) ; les autres reçoivent l’image en direct.
   const label = el("span", { className: "badge", textContent: { screen: "Écran", camera: "Caméra", file: "Fichier" }[m.what] + " · " + (m.byName || "") });
-  if (m.peer === state.you.peer && local) {
-    const v = fileVideo || el("video", { srcObject: local, autoplay: true, muted: true, playsInline: true });
-    stage.replaceChildren(el("div", { className: "media" }, v), label);
+  if (m.peer === state.you.peer && fileVideo) stage.replaceChildren(el("div", { className: "media" }, fileVideo), label); // ses propres commandes
+  else if (m.peer === state.you.peer && local) {
+    // Son écran ou sa caméra : l’aperçu, avec la barre (micro, réactions, plein écran) et le double clic, comme les autres.
+    const v = el("video", { srcObject: local, autoplay: true, muted: true, playsInline: true });
+    stage.replaceChildren(el("div", { className: "media locked" }, v), hit(), label, makeBar(true));
+    bar.mute.hidden = bar.vol.hidden = true; // l’aperçu est muet
   } else {
     const v = el("video", { id: "remote", autoplay: true, playsInline: true });
     stage.replaceChildren(el("div", { className: "media locked" }, v), hit(), label, el("div", { className: "empty", id: "waiting", style: "z-index:2" }, "Connexion à " + (m.byName || "l’hôte") + "…"), makeBar(true));
@@ -874,8 +912,9 @@ function makeBar(live, platform = false) {
   setTimeout(() => { setReactionSet.cur = ""; setReactionSet(kcOn()); }, 0);
   b.gear = el("button", { type: "button", ariaLabel: "Réglages du lecteur", title: "Réglages du lecteur", onclick: (e) => { e.stopPropagation(); toggleMenu(); } }, svg("gear"));
   b.full = el("button", { type: "button", ariaLabel: "Plein écran", onclick: () => fullscreen() }, svg("full"));
+  b.mic = el("button", { type: "button", hidden: true, onclick: () => toggleMic() }, svg("micoff")); // sur scène : son micro, sans quitter le plein écran
   b.el = el("div", { className: "wp-bar" }, ...(live ? [platform ? b.play : null, el("span", { className: "wp-live" }, el("i"), "EN DIRECT"), el("span", { style: "flex:1" })]
-    : [b.play, b.time, b.seek]), b.note, b.reacts, b.mute, b.vol, b.gear, b.full);
+    : [b.play, b.time, b.seek]), b.note, b.reacts, b.mic, b.mute, b.vol, b.gear, b.full);
   bar = b;
   return b.el;
 }
@@ -924,8 +963,11 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") toggleMenu(false); });
 const fullscreen = () => { const st = $("stage"); if (document.fullscreenElement) document.exitFullscreen(); else st.requestFullscreen && st.requestFullscreen().catch(() => {}); };
-// La barre se montre au mouvement de la souris, et reste quand la vidéo est en pause.
-$("stage").addEventListener("pointermove", () => { hideAt = Date.now() + 2500; $("stage").classList.add("show"); });
+// La barre se montre au mouvement de la souris, et reste quand la vidéo est en pause ou que la souris est sur elle
+// (pointerY : arrivée là quand la barre était cachée, la souris n'en « survole » aucun bouton).
+let pointerY = -1;
+$("stage").addEventListener("pointermove", (e) => { hideAt = Date.now() + 2500; pointerY = e.clientY; $("stage").classList.add("show"); });
+$("stage").addEventListener("pointerleave", () => { pointerY = -1; });
 $("stage").tabIndex = 0;
 $("stage").addEventListener("keydown", (e) => {
   if (!state || !state.media || e.target.tagName === "INPUT") return;
@@ -991,8 +1033,14 @@ function drawBar() {
   const st = $("stage");
   const paused = !!(state && state.media && state.media.kind !== "share" && (!state.playing || hold || blocked));
   st.classList.toggle("paused", paused);
-  if (Date.now() > hideAt) st.classList.remove("show");
+  // La barre reste tant que la souris est dessus (sinon le clic, sur un bouton devenu invisible, tombait sur la vidéo).
+  const overBar = bar && pointerY >= bar.el.getBoundingClientRect().top;
+  if (Date.now() > hideAt && !overBar && !st.querySelector(".wp-chatbox:hover")) st.classList.remove("show");
   if (!bar) return;
+  bar.mic.hidden = !speaks();
+  bar.mic.classList.toggle("on", !!myMic);
+  bar.mic.replaceChildren(svg(myMic ? "mic" : "micoff"));
+  bar.mic.title = bar.mic.ariaLabel = myMic ? "Couper mon micro" : "Activer mon micro (entendu de tous)";
   bar.mute.replaceChildren(svg(vol.muted || vol.level === 0 ? "mute" : "vol"));
   if (!bar.dragging) bar.vol.value = vol.muted ? 0 : vol.level;
   if (bar.live) {
@@ -1195,13 +1243,14 @@ async function onSignal({ from, data }) {
   }
 }
 // Celui qui partage ouvre une connexion vers chaque présent (et la referme quand il part) ; trois essais par présent.
-// Quand le nombre de spectateurs change, la part de débit de chacun est recalculée.
+// Quand le nombre de spectateurs change, la part de débit de chacun est recalculée. Un présent absent de la liste mais
+// encore connecté est gardé : le serveur redémarre (mise en ligne) et il revient, l’image n’a pas à s’arrêter.
 let lastViewers = 0;
 function syncPeers() {
   const m = state.media;
   if (!m || m.kind !== "share" || m.peer !== state.you.peer || !local) return;
   const peers = state.members.flatMap((x) => x.peers).filter((p) => p !== state.you.peer);
-  for (const [p, pc] of pcs) if (!peers.includes(p)) { pc.close(); pcs.delete(p); }
+  for (const [p, pc] of pcs) if (!peers.includes(p) && pc.connectionState !== "connected") { pc.close(); pcs.delete(p); }
   for (const p of peers) {
     if (pcs.has(p) || (tries.get(p) || 0) >= 3) continue;
     tries.set(p, (tries.get(p) || 0) + 1);
@@ -1604,9 +1653,12 @@ setInterval(() => {
   } else if (ov && !state.ready) ov.remove();
 }, 250);
 
-// ——— Les caméras des présents : chacun envoie sa vignette à chacun (pair à pair, quatre au plus) ———
-let myCam = null, camGrace = 0;
-const camPcs = new Map(), camIce = new Map();
+// ——— Les caméras des présents et les voix de la scène : chacun envoie à chacun, de pair à pair ———
+// Une connexion par sens et par pair (« out:pair », « in:pair ») pour chaque sorte : cam (la vignette, quatre au plus)
+// et mic (la voix de ceux qui sont sur scène).
+let myCam = null, camGrace = 0, myMic = null, micGrace = 0;
+const MESH = { cam: { pcs: new Map(), ice: new Map() }, mic: { pcs: new Map(), ice: new Map() } };
+const speaks = (id = state && state.you.id) => !!state && (id === state.owner || (state.stage || []).includes(id));
 // L’appareil choisi dans les Paramètres de l’application (par son nom ; window.__oniriqueAudio, posé par l’application).
 async function deviceId(kind, name) {
   if (!name) return null;
@@ -1632,8 +1684,7 @@ const drawCamBtn = () => { $("cam-btn").textContent = myCam ? "Couper ma vignett
 function stopCam() {
   if (myCam) myCam.getTracks().forEach((t) => t.stop());
   myCam = null;
-  for (const pc of camPcs.values()) pc.close();
-  camPcs.clear();
+  closeMesh("cam", "out:"); // les vignettes des autres continuent d’arriver
   drawCamBtn();
 }
 const camTile = (peer, name) => {
@@ -1641,59 +1692,93 @@ const camTile = (peer, name) => {
   if (!t) { t = el("div", { className: "cam" }, el("video", { autoplay: true, playsInline: true }), el("span", { textContent: name })); t.dataset.peer = peer; $("cams").append(t); }
   return t.querySelector("video");
 };
-const camSignal = (to, data) => { signalChain.p = signalChain.p.then(() => api("POST", "/watchparty/" + code + "/signal", { from: state.you.peer, to, data: { ...data, cam: true } }).catch(() => {})); };
-function camPc(key, peer) {
-  const pc = new RTCPeerConnection({ iceServers: ICE });
+// Mon micro, sur scène (le créateur y est toujours) : la voix traitée pour la parole (écho, bruit), entendue de tous.
+async function toggleMic() {
+  if (myMic) { stopMic(); return send("mic", { on: false, peer: state.you.peer }); }
+  try {
+    const dev = await deviceId("audioinput", chosen().mic);
+    myMic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, ...(dev ? { deviceId: dev } : {}) } });
+  } catch (e) { return say("Micro indisponible : " + e.message); }
+  micGrace = Date.now() + 5000; // le temps que la salle apprenne mon micro
+  drawMicBtn();
+  if (!(await send("mic", { on: true, peer: state.you.peer }))) stopMic();
+}
+$("mic-btn").onclick = toggleMic;
+$("hand-btn").onclick = () => (speaks() ? send("stage", { userId: state.you.id, on: false }) : send("hand", { on: !(state.hands || []).includes(state.you.id) }));
+const drawMicBtn = () => { $("mic-btn").textContent = myMic ? "Couper mon micro" : "Activer mon micro"; $("mic-btn").classList.toggle("btn-primary", !!myMic); };
+function stopMic() {
+  if (myMic) myMic.getTracks().forEach((t) => t.stop());
+  myMic = null;
+  closeMesh("mic", "out:");
+  drawMicBtn();
+}
+// Les voix reçues : un lecteur audio par micro ouvert, hors de la page.
+const voices = new Map();
+const voice = (peer) => voices.get(peer) || voices.set(peer, new Audio()).get(peer);
+document.addEventListener("pointerdown", () => { for (const a of voices.values()) if (a.paused && a.srcObject) a.play().catch(() => {}); }); // le son attendait un geste
+
+const meshSignal = (kind, to, data) => { signalChain.p = signalChain.p.then(() => api("POST", "/watchparty/" + code + "/signal", { from: state.you.peer, to, data: { ...data, [kind]: true } }).catch(() => {})); };
+const closeMesh = (kind, side = "") => { for (const [key, pc] of MESH[kind].pcs) if (key.startsWith(side)) { pc.close(); MESH[kind].pcs.delete(key); } };
+function meshPc(kind, key, peer) {
+  const pcs = MESH[kind].pcs, pc = new RTCPeerConnection({ iceServers: ICE });
   // dir : la connexion d’en face à laquelle ce candidat est destiné (ma sortie est son entrée, et l’inverse).
-  pc.onicecandidate = (e) => e.candidate && camSignal(peer, { ice: e.candidate, dir: key.startsWith("out:") ? "in" : "out" });
-  pc.onconnectionstatechange = () => { if (pc.connectionState === "failed") { pc.close(); camPcs.delete(key); } };
-  camPcs.set(key, pc);
+  pc.onicecandidate = (e) => e.candidate && meshSignal(kind, peer, { ice: e.candidate, dir: key.startsWith("out:") ? "in" : "out" });
+  pc.onconnectionstatechange = () => { if (pc.connectionState === "failed") { pc.close(); if (pcs.get(key) === pc) pcs.delete(key); } };
+  pcs.set(key, pc);
   return pc;
 }
-// Une vignette part de chaque caméra allumée vers chaque présent : une connexion par sens (« out:pair », « in:pair »).
-function syncCams() {
-  const s = state;
-  const cams = s.cams || [], camPeers = new Set(cams.map((c) => c.peer));
-  if (myCam && !camPeers.has(s.you.peer) && Date.now() > camGrace) stopCam();
-  for (const t of [...$("cams").children]) if (!camPeers.has(t.dataset.peer)) t.remove();
-  for (const [key, pc] of camPcs) {
+// Mon flux (mine) part vers chaque présent ; une connexion entrante se ferme quand son pair coupe. Un pair absent de la
+// liste mais encore connecté est gardé : le serveur redémarre (mise en ligne), il revient.
+function syncMesh(kind, mine, senders) {
+  const s = state, pcs = MESH[kind].pcs, sending = new Set(senders.map((c) => c.peer));
+  for (const [key, pc] of pcs) {
     const peer = key.slice(key.indexOf(":") + 1), present = s.members.some((m) => m.peers.includes(peer));
-    if (!present || (key.startsWith("in:") && !camPeers.has(peer))) { pc.close(); camPcs.delete(key); }
+    if ((!present && pc.connectionState !== "connected") || (key.startsWith("in:") && !sending.has(peer))) { pc.close(); pcs.delete(key); }
   }
-  if (myCam) {
-    const v = camTile(s.you.peer, "Toi");
-    v.muted = true;
-    if (v.srcObject !== myCam) v.srcObject = myCam;
-    for (const peer of s.members.flatMap((m) => m.peers).filter((p) => p !== s.you.peer)) {
-      if (camPcs.has("out:" + peer)) continue;
-      const pc = camPc("out:" + peer, peer);
-      for (const t of myCam.getTracks()) pc.addTransceiver(t, { direction: "sendonly", streams: [myCam], sendEncodings: [{ maxBitrate: t.kind === "video" ? 350_000 : 48_000 }] });
-      pc.createOffer().then((o) => pc.setLocalDescription(o)).then(() => camSignal(peer, { sdp: pc.localDescription })).catch(() => {});
-    }
+  if (!mine) return;
+  for (const peer of s.members.flatMap((m) => m.peers).filter((p) => p !== s.you.peer)) {
+    if (pcs.has("out:" + peer)) continue;
+    const pc = meshPc(kind, "out:" + peer, peer);
+    for (const t of mine.getTracks()) pc.addTransceiver(t, { direction: "sendonly", streams: [mine], sendEncodings: [{ maxBitrate: t.kind === "video" ? 350_000 : 48_000 }] });
+    pc.createOffer().then((o) => pc.setLocalDescription(o)).then(() => meshSignal(kind, peer, { sdp: pc.localDescription })).catch(() => {});
   }
 }
-async function onCamSignal({ from, data }) {
-  const cam = (state.cams || []).find((c) => c.peer === from);
+function syncCams() {
+  const s = state, cams = s.cams || [], camPeers = new Set(cams.map((c) => c.peer));
+  if (myCam && !camPeers.has(s.you.peer) && Date.now() > camGrace) stopCam();
+  for (const t of [...$("cams").children]) if (!camPeers.has(t.dataset.peer)) t.remove();
+  if (myCam) { const v = camTile(s.you.peer, "Toi"); v.muted = true; if (v.srcObject !== myCam) v.srcObject = myCam; }
+  syncMesh("cam", myCam, cams);
+}
+// Descendu de scène (ou retiré par le serveur), mon micro se coupe ; la voix d’un micro fermé s’arrête.
+function syncVoices() {
+  const s = state, mics = s.mics || [];
+  if (myMic && !mics.some((c) => c.peer === s.you.peer) && Date.now() > micGrace) stopMic();
+  for (const [peer, a] of voices) if (!mics.some((c) => c.peer === peer)) { a.srcObject = null; voices.delete(peer); }
+  syncMesh("mic", myMic, mics);
+}
+async function onMeshSignal(kind, { from, data }) {
+  const { pcs, ice } = MESH[kind], who = (state[kind === "cam" ? "cams" : "mics"] || []).find((c) => c.peer === from);
   if (data.sdp && data.sdp.type === "offer") {
-    if (!cam) return;
-    if (camPcs.has("in:" + from)) camPcs.get("in:" + from).close();
-    const pc = camPc("in:" + from, from);
-    pc.ontrack = (e) => { const v = camTile(from, cam.name); if (v.srcObject !== e.streams[0]) { v.srcObject = e.streams[0]; v.play().catch(() => {}); } };
+    if (!who) return;
+    if (pcs.has("in:" + from)) pcs.get("in:" + from).close();
+    const pc = meshPc(kind, "in:" + from, from);
+    pc.ontrack = (e) => { const v = kind === "cam" ? camTile(from, who.name) : voice(from); if (v.srcObject !== e.streams[0]) { v.srcObject = e.streams[0]; v.play().catch(() => {}); } };
     await pc.setRemoteDescription(data.sdp);
-    for (const c of camIce.get("in:" + from) || []) await pc.addIceCandidate(c).catch(() => {});
-    camIce.delete("in:" + from);
+    for (const c of ice.get("in:" + from) || []) await pc.addIceCandidate(c).catch(() => {});
+    ice.delete("in:" + from);
     await pc.setLocalDescription(await pc.createAnswer());
-    camSignal(from, { sdp: pc.localDescription });
+    meshSignal(kind, from, { sdp: pc.localDescription });
   } else if (data.sdp) {
-    const pc = camPcs.get("out:" + from);
+    const pc = pcs.get("out:" + from);
     if (!pc) return;
     await pc.setRemoteDescription(data.sdp);
-    for (const c of camIce.get("out:" + from) || []) await pc.addIceCandidate(c).catch(() => {});
-    camIce.delete("out:" + from);
+    for (const c of ice.get("out:" + from) || []) await pc.addIceCandidate(c).catch(() => {});
+    ice.delete("out:" + from);
   } else if (data.ice) {
-    const key = (data.dir === "out" ? "out:" : "in:") + from, pc = camPcs.get(key);
+    const key = (data.dir === "out" ? "out:" : "in:") + from, pc = pcs.get(key);
     if (pc && pc.remoteDescription) await pc.addIceCandidate(data.ice).catch(() => {});
-    else camIce.set(key, [...(camIce.get(key) || []), data.ice]);
+    else ice.set(key, [...(ice.get(key) || []), data.ice]);
   }
 }
 
@@ -1759,7 +1844,7 @@ document.addEventListener("click", (e) => {
   e.preventDefault();
   window.open(url.href, "_blank", "noopener");
 }, true);
-if (!window.oniriqueApp) window.addEventListener("beforeunload", (e) => { if (local || myCam) { e.preventDefault(); e.returnValue = ""; } });
+if (!window.oniriqueApp) window.addEventListener("beforeunload", (e) => { if (local || myCam || myMic) { e.preventDefault(); e.returnValue = ""; } });
 window.addEventListener("hashchange", () => { if (location.hash.slice(1) && location.hash.slice(1) !== code) location.reload(); });
 
 (async () => {

@@ -11,7 +11,7 @@ Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0'
 const { createApp } = await import('../src/app.js');
 const { get, run } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
-const { act, newRoom, youtubeId, cleanSource, positionOf, isMember, mediaKey } = await import('../src/watchparty.js');
+const { act, newRoom, youtubeId, cleanSource, positionOf, isMember, mediaKey, drop } = await import('../src/watchparty.js');
 
 let passed = 0;
 async function step(name, fn) { await fn(); passed++; console.log(`  ok  ${name}`); }
@@ -134,11 +134,48 @@ await step('partage : seulement depuis un flux ouvert, et seul celui qui partage
   act(r, { id: 1 }, 'perms', { perms: { source: 'all' } });
   throws(() => act(r, { id: 2, name: 'Lou' }, 'share', { what: 'screen' }), 400);
   act(r, { id: 2, name: 'Lou' }, 'share', { what: 'camera' }, 0, 'peerLou');
-  assert.deepEqual([r.media.kind, r.media.peer, r.media.what], ['share', 'peerLou', 'camera']);
+  assert.deepEqual([r.media.kind, r.media.peer, r.media.what, r.stage], ['share', 'peerLou', 'camera', [2]]); // qui partage monte sur scène
   act(r, { id: 1 }, 'perms', { perms: { source: 'host' } });
   throws(() => act(r, { id: 3 }, 'unshare'), 403);
   act(r, { id: 1 }, 'unshare');
   assert.equal(r.media, null);
+});
+
+await step('scène : le créateur parle toujours ; on demande la parole, le créateur ou un co-hôte fait monter et descendre', () => {
+  const r = newRoom({ id: 1, name: 'Kay' });
+  throws(() => act(r, { id: 1 }, 'mic', { on: true }), 400); // pas de flux ouvert
+  act(r, { id: 1, name: 'Kay' }, 'mic', { on: true }, 0, 'pk');
+  throws(() => act(r, { id: 2, name: 'Lou' }, 'mic', { on: true }, 0, 'pl'), 403);
+  act(r, { id: 2 }, 'hand', { on: true });
+  assert.deepEqual(r.hands, [2]);
+  throws(() => act(r, { id: 3 }, 'stage', { userId: 2, on: true }), 403);
+  act(r, { id: 1 }, 'cohost', { userId: 3, on: true });
+  act(r, { id: 3 }, 'stage', { userId: 2, on: true });
+  assert.deepEqual([r.stage, r.hands], [[2], []]);
+  act(r, { id: 2, name: 'Lou' }, 'mic', { on: true }, 0, 'pl');
+  act(r, { id: 2, name: 'Lou' }, 'mic', { on: true }, 0, 'pl2'); // depuis un autre onglet : un seul micro par personne
+  assert.deepEqual(r.mics.map((c) => c.peer), ['pk', 'pl2']);
+  act(r, { id: 1 }, 'stage', { userId: 2, on: false }); // descendue : son micro se coupe
+  assert.deepEqual([r.stage, r.mics.map((c) => c.id)], [[], [1]]);
+  act(r, { id: 3 }, 'stage', { userId: 1, on: false }); // le créateur reste sur scène
+  assert.deepEqual(r.mics.map((c) => c.id), [1]);
+  act(r, { id: 1 }, 'stage', { userId: 4, on: true });
+  act(r, { id: 4 }, 'stage', { userId: 4, on: false }); // chacun redescend seul, mais ne remonte pas seul
+  throws(() => act(r, { id: 4 }, 'stage', { userId: 4, on: true }), 403);
+  for (let i = 10; i < 18; i++) act(r, { id: 1 }, 'stage', { userId: i, on: true });
+  throws(() => act(r, { id: 1 }, 'stage', { userId: 30, on: true }), 400);
+  act(r, { id: 1 }, 'kick', { userId: 10 });
+  assert.equal(r.stage.includes(10), false);
+});
+
+await step('redémarrage : ce qui vivait dans un flux qui ne revient pas est retiré, le reste attend', () => {
+  const r = newRoom({ id: 1, name: 'Kay' });
+  Object.assign(r, { media: { kind: 'share', peer: 'a', by: 1 }, cams: [{ peer: 'a', id: 1 }, { peer: 'b', id: 2 }], mics: [{ peer: 'c', id: 3 }] });
+  assert.equal(drop(r, (p) => p !== 'z'), false);
+  assert.equal(drop(r, (p) => p !== 'b'), true);
+  assert.deepEqual([r.media.peer, r.cams.map((c) => c.peer), r.mics.length], ['a', ['a'], 1]);
+  assert.equal(drop(r, () => false), true);
+  assert.deepEqual([r.media, r.cams, r.mics], [null, [], []]);
 });
 
 const server = createApp().listen(0);
@@ -159,8 +196,8 @@ async function account(name, role) {
   run('UPDATE users SET role = ? WHERE email = ?', role, email);
   return { token, id: get('SELECT id FROM users WHERE email = ?', email).id };
 }
-async function live(code, token) {
-  const response = await fetch(`${base}/api/watchparty/${code}/live`, { headers: { Authorization: `Bearer ${token}` } });
+async function live(code, token, { at = base, peer = '' } = {}) {
+  const response = await fetch(`${at}/api/watchparty/${code}/live${peer ? `?peer=${peer}` : ''}`, { headers: { Authorization: `Bearer ${token}` } });
   const reader = response.body.getReader(), decoder = new TextDecoder();
   let buffer = '';
   return {
@@ -259,6 +296,37 @@ try {
     assert.ok(exp * 1000 > Date.now() + 11 * 3600_000);
     assert.equal(turn.credential, crypto.createHmac('sha1', 'secret-de-test').update(turn.username).digest('base64'));
     assert.deepEqual(turn.urls, ['turn:site.test:3478?transport=udp', 'turn:site.test:3478?transport=tcp']);
+  });
+  await step('mise en ligne : après un redémarrage, chacun reprend son flux, et le partage et les micros l’attendent', async () => {
+    const { code } = await call('POST', '/api/watchparty', { token: kay.token, expect: 201 });
+    const k = await live(code, kay.token), kPeer = (await k.until((m) => m.you?.peer)).you.peer;
+    const l = await live(code, lou.token), lPeer = (await l.until((m) => m.you?.peer)).you.peer;
+    await call('POST', `/api/watchparty/${code}/share`, { token: kay.token, body: { what: 'screen', peer: kPeer } });
+    await call('POST', `/api/watchparty/${code}/mic`, { token: lou.token, body: { on: true, peer: lPeer }, expect: 403 });
+    await call('POST', `/api/watchparty/${code}/hand`, { token: lou.token, body: { on: true } });
+    await call('POST', `/api/watchparty/${code}/stage`, { token: lou.token, body: { userId: lou.id, on: true }, expect: 403 });
+    await call('POST', `/api/watchparty/${code}/stage`, { token: kay.token, body: { userId: lou.id, on: true } });
+    await call('POST', `/api/watchparty/${code}/mic`, { token: lou.token, body: { on: true, peer: lPeer } });
+    const seen = await k.until((m) => m.mics?.length);
+    assert.deepEqual([seen.stage, seen.hands, seen.mics.map((c) => [c.id, c.peer])], [[lou.id], [], [[lou.id, lPeer]]]);
+    // Le serveur s'arrête net : la salle reste en base telle quelle, sans que la fin des flux soit passée par lui.
+    const saved = get('SELECT data FROM watchparty_rooms WHERE code = ?', code).data;
+    k.close(); l.close();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    run('UPDATE watchparty_rooms SET data = ? WHERE code = ?', saved, code);
+    const again = createApp().listen(0), at = `http://127.0.0.1:${again.address().port}`;
+    try {
+      const s = await (await live(code, kay.token, { at, peer: kPeer })).until((m) => m.you?.peer);
+      assert.deepEqual([s.you.peer, s.media?.kind, s.media?.peer, s.mics.map((c) => c.peer)], [kPeer, 'share', kPeer, [lPeer]]);
+      // Un identifiant pris, ou dont le micro est à quelqu'un d'autre, n'est pas rendu.
+      assert.notEqual((await (await live(code, max.token, { at, peer: kPeer })).until((m) => m.you?.peer)).you.peer, kPeer);
+      assert.notEqual((await (await live(code, max.token, { at, peer: lPeer })).until((m) => m.you?.peer)).you.peer, lPeer);
+      const back = await (await live(code, lou.token, { at, peer: lPeer })).until((m) => m.you?.peer);
+      assert.deepEqual([back.you.peer, back.mics.map((c) => c.peer)], [lPeer, [lPeer]]);
+    } finally {
+      again.closeAllConnections?.();
+      again.close();
+    }
   });
   console.log(`watchparty : ${passed} étapes ok`);
 } finally {
