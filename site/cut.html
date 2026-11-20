@@ -942,7 +942,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             </details>
         </div>
         <div class="stack">
-          <p class="hint">MP4 1080 × 1920, 30 images par seconde, son en haute qualité. Avec des clips MP4 ou MOV, tu peux changer d’onglet pendant l’export. Tes sons, clips et vidéos restent chez toi.</p>
+          <p class="hint">MP4 1080 × 1920, 30 images par seconde, son en haute qualité (« Export Haute qualité » : 60 images par seconde et 50 Mb/s). Avec des clips MP4 ou MOV, tu peux changer d’onglet pendant l’export. Tes sons, clips et vidéos restent chez toi.</p>
           <p class="hint keys">Raccourcis : <kbd>Espace</kbd> lecture · <kbd>1</kbd>–<kbd>7</kbd> étapes · <kbd>E</kbd> exporter · <kbd>←</kbd> <kbd>→</kbd> une seconde</p>
         </div>
       </div>
@@ -963,6 +963,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l’export et quand l’IA travaille</label>
       <label class="check mute"><input type="checkbox" id="fastExport"> Export rapide <small>quand le serveur doit réencoder la vidéo : 3 à 5 fois plus vite, qualité à peine moindre</small></label>
       <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
+      <button class="go wide" type="button" id="export-hq" disabled title="1080 × 1920, 60 images par seconde, 50 Mb/s : la vidéo la plus fluide et la plus nette, fichier plus lourd">Export Haute qualité</button>
       <button class="cloud-short" type="button" id="cloud-short" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4zM13 5h7v6h-7zM4 13h7v6H4zM13 13h7v6h-7z"/></svg>Mes vidéos CUT</button>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       </div>
@@ -3201,7 +3202,7 @@ let hearing = 0; // « Écouter le début » en cours (un minuteur)
 // est arrivé au bout (il boucle). Sinon l’aperçu laisse la vidéo jouer, sans sauts.
 let resync = false;
 const drift = (v, want, tolerance) => (recording || resync || v.ended) && Math.abs(v.currentTime - want) > tolerance;
-function loop() { const t = now(); draw(t, playing); resync = false; drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) frame = recording ? setTimeout(loop, 1000 / 30) : requestAnimationFrame(loop); }
+function loop() { const t = now(); draw(t, playing); resync = false; drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) frame = recording ? setTimeout(loop, 1000 / exportFps()) : requestAnimationFrame(loop); }
 /** Après une option qui ne change que l’image (ou l’ordre des coupes) : on redessine sans couper le son. */
 function restyle(rebuild) {
   if (rebuild) { build(); shown = -1; renderClips(); $("reshuffle").hidden = prefs.order !== "mix"; }
@@ -3321,7 +3322,7 @@ function refresh() {
   $("bpm").textContent = sound.bpm ? (Math.round(sound.bpm * 10) / 10).toString().replace(".", ",") : "—";
   $("reshuffle").hidden = prefs.order !== "mix";
   const ready = !!(sound.buffer && clips.length);
-  $("play").disabled = $("export").disabled = $("series-go").disabled = !ready;
+  $("play").disabled = $("export").disabled = $("export-hq").disabled = $("series-go").disabled = !ready;
   $("screen-empty").hidden = ready;
   if (!ready) g.clearRect(0, 0, W, H);
   drawWave();
@@ -3342,7 +3343,10 @@ function refresh() {
 // Image par image : chaque image est dessinée à son temps exact, les vidéos calées à l’image près, puis encodée en H.264
 // (WebCodecs) sans avoir à suivre le temps réel : ni image sautée, ni encodage bâclé pour tenir la cadence.
 const AVC = ["avc1.640033", "avc1.640029", "avc1.4d0033", "avc1.42e033"]; // High 5.1, High 4.1, Main 5.1, Baseline 5.1
-const encoderConfig = (codec) => ({ codec, width: W, height: H, bitrate: 20_000_000, framerate: 30, bitrateMode: "variable", latencyMode: "quality", avc: { format: "annexb" } });
+// « Export Haute qualité » : 60 images par seconde et 50 Mb/s (bien au-dessus de ce que demandent TikTok, YouTube et Instagram).
+let hq = false;
+const exportFps = () => (hq ? 60 : 30);
+const encoderConfig = (codec) => ({ codec, width: W, height: H, bitrate: hq ? 50_000_000 : 20_000_000, framerate: exportFps(), bitrateMode: "variable", latencyMode: "quality", avc: { format: "annexb" } });
 let encoderCodec = null; // le H.264 que ce navigateur sait encoder en 1080 × 1920, sinon l’enregistrement en temps réel
 async function pickEncoder() {
   if (!window.VideoEncoder || !window.VideoFrame) return null;
@@ -3392,7 +3396,7 @@ async function encodeExact(codec, progress) {
   });
   encoder.ondequeue = () => wake();
   encoder.configure(encoderConfig(codec));
-  const count = Math.max(1, Math.round(total() * 30));
+  const fps = exportFps(), count = Math.max(1, Math.round(total() * fps));
   // Les clips que WebCodecs sait décoder ne passent plus par une balise vidéo : si c’est le cas de tous, l’export continue
   // même quand on change d’onglet (un onglet caché freine les balises vidéo, pas le décodeur).
   if (!clipFrames) clipFrames = (await framesLib())?.clipFrames || null;
@@ -3406,13 +3410,13 @@ async function encodeExact(codec, progress) {
         progress("En pause : reviens sur cet onglet pour finir la vidéo.", .08 + n / count * .64);
         await new Promise((resolve) => document.addEventListener("visibilitychange", resolve, { once: true }));
       }
-      await drawAt(n / 30);
-      const frame = new VideoFrame(screen, { timestamp: Math.round(n * 1e6 / 30), duration: Math.round(1e6 / 30) });
-      encoder.encode(frame, { keyFrame: n % 60 === 0 });
+      await drawAt(n / fps);
+      const frame = new VideoFrame(screen, { timestamp: Math.round(n * 1e6 / fps), duration: Math.round(1e6 / fps) });
+      encoder.encode(frame, { keyFrame: n % (fps * 2) === 0 });
       frame.close();
       while (encoder.encodeQueueSize > 3 && !failed) await new Promise((resolve) => { wake = resolve; });
       if (failed) throw failed;
-      if (n % 6 === 0) progress("Fabrication de la vidéo, image par image… " + OniriqueAudio.clock(n / 30) + " / " + OniriqueAudio.clock(total()) + (background ? " · tu peux changer d’onglet" : " · garde cet onglet ouvert"), .08 + n / count * .64);
+      if (n % 6 === 0) progress("Fabrication de la vidéo, image par image… " + OniriqueAudio.clock(n / fps) + " / " + OniriqueAudio.clock(total()) + (background ? " · tu peux changer d’onglet" : " · garde cet onglet ouvert"), .08 + n / count * .64);
     }
     await encoder.flush();
     if (failed) throw failed;
@@ -3466,7 +3470,7 @@ const fileName = (ext, suffix = "") => (($("title").value.trim() || sound.name |
 function save(blob, name) { const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name }); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 60_000); }
 
 /** L’export : une vidéo, ou une par fond (« Une vidéo par fond ») rangées dans un dossier choisi quand le navigateur le permet. */
-async function exportVideo(series = null) {
+async function exportVideo(series = null, high = false) {
   const mime = pickMime();
   if (!encoderCodec && (!mime || !screen.captureStream)) { alert("Ce navigateur ne sait pas enregistrer de vidéo. Ouvre ONIRIQUE CUT dans Chrome, Edge ou Safari."); return; }
   stop();
@@ -3476,6 +3480,7 @@ async function exportVideo(series = null) {
   // Plusieurs vidéos : un dossier où les ranger (Chrome, Edge) ; sinon elles arrivent une par une dans les téléchargements.
   let folder = null;
   if (list.length > 1 && window.showDirectoryPicker) { try { folder = await window.showDirectoryPicker({ mode: "readwrite" }); } catch { folder = null; } }
+  hq = high;
   lockUi(true); busy.export = true; applyMute();
   $("mute").disabled = false; // on peut couper ou remettre le son pendant l’enregistrement
   try {
@@ -3520,6 +3525,7 @@ async function exportVideo(series = null) {
     recording = null;
     focus = kept;
     if (series) { Object.assign(prefs, savedPrefs); sound.start = savedStart; manual = null; savePrefs(); syncAll(); }
+    hq = false;
     lockUi(false); busy.export = false; applyMute();
     refresh();
   }
@@ -3554,13 +3560,14 @@ async function exportOne(mime, wav, progress) {
     position = 0; shown = -1; draw(0, false);
     await Promise.all([introVideo, ...pool].map((v) => ((v.dataset.seg || (v === introVideo && introLen())) && v.readyState < 2 ? new Promise((r) => { v.onseeked = v.oncanplay = r; setTimeout(r, 3000); }) : null)));
     let raw = null, query = audioId ? "?audio=" + audioId : "";
-    if (audioId && encoderCodec) raw = await encodeExact(encoderCodec, progress).catch(() => null);
+    const codec = hq && encoderCodec ? await pickEncoder() : encoderCodec;
+    if (audioId && codec) raw = await encodeExact(codec, progress).catch(() => null);
     if (raw) query += "&raw=h264" + (raw.reordered ? "&reorder=1" : "");
     else {
       ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
       const out = ctx.createMediaStreamDestination();
-      const stream = new MediaStream([...screen.captureStream(30).getVideoTracks(), ...out.stream.getAudioTracks()]);
-      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 40_000_000, audioBitsPerSecond: 320_000 });
+      const stream = new MediaStream([...screen.captureStream(exportFps()).getVideoTracks(), ...out.stream.getAudioTracks()]);
+      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: hq ? 80_000_000 : 40_000_000, audioBitsPerSecond: 320_000 });
       const chunks = [];
       recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
       let aborted = false;
@@ -3585,7 +3592,8 @@ async function exportOne(mime, wav, progress) {
     }
 
     // Export rapide : le serveur réencode plus vite, quand il doit réencoder (sinon rien ne change).
-    if (prefs.fastExport) query += (query ? "&" : "?") + "fast=1";
+    if (hq) query += (query ? "&" : "?") + "hq=1";
+    else if (prefs.fastExport) query += (query ? "&" : "?") + "fast=1";
     progress("Préparation du MP4 en haute qualité…", .72);
     // Un serveur qui redémarre perd la vidéo en cours et le son envoyé : on attend qu’il revienne, on renvoie tout (3 essais).
     const toMp4 = async (attempt = 1) => {
@@ -4632,6 +4640,7 @@ function start() {
   $("zone-clip").onchange = () => { zoneIndex = Number($("zone-clip").value); drawZoneBox(); };
   $("zone-all").onclick = () => { delete zoneClip().zone; position = 0; refresh(); };
   $("export").onclick = () => exportVideo();
+  $("export-hq").onclick = () => exportVideo(null, true);
   $("caption").oninput = () => { captionEdited = true; renderHud(); };
   chips("hudPick", "hud", renderHud); renderHud();
   for (const id of ["artist", "title"]) $(id).addEventListener("input", renderHud);
