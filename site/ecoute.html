@@ -104,6 +104,15 @@ button.buy { cursor: pointer; }
 .offer details { grid-column: 2 / -1; font-size: 12px; color: var(--haze); }
 #buy .row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 16px; }
 #buy .btn.paypal { background: #FFC439; color: #111; box-shadow: none; }
+/* Le menu du clic droit sur un son */
+.rt-menu { position: fixed; z-index: 80; display: grid; gap: 2px; padding: 6px; min-width: 220px; border-radius: 16px; border: 1px solid var(--line); background: var(--glass-deep); box-shadow: var(--glass-shadow); }
+.rt-menu small { padding: 8px 12px; color: var(--haze); font: 500 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; }
+.rt-menu button { text-align: left; padding: 8px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
+.rt-menu button:hover { background: rgba(255,255,255,.06); }
+/* Un outil du site ouvert sur un son, comme dans la fiche d'un son d'ONIRIQUE CLOUD */
+#tool { width: 900px; max-width: calc(100vw - 24px); padding: 16px 20px 20px; color: var(--mist); }
+#tool h2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; font: 800 18px var(--f-display); }
+#tool iframe { display: block; width: 100%; height: calc(100dvh - 150px); min-height: 420px; border: 1px solid var(--line); border-radius: 16px; background: var(--night); }
 .stage.maquette { background: rgba(255,255,255,.06); }
 .stage.version { border-color: var(--ember); color: var(--ember); }
 .stage.final { border-color: transparent; background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; }
@@ -224,6 +233,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
 <dialog id="buy"></dialog>
+<dialog id="tool"></dialog>
 <script src="assets/sounds-player.js?v=31"></script>
 <script src="assets/platforms.js?v=22"></script>
 <script src="assets/hm.js?v=16"></script>
@@ -474,6 +484,7 @@ function show(data) {
       el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }),
       it.downloadUrl ? el("a", { className: "dl", href: it.downloadUrl, title: "Télécharger", ariaLabel: "Télécharger " + it.title, onclick: (event) => event.stopPropagation() }, icon("download")) : el("span"));
     row.dataset.id = it.trackId;
+    row.oncontextmenu = (event) => { event.preventDefault(); rowMenu(it, event); };
     row.onclick = () => player.play(items, items.indexOf(it));
     row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); };
     return row;
@@ -503,7 +514,7 @@ function show(data) {
 }
 
 // Une playlist ouverte par un membre connecté : sa note, ses ups, le up de chaque son ; et, si son créateur l’autorise,
-// le clic droit sur un son pour l’ajouter à l’une de ses propres playlists.
+// « Ajouter à… » dans le clic droit sur un son, pour l’ajouter à l’une de ses propres playlists.
 async function drawRatings(data) {
   if (!session) return;
   let info;
@@ -518,8 +529,37 @@ async function drawRatings(data) {
       if (up) row.querySelector(".len").before(up);
     });
   }
-  if (!info.open) return;
-  document.querySelectorAll("#tracks .trk:not(.hidden-row)").forEach((row) => row.addEventListener("contextmenu", (event) => { event.preventDefault(); addTo(Number(row.dataset.id), event); }));
+  canAdd = !!info.open;
+}
+// Le clic droit sur un son : « Volume avant sortie » et « Comparer à une référence », comme dans ONIRIQUE CLOUD, même
+// quand le lien ne permet pas de télécharger (l’outil lit le son par l’adresse d’écoute, sans le donner).
+let canAdd = false;
+function rowMenu(it, event) {
+  popMenu(event, null, [["Volume avant sortie", () => openTool("volume-lufs", "Volume avant sortie", it)],
+    ["Comparer à une référence", () => openTool("comparer-mix", "Comparer à une référence", it)],
+    ...(canAdd ? [["Ajouter à…", () => addTo(it.trackId, event)]] : [])]);
+}
+function openTool(page, title, it) {
+  const dialog = $("tool");
+  dialog.replaceChildren(el("h2", {}, title, el("button", { className: "back", type: "button", onclick: () => dialog.close() }, icon("close"), "Fermer")),
+    el("iframe", { title, src: page + "?embed=1&src=" + encodeURIComponent(it.url) + "&name=" + encodeURIComponent(it.title) }));
+  dialog.showModal();
+}
+$("tool").addEventListener("click", (event) => { if (event.target === $("tool")) $("tool").close(); });
+// Fermé, l’outil s’arrête (son écoute A/B comprise).
+$("tool").addEventListener("close", () => $("tool").replaceChildren());
+// Un menu à l’endroit du clic droit, gardé dans la fenêtre ; un clic ailleurs ou Échap le ferme.
+function popMenu(event, heading, entries) {
+  document.querySelector(".rt-menu")?.remove();
+  const menuBox = el("div", { className: "rt-menu", onkeydown: (e) => { if (e.key === "Escape") menuBox.remove(); } },
+    heading ? el("small", { textContent: heading }) : null,
+    ...entries.map(([label, run]) => el("button", { type: "button", textContent: label, onclick: () => { menuBox.remove(); run(); } })));
+  document.body.append(menuBox);
+  const { width, height } = menuBox.getBoundingClientRect();
+  menuBox.style.left = Math.max(8, Math.min(event.clientX, innerWidth - width - 8)) + "px";
+  menuBox.style.top = Math.max(8, Math.min(event.clientY, innerHeight - height - 8)) + "px";
+  menuBox.querySelector("button").focus({ preventScroll: true });
+  setTimeout(() => document.addEventListener("click", () => menuBox.remove(), { once: true }), 0);
 }
 // « Ajouter à » : la liste de ses playlists ; le lien est d’abord enregistré dans son ONIRIQUE CLOUD s’il ne l’est pas.
 async function addTo(trackId, event) {
@@ -535,14 +575,9 @@ async function addTo(trackId, event) {
     if (!save) { await api("/save", {}, "POST"); mine = await call("GET", "/me/sounds"); save = mine.saved.find((x) => x.token === shareToken); }
     const lists = mine.projects.filter((x) => x.kind === "playlist" && (x.mine || x.collaborators));
     if (!save || !lists.length) return alert("Crée d’abord une playlist dans ONIRIQUE CLOUD.");
-    document.querySelector(".rt-menu")?.remove();
-    const menuBox = el("div", { className: "rt-menu", style: `position:fixed;left:${event.clientX}px;top:${event.clientY}px;z-index:80;display:grid;gap:2px;padding:6px;min-width:220px;border-radius:16px;border:1px solid var(--line);background:var(--glass-deep);box-shadow:var(--glass-shadow)` },
-      el("small", { style: "padding:8px 12px;color:var(--haze);font:500 11px var(--f-mono);letter-spacing:.14em;text-transform:uppercase", textContent: "Ajouter à" }),
-      ...lists.map((x) => el("button", { type: "button", style: "text-align:left;padding:8px 12px;border:0;border-radius:10px;background:none;color:var(--mist);font:600 14px var(--f-body);cursor:pointer",
-        textContent: x.title, onmouseenter: (e) => { e.target.style.background = "rgba(255,255,255,.06)"; }, onmouseleave: (e) => { e.target.style.background = "none"; },
-        onclick: async () => { menuBox.remove(); try { await call("POST", "/me/sounds/saves/" + save.id + "/add", { projectId: x.id, trackId }); alert("Ajouté à « " + x.title + " »."); } catch (e) { alert(e.message); } } })));
-    document.body.append(menuBox);
-    setTimeout(() => document.addEventListener("click", () => menuBox.remove(), { once: true }), 0);
+    popMenu(event, "Ajouter à", lists.map((x) => [x.title, async () => {
+      try { await call("POST", "/me/sounds/saves/" + save.id + "/add", { projectId: x.id, trackId }); alert("Ajouté à « " + x.title + " »."); } catch (e) { alert(e.message); }
+    }]));
   } catch (e) { alert(e.message); }
 }
 
