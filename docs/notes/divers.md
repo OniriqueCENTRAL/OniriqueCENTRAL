@@ -41,9 +41,12 @@
 ## Arborescence de CUT et AUTOMATIQUE (`server/src/cutbrain.js`, `cut-brain.json`)
 - L'arbre part de la recette de `cut-brain.json` (une feuille = un réglage de `prefs` dans `site/cut.html`, mêmes clés et
   mêmes valeurs) : une feuille ajoutée là doit exister dans CUT. Menu « Arborescence » de CUT, réservé aux fondateurs.
-- Nourri par les exports (réglages seulement, et le rôle du compte ; case « Aider CUT à apprendre »), les corrections
-  faites après AUTOMATIQUE (comptent triple) et les leçons des fondateurs (une leçon peut régler une feuille). Les TikToks
-  d'AUTOMATIQUE ne votent pas. Proposition à valider : 5 TikToks et 60 % d'accord ; un refus tient 30 jours.
+- Nourri par les exports (case « Aider CUT à apprendre », cochée au départ) : réglages, 3 images réduites, mesures du
+  passage (tempo, place, énergie, drop ; jamais le son), noms des fonds, textes ; et le rôle du compte, jamais qui. Aussi par
+  les corrections faites après AUTOMATIQUE (comptent triple) et les leçons des fondateurs. Les TikToks d'AUTOMATIQUE ne votent
+  pas. Proposition à valider : 5 TikToks et 60 % d'accord ; un refus tient 30 jours. Images et textes gardés un an.
+- Cadre légal : article 19 des CGU (licence limitée à l'amélioration de CUT) et paragraphe « cut » de la confidentialité
+  (intérêt légitime, opposition par la case). Changer ce qui part = changer ces deux textes.
 - AUTOMATIQUE : durée de l'arbre et meilleur passage, paroles par l'IA, style de l'arbre, fonds tirés au hasard dans la
   banque si aucun clip (3 films essayés), réplique qui reprend des mots du passage et finit sur une question, image froide
   retirée sur un film sombre, export sans Shorts ni Reels automatiques, gardé dans le cloud CUT.

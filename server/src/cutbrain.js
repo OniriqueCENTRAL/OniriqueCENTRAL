@@ -3,9 +3,10 @@
 // sans un fondateur.
 //
 // Elle part de la recette du dépôt (cut-brain.json) et se nourrit de trois choses :
-//   - les TikToks faits sur CUT : à chaque export, les réglages du montage, jamais le son, les images, les textes ni qui l'a
-//     fait (seulement le rôle du compte, pour séparer les fondateurs des autres) ; ceux déjà gardés dans le cloud CUT sont
-//     repris une fois ;
+//   - les TikToks faits sur CUT : à chaque export, les réglages du montage et son contenu (trois images réduites, le rythme
+//     et l'énergie du passage, jamais le son lui-même, et les textes : réplique, paroles affichées, description, titre),
+//     sans dire qui l'a fait (seulement le rôle du compte) ; les montages déjà gardés dans le cloud CUT sont repris une fois
+//     (leur contenu seulement pour ceux des fondateurs) ;
 //   - les corrections : un fondateur qui retouche un TikTok fait par AUTOMATIQUE puis le réexporte ; ce qu'il a changé compte
 //     triple ;
 //   - les leçons des fondateurs (menu « Arborescence » de CUT), qui peuvent régler une feuille tout de suite.
@@ -32,6 +33,8 @@ export const STRONG = { tiktoks: 5, agree: 0.6 };
 const CORRECTION = 3;          // un réglage corrigé après AUTOMATIQUE compte pour trois TikToks
 const REFUSED_DAYS = 30;       // une proposition refusée ne revient pas avant
 const KEEP_YEARS = 3;          // les réglages des TikToks sont gardés trois ans au plus (les leçons restent)
+const CONTENT_YEARS = 1;       // leurs images et leurs textes, un an
+const THUMB_MAX = 40_000;      // une image réduite (JPEG en base64)
 
 const parse = (s, d) => { try { return JSON.parse(s); } catch { return d; } };
 
@@ -73,6 +76,51 @@ export function tally(rows) {
     }
   }
   return stats;
+}
+
+const num = (v, lo, hi) => { const n = Number(v); return v !== null && v !== '' && Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n * 1000) / 1000)) : undefined; };
+const str = (v, max) => (typeof v === 'string' && v.trim() ? v.replace(/[\u0000-\u0009\u000b-\u001f]+/g, ' ').trim().slice(0, max) : undefined);
+/** Le contenu d'un montage, propre : des mesures bornées et des textes coupés, rien d'autre. */
+export function cleanContent(raw) {
+  const r = raw && typeof raw === 'object' ? raw : {}, so = r.sound || {}, im = r.image || {}, tx = r.text || {};
+  const out = {
+    sound: { bpm: num(so.bpm, 40, 260), start: num(so.start, 0, 1), length: num(so.length, 0, 600), song: num(so.song, 0, 3600),
+      drop: typeof so.drop === 'boolean' ? so.drop : undefined, energy: num(so.energy, 0, 10),
+      envelope: Array.isArray(so.envelope) ? so.envelope.slice(0, 64).map((v) => num(v, 0, 1) ?? 0) : undefined },
+    image: { luma: num(im.luma, 0, 1), sat: num(im.sat, 0, 1), cool: num(im.cool, -1, 1), cuts: num(im.cuts, 0, 2000), shot: num(im.shot, 0, 120),
+      clips: num(im.clips, 0, 500), photos: num(im.photos, 0, 500), names: Array.isArray(im.names) ? im.names.slice(0, 12).map((x) => str(x, 80)).filter(Boolean) : undefined },
+    text: { replica: str(tx.replica, 800), replicaLen: num(tx.replicaLen, 0, 120), lyrics: str(tx.lyrics, 2000), caption: str(tx.caption, 2200), title: str(tx.title, 100) },
+  };
+  return JSON.parse(JSON.stringify(out));
+}
+/** Les images réduites d'un montage (trois au plus, JPEG). */
+export const cleanThumbs = (list) => (Array.isArray(list) ? list : []).slice(0, 3)
+  .filter((x) => typeof x === 'string' && x.length <= THUMB_MAX && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(x));
+
+const STOP = new Set(('avec dans pour mais plus tout toute tous toutes cette comme elle elles nous vous leur leurs sans sous tres bien fait faire etre avoir '
+  + 'etait suis sont peut veux vais quand alors aussi encore meme parce quoi juste deja ceux celle cela ici voila donc moins trop cest quil quelle votre notre '
+  + 'ouais avais avait sais sait faut yeah ouai hein dans mais moi toi lui fond clip video film scene extrait copie final edit export onirique tiktok').split(' '));
+const wordsOf = (text) => new Set(String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/)
+  .filter((w) => w.length >= 4 && !STOP.has(w) && !/^\d+$/.test(w)));
+const median = (xs) => { const v = xs.filter((x) => Number.isFinite(x)).sort((a, b) => a - b); return v.length ? v[Math.floor(v.length / 2)] : null; };
+/** Ce que l'arbre apprend du contenu des TikToks (pas ceux d'AUTOMATIQUE) : le son, les images, les textes. */
+export function learnFromContent(rows) {
+  const list = rows.filter((r) => ['export', 'correction', 'archive'].includes(r.kind)).map((r) => parse(r.content, {})).filter((c) => c.sound || c.image || c.text);
+  const words = new Map(), tags = new Map(), films = new Map(), count = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+  for (const c of list) {
+    for (const w of wordsOf([c.text?.replica, c.text?.lyrics].join(' '))) count(words, w);
+    for (const h of new Set((c.text?.caption || '').toLowerCase().match(/#[\p{L}\p{N}_]+/gu) || [])) count(tags, h);
+    for (const w of new Set((c.image?.names || []).flatMap((n) => [...wordsOf(n.replace(/\.[a-z0-9]+$/i, ''))]))) count(films, w);
+  }
+  const top = (m, k) => [...m].sort((a, b) => b[1] - a[1]).slice(0, k).map(([value, n]) => ({ value, n }));
+  const drops = list.filter((c) => typeof c.sound?.drop === 'boolean'), replicas = list.filter((c) => c.text?.replica);
+  const round = (v) => (v == null ? null : Math.round(v * 100) / 100);
+  return { n: list.length, bpm: median(list.map((c) => c.sound?.bpm)), length: median(list.map((c) => c.sound?.length)), start: round(median(list.map((c) => c.sound?.start))),
+    drops: drops.length, dropShare: drops.length ? round(drops.filter((c) => c.sound.drop).length / drops.length) : null,
+    replicas: replicas.length, replicaLen: median(list.map((c) => c.text?.replicaLen)),
+    questions: replicas.length ? round(replicas.filter((c) => /\?\s*$/.test(c.text.replica)).length / replicas.length) : null,
+    luma: round(median(list.map((c) => c.image?.luma))), cool: round(median(list.map((c) => c.image?.cool))), shot: round(median(list.map((c) => c.image?.shot))),
+    words: top(words, 30), tags: top(tags, 12), films: top(films, 12) };
 }
 
 const current = (leaf, overlay) => (Object.hasOwn(overlay.leaves || {}, leaf.key) ? overlay.leaves[leaf.key].value : leaf.value);
@@ -119,10 +167,18 @@ db.exec(`CREATE TABLE IF NOT EXISTS cut_learn (
   author     TEXT NOT NULL DEFAULT '',     -- leçon : le fondateur qui l'a écrite
   created_at INTEGER NOT NULL
 )`);
+// le contenu des montages (21/11/2026) : mesures et textes (content), images réduites (thumbs) ; kind 'archive' : un montage du
+// cloud CUT repris pour son contenu (ses réglages l'ont déjà été, comme un export)
+for (const col of ["content TEXT NOT NULL DEFAULT '{}'", "thumbs TEXT NOT NULL DEFAULT '[]'"])
+  try { db.exec('ALTER TABLE cut_learn ADD COLUMN ' + col); } catch { /* déjà là */ }
 const overlayNow = () => setting('cut_brain_overlay', null) || { leaves: {}, refused: {}, revision: 0 };
 const saveOverlay = (ov) => setSetting('cut_brain_overlay', { ...ov, revision: (ov.revision || 0) + 1 });
 
-const purge = () => run("DELETE FROM cut_learn WHERE kind != 'note' AND created_at < ?", now() - KEEP_YEARS * 365 * 864e5);
+const purge = () => {
+  run("DELETE FROM cut_learn WHERE kind != 'note' AND created_at < ?", now() - KEEP_YEARS * 365 * 864e5);
+  run("UPDATE cut_learn SET content = '{}', thumbs = '[]' WHERE kind != 'note' AND created_at < ? AND (content != '{}' OR thumbs != '[]')", now() - CONTENT_YEARS * 365 * 864e5);
+  run("DELETE FROM cut_learn WHERE kind = 'archive' AND content = '{}' AND thumbs = '[]'");
+};
 purge();
 setInterval(purge, 864e5).unref();
 
@@ -140,11 +196,30 @@ export function importCloudRecipes() {
   return n;
 }
 
-export function mountCutBrain(app, { requireUser }) {
+/** Le contenu des montages des fondateurs déjà gardés dans le cloud CUT (textes, tempo, noms des fonds, aperçu), une fois. */
+export function importCloudContent(libDir) {
+  if (setting('cut_brain_import_content', 0)) return 0;
+  let n = 0;
+  for (const v of all("SELECT v.*, u.role FROM cut_videos v JOIN users u ON u.id = v.user_id WHERE u.role = 'founder'")) {
+    const edit = parse(v.edit, null) || {}, prefs = edit.prefs || {};
+    const replica = String(prefs.introLyrics || '').split('\n').map((l) => l.replace(/\[[^\]]*\]|<[^>]*>|\{[23]\}|\*\*/g, '').trim()).filter(Boolean).join('\n');
+    const content = cleanContent({ sound: { bpm: edit.bpm, length: prefs.duration }, image: { names: (edit.clips || []).map((c) => c.name) },
+      text: { replica, replicaLen: prefs.introOn ? prefs.introLen : undefined, caption: v.caption, title: edit.title || v.name } });
+    let thumbs = [];
+    try { const jpg = fs.readFileSync(`${libDir}/${v.stored_as}.jpg`); thumbs = cleanThumbs(['data:image/jpeg;base64,' + jpg.toString('base64')]); } catch { /* pas d'aperçu */ }
+    run("INSERT INTO cut_learn (kind, role, content, thumbs, created_at) VALUES ('archive', 'founder', ?, ?, ?)", JSON.stringify(content), JSON.stringify(thumbs), v.created_at);
+    n++;
+  }
+  setSetting('cut_brain_import_content', 1);
+  return n;
+}
+
+export function mountCutBrain(app, { requireUser, libDir }) {
+  try { importCloudContent(libDir); } catch (error) { console.error('Arborescence CUT, reprise du contenu :', error.message); }
   try { importCloudRecipes(); } catch (error) { console.error('Arborescence CUT, reprise du cloud :', error.message); }
   const member = (req, _res, next) => (can(req.user, 'sounds') ? next() : next(new HttpError(403, 'ONIRIQUE CUT est réservé aux membres ONIRIQUE et aux abonnés CLOUD.')));
   const founder = (req, _res, next) => (req.user.role === 'founder' ? next() : next(new HttpError(403, 'Réservé aux fondateurs.')));
-  const rows = () => all('SELECT * FROM cut_learn ORDER BY id DESC LIMIT 5000');
+  const rows = () => all('SELECT id, kind, role, settings, changed, note, leaf, link, author, content, created_at FROM cut_learn ORDER BY id DESC LIMIT 5000');
 
   app.get('/api/cut/learn', requireUser, member, (_req, res) => res.json({ keys: [...LEAVES.keys()] }));
   app.post('/api/cut/learn', requireUser, member, (req, res) => {
@@ -159,8 +234,8 @@ export function mountCutBrain(app, { requireUser }) {
       changed = Object.keys(settings).filter((k) => k in auto && auto[k] !== settings[k]).map((k) => ({ key: k, from: auto[k], to: settings[k] }));
       if (changed.length) kind = 'correction';
     }
-    run('INSERT INTO cut_learn (kind, role, settings, changed, created_at) VALUES (?, ?, ?, ?, ?)',
-      kind, req.user.role, JSON.stringify(settings), JSON.stringify(changed), now());
+    run('INSERT INTO cut_learn (kind, role, settings, changed, content, thumbs, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      kind, req.user.role, JSON.stringify(settings), JSON.stringify(changed), JSON.stringify(cleanContent(req.body?.content)), JSON.stringify(cleanThumbs(req.body?.thumbs)), now());
     res.json({ ok: true, kind });
   });
 
@@ -174,7 +249,10 @@ export function mountCutBrain(app, { requireUser }) {
       .map((r) => ({ id: r.id, text: r.note, leaf: r.leaf, link: r.link, author: r.author, settings: parse(r.settings, {}), at: r.created_at }));
     const journal = list.slice(0, 80).map((r) => ({ id: r.id, kind: r.kind, founder: r.role === 'founder', at: r.created_at,
       settings: parse(r.settings, {}), changed: parse(r.changed, []), note: r.note, leaf: r.leaf, link: r.link, author: r.author }));
+    const gallery = all("SELECT id, kind, role, content, thumbs, created_at FROM cut_learn WHERE thumbs != '[]' OR content != '{}' ORDER BY id DESC LIMIT 24")
+      .map((r) => ({ id: r.id, kind: r.kind, founder: r.role === 'founder', at: r.created_at, content: parse(r.content, {}), thumbs: parse(r.thumbs, []) }));
     res.json({ ...published(overlay, stats), proposals: proposalsOf(overlay, stats), lessons, journal, counts, week, founders,
+      content: learnFromContent(list), gallery,
       revision: overlay.revision || 0 });
   });
 

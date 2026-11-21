@@ -11,7 +11,7 @@ Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0'
 const { createApp } = await import('../src/app.js');
 const { db, run, get, setSetting } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
-const { cleanSettings, tally, proposalsOf, published, importCloudRecipes, STRONG } = await import('../src/cutbrain.js');
+const { cleanSettings, tally, proposalsOf, published, importCloudRecipes, importCloudContent, cleanContent, cleanThumbs, learnFromContent, STRONG } = await import('../src/cutbrain.js');
 
 // ——— Les fonctions pures ———
 assert.deepEqual(cleanSettings({ transition: 'flash', duration: 28, glow: 47, iColor: '#FF0000', rhyme: true, introLyrics: 'texte privé', artist: 'Moi',
@@ -33,6 +33,23 @@ assert.equal(tree.values.iSize, 90, 'la leçon passe avant la recette');
 assert.equal(tree.values.preset, 'drop', 'la recette du dépôt');
 assert.equal(tree.branches.find((b) => b.id === 'film').leaves.find((l) => l.key === 'transition').stats.values[0].value, 'cut');
 assert.deepEqual(tree.branches[0].leaves[0].buckets, [8, 15, 30, 60], 'les cases de la durée, pour le formulaire');
+
+// ——— Le contenu : des mesures bornées, des textes coupés, des images JPEG seulement ———
+assert.deepEqual(cleanContent({ sound: { bpm: 999, drop: 'oui', envelope: [2, -1, .5] }, text: { replica: '  Tu crois ?  ', evil: 'x' }, other: 1 }),
+  { sound: { bpm: 260, envelope: [1, 0, .5] }, image: {}, text: { replica: 'Tu crois ?' } });
+const jpg = 'data:image/jpeg;base64,' + Buffer.from('jpeg').toString('base64');
+assert.deepEqual(cleanThumbs([jpg, 'data:image/svg+xml;base64,PHN2Zz4=', 'javascript:alert(1)', jpg + 'A'.repeat(50_000)]), [jpg]);
+const seen = learnFromContent([
+  { kind: 'export', content: JSON.stringify({ sound: { bpm: 140, drop: true }, text: { replica: 'Tu me trahis encore ?', replicaLen: 9, caption: '« x » #undergroundmusic #harrypotter' }, image: { names: ['Harry Potter - Sirius.mp4'] } }) },
+  { kind: 'export', content: JSON.stringify({ sound: { bpm: 150, drop: true }, text: { replica: 'La trahison, toujours.', replicaLen: 7, caption: '#undergroundmusic' }, image: { names: ['harry potter.mp4'] } }) },
+  { kind: 'auto', content: JSON.stringify({ sound: { bpm: 90, drop: false } }) },
+]);
+assert.equal(seen.n, 2, 'AUTOMATIQUE ne s’apprend pas lui-même');
+assert.equal(seen.dropShare, 1);
+assert.equal(seen.replicaLen, 9);
+assert.equal(seen.questions, .5);
+assert.deepEqual(seen.tags[0], { value: '#undergroundmusic', n: 2 });
+assert.deepEqual(seen.films.slice(0, 2).map((f) => f.value).sort(), ['harry', 'potter']);
 
 // ——— Les routes ———
 const server = createApp().listen(0);
@@ -63,14 +80,18 @@ try {
   const fix = await (await call(boss.token, 'POST', '/api/cut/learn', { settings: { transition: 'cut', filmVol: 100 }, auto: { transition: 'cut', filmVol: 150 } })).json();
   assert.equal(fix.kind, 'correction');
   assert.equal(get("SELECT changed FROM cut_learn WHERE kind = 'correction'").changed, '[{"key":"filmVol","from":150,"to":100}]');
+  assert.equal((await call(vip.token, 'POST', '/api/cut/learn', { settings: { transition: 'flash' }, content: { sound: { bpm: 140, drop: true }, text: { replica: 'Encore ?' } }, thumbs: [jpg] })).status, 200);
+  assert.equal(get('SELECT thumbs FROM cut_learn ORDER BY id DESC LIMIT 1').thumbs, JSON.stringify([jpg]));
 
   assert.equal((await call(vip.token, 'GET', '/api/cut/brain')).status, 403, 'réservé aux fondateurs');
   let brain = await (await call(boss.token, 'GET', '/api/cut/brain')).json();
-  assert.equal(brain.counts.export, 6);
+  assert.equal(brain.counts.export, 7);
   assert.equal(brain.counts.auto, 1);
   assert.equal(brain.counts.correction, 1);
   assert.equal(brain.founders, 1, 'la correction est d’un fondateur');
   assert.ok(brain.proposals.some((p) => p.key === 'transition' && p.value === 'flash'), 'les membres préfèrent le flash');
+  assert.equal(brain.content.bpm, 140, 'ce que l’arbre a entendu');
+  assert.equal(brain.gallery[0].thumbs[0], jpg, 'ce qu’il a vu');
   assert.equal(brain.values.transition, 'cut');
 
   // Valider la proposition, puis une leçon qui règle une feuille, puis la retirer
@@ -99,6 +120,18 @@ try {
   assert.equal(importCloudRecipes(), 1);
   assert.equal(importCloudRecipes(), 0, 'une seule fois');
   assert.equal(get("SELECT settings FROM cut_learn WHERE created_at = 1").settings, '{"preset":"drop","transition":"cut"}');
+  // leur contenu, pour les montages des fondateurs : textes, tempo, fonds, aperçu
+  const lib = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-cutlib-'));
+  fs.writeFileSync(path.join(lib, 'x.mp4.jpg'), Buffer.from('jpeg'));
+  run("UPDATE cut_videos SET caption = '« Tu crois ? » #undergroundmusic', edit = ? WHERE stored_as = 'x.mp4'",
+    JSON.stringify({ bpm: 140, title: 'DEAD', clips: [{ name: 'Sirius.mp4' }], prefs: { introOn: true, introLen: 8, introLyrics: '[00:00.10] <00:00.10>Tu <00:00.40>crois ?' } }));
+  setSetting('cut_brain_import_content', 0);
+  assert.equal(importCloudContent(lib), 1);
+  const archive = get("SELECT content, thumbs FROM cut_learn WHERE kind = 'archive'");
+  assert.equal(JSON.parse(archive.content).text.replica, 'Tu crois ?');
+  assert.equal(JSON.parse(archive.thumbs).length, 1);
+  assert.equal(importCloudContent(lib), 0, 'une seule fois');
+  fs.rmSync(lib, { recursive: true, force: true });
   console.log('cutbrain : ok');
 } finally {
   server.close(); db.close();

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=fa46659e"></script>
+<script src="assets/i18n.js?v=b0d1ad5c"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -183,6 +183,20 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .neural-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--haze); font-size: 12px; }
 .neural-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
 .neural-legend i.ring { border: 1.5px solid rgb(var(--acc)); }
+.seen { display: grid; gap: 12px; }
+.seen > p { margin: 0; color: var(--label); }
+.seen-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.seen-chips small { margin-right: 6px; color: var(--haze); font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
+.seen-chips .tag { padding: 4px 9px; border-radius: 999px; background: rgba(var(--acc), .16); color: var(--ember-text); font: 500 12px var(--f-mono); }
+.seen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.seen-card { display: grid; gap: 6px; align-content: start; padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.25); font-size: 13px; }
+.seen-card p { margin: 0; color: var(--mist); }
+.seen-card p.muted { color: var(--haze); font-size: 12px; max-height: 3.2em; overflow: hidden; }
+.seen-card small { color: var(--haze); font-size: 11px; }
+.seen-thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.seen-thumbs img { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 6px; background: #000; }
+.seen-card svg { width: 100%; height: 22px; }
+.seen-card polyline { fill: none; stroke: rgb(var(--acc)); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .tree-journal { display: grid; margin: 0; padding: 0; list-style: none; }
 .tree-journal li { display: grid; grid-template-columns: 120px 190px 1fr; gap: 4px 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .tree-journal small { color: var(--haze); font-variant-numeric: tabular-nums; }
@@ -1014,7 +1028,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             </div>
           </details>
           <label class="check mute" id="keep-box" hidden><input type="checkbox" id="keepCloud"> Garder aussi dans mon cloud CUT</label>
-          <label class="check mute"><input type="checkbox" id="learn"> Aider CUT à apprendre : les réglages du montage partent à l’export, jamais le son, les images ni les textes</label>
+          <label class="check mute"><input type="checkbox" id="learn"> Aider CUT à apprendre : à l’export, les réglages, trois images réduites, le rythme du passage (pas le son lui-même) et les textes du montage partent à l’arborescence de CUT, vue par les seuls fondateurs</label>
           <div class="adv-links"><span>Avancé</span><button class="mini" type="button" id="adv-open" disabled>Timeline des sons</button><button class="mini" type="button" id="adv-open-video" disabled>Timeline vidéo</button></div>
           <div id="lib-panel" hidden><button class="go cloud-open" type="button" id="cloud-open">Mes vidéos CUT <small>voir, programmer, modifier</small></button></div>
           <!-- Les Shorts YouTube des fondateurs : un menu déroulant, fermé tant qu’on ne l’ouvre pas. -->
@@ -3899,7 +3913,7 @@ async function exportVideo(series = null, high = false) {
       + (shorts.length ? " Short YouTube programmé : " + shorts.join(", ") + "." : "") + (shortError ? " Short YouTube : " + shortError : "")
       + (reels.length ? " Reel Instagram programmé : " + reels.join(", ") + "." : "") + (reelError ? " Reel Instagram : " + reelError : ""), 1);
     if (savedToCloud) renderLibrary();
-    if (!series) learnSend();
+    if (!series) await learnSend();
     // Fini pendant qu’on était sur un autre onglet : l’onglet le dit dans son titre jusqu’à ce qu’on y revienne.
     if (document.hidden) { const title = document.title; document.title = "✓ Vidéo prête · " + title; document.addEventListener("visibilitychange", () => { document.title = title; }, { once: true }); }
     return { cloud: savedToCloud > 0 };
@@ -4561,13 +4575,49 @@ function openVideo(v, edit, sub) {
 let learnKeys = null; // les réglages que l’arborescence apprend (ses feuilles)
 let autoRunning = false, autoSay = null; // pendant AUTOMATIQUE : les messages des IA et de l’export vont dans sa barre
 let autoApplied = null; // { sound, values } : ce qu’AUTOMATIQUE a réglé sur ce son ; un export fait ensuite à la main dit ce qui a été corrigé
+/** Ce que l’arbre peut apprendre du contenu d’un montage : le passage (tempo, place, énergie, drop), trois images réduites
+ *  (la réplique, le drop, la suite) et leurs couleurs, le rythme des coupes, les noms des fonds, et les textes. */
+async function learnContent() {
+  const env = sound.rms, from = Math.floor(sound.start * FPS), to = Math.min(env.length, Math.ceil((sound.start + span()) * FPS));
+  const mean = (a, i, j) => { let x = 0; for (let k = i; k < j; k++) x += a[k]; return j > i ? x / (j - i) : 0; };
+  const part = env.slice(from, to), peak = Math.max(...part, 1e-9);
+  const envelope = Array.from({ length: 64 }, (_, k) => Math.round(mean(part, Math.floor(k * part.length / 64), Math.floor((k + 1) * part.length / 64)) / peak * 1000) / 1000);
+  const drop = bestStarts(3).some((p) => p.drop && Math.abs(p.start - sound.start) < barLength());
+  const small = Object.assign(document.createElement("canvas"), { width: 144, height: 256 }), sg = small.getContext("2d", { willReadFrequently: true });
+  const thumbs = [];
+  let luma = 0, sat = 0, cool = 0, n = 0;
+  const times = [introLen() > 0 ? introLen() / 2 : null, introLen() + Math.min(1.5, span() / 4), introLen() + span() * .6].filter((t) => t != null);
+  const was = exact;
+  exact = true;
+  try {
+    for (const t of times) {
+      await drawAt(t);
+      sg.drawImage(screen, 0, 0, 144, 256);
+      thumbs.push(small.toDataURL("image/jpeg", .6));
+      const d = sg.getImageData(0, 0, 144, 256).data;
+      for (let i = 0; i < d.length; i += 32) {
+        const r = d[i] / 255, gr = d[i + 1] / 255, b = d[i + 2] / 255, hi = Math.max(r, gr, b), lo = Math.min(r, gr, b);
+        luma += .2126 * r + .7152 * gr + .0722 * b; sat += hi ? (hi - lo) / hi : 0; cool += b - r; n++;
+      }
+    }
+  } finally { exact = was; draw(position, false); }
+  const passage = lyrics.filter((l) => l.at >= sound.start - .5 && l.at < sound.start + span()).map((l) => l.text.replace(/\*\*/g, ""));
+  return { thumbs, content: {
+    sound: { bpm: sound.bpm, start: sound.start / sound.buffer.duration, length: span(), song: sound.buffer.duration, drop, energy: mean(part, 0, part.length) / (mean(env, 0, env.length) || 1), envelope },
+    image: { luma: n ? luma / n : undefined, sat: n ? sat / n : undefined, cool: n ? cool / n : undefined, cuts: segments.length, shot: span() / Math.max(1, segments.length),
+      clips: clips.length, photos: clips.filter((c) => c.kind === "image").length, names: clips.map((c) => c.name) },
+    text: { replica: introLen() > 0 ? prefs.introLyrics.split("\n").map((l) => bareLine(l).replace(/\*\*/g, "")).filter(Boolean).join("\n") : undefined,
+      replicaLen: introLen() || undefined, lyrics: passage.join("\n"), caption: $("caption").value, title: $("title").value },
+  } };
+}
 async function learnSend() {
   if (prefs.learn === false) return;
   const snapshot = { ...prefs }, auto = autoRunning, before = autoApplied && autoApplied.sound === setKey() ? autoApplied.values : null;
   try {
+    const seen = await learnContent().catch(() => ({}));
     learnKeys ||= (await bankFetch("/api/cut/learn")).keys;
     const settings = Object.fromEntries(learnKeys.filter((k) => k in snapshot).map((k) => [k, snapshot[k]]));
-    await bankFetch("/api/cut/learn", jsonBody("POST", { kind: auto ? "auto" : "export", settings, ...(!auto && before ? { auto: before } : {}) }));
+    await bankFetch("/api/cut/learn", jsonBody("POST", { kind: auto ? "auto" : "export", settings, ...seen, ...(!auto && before ? { auto: before } : {}) }));
   } catch { /* l’apprentissage ne gêne jamais un export */ }
 }
 
@@ -4592,14 +4642,15 @@ async function lumaOf(c, from, to) {
 }
 /** La meilleure fin de réplique parmi les phrases d’un clip (branche « Le film » de l’arborescence) : elle reprend des mots du
  *  passage, finit sur une question et dure au moins 6 s. */
-function bestReplica(phrases, duration) {
+function bestReplica(phrases, duration, target = null) {
   const passage = lyrics.filter((l) => l.at >= sound.start - .5 && l.at < sound.start + span());
   const sung = echoWords((passage.length ? passage : lyrics).map((l) => l.text).join(" "));
   let best = null;
   phrases.forEach((p, k) => {
     const r = replicaEnding(phrases, k, duration), len = r.to - r.from;
     const hits = echoWords(r.phrases.flatMap((x) => x.words.map((w) => w.text)).join(" ")).filter((w) => sung.some((s) => echoes(w, s))).length;
-    const score = 2 * hits + (/\?\s*$/.test(p.words.map((w) => w.text).join(" ")) ? 1.5 : 0) + (len >= 6 ? 1 : 0) - (len < 2.5 ? 3 : 0);
+    const score = 2 * hits + (/\?\s*$/.test(p.words.map((w) => w.text).join(" ")) ? 1.5 : 0) + (len >= 6 ? 1 : 0) - (len < 2.5 ? 3 : 0)
+      + (target && Math.abs(len - target) < 2.5 ? 1 : 0); // la durée des répliques des TikToks
     if (!best || score > best.score) best = { k, score };
   });
   return best;
@@ -4633,10 +4684,13 @@ async function autoTikTok() {
   const keep = { ytAuto: prefs.ytAuto, igAuto: prefs.igAuto };
   try {
     step("Ce que l’arborescence a appris…");
-    const learnt = (await bankFetch("/api/cut/brain")).values;
+    const brainNow = await bankFetch("/api/cut/brain"), learnt = brainNow.values, seen = brainNow.content || {};
     stop(); manual = null; position = 0;
-    prefs.duration = learnt.duration; savePrefs(); syncAll(); sound.start = bestStart(); refresh();
-    paint(1, "Le meilleur passage : " + OniriqueAudio.clock(sound.start) + ", " + learnt.duration + " s.");
+    prefs.duration = learnt.duration; savePrefs(); syncAll();
+    // Le son : les TikToks partent surtout sur un drop ? AUTOMATIQUE prend le passage du drop s’il y en a un.
+    const onDrop = seen.drops >= 5 && seen.dropShare >= .6 && bestStarts(3).find((p) => p.drop);
+    sound.start = onDrop ? clampStart(onDrop.start) : bestStart(); refresh();
+    paint(1, (onDrop ? "Le passage du drop, comme " + Math.round(seen.dropShare * 100) + " % des TikToks : " : "Le meilleur passage : ") + OniriqueAudio.clock(sound.start) + ", " + learnt.duration + " s.");
 
     step("Les paroles…");
     await autoLyrics();
@@ -4652,7 +4706,9 @@ async function autoTikTok() {
     if (fromBank) {
       const bank = (await bankFetch("/api/cut/backgrounds")).backgrounds, films = bank.filter((b) => b.type.startsWith("video/"));
       // shortcut: les fonds sont tirés au hasard dans la banque (3 films essayés, sinon 4 fonds) ; l’arborescence ne choisit pas encore le film.
-      const picks = prefs.introOn && films.length ? shuffled(films).slice(0, 3) : shuffled(bank).slice(0, 4);
+      // Les films qui reviennent dans les TikToks (noms des fonds) passent en premier.
+      const liked = new Set((seen.films || []).map((f) => f.value)), score = (b) => [...liked].filter((w) => tagOf(b.name).includes(w)).length;
+      const picks = (prefs.introOn && films.length ? shuffled(films) : shuffled(bank)).sort((a, b) => score(b) - score(a)).slice(0, prefs.introOn && films.length ? 3 : 4);
       for (const [i, b] of picks.entries()) await bankAdd(b, (t) => autoSay(t, (i + (Number(/(\d+)\s*%/.exec(t)?.[1]) || 0) / 100) / picks.length));
     }
     if (!clips.length) throw new Error("aucun clip : ajoute des vidéos, ou garde des fonds dans ta banque de fonds.");
@@ -4665,7 +4721,7 @@ async function autoTikTok() {
         prefs.introClip = i;
         autoSay("L’IA écoute « " + c.name + " » (" + (n + 1) + " / " + films.length + ")…", n / films.length);
         await findReplica();
-        const phrases = found.get(introKey()), r = phrases && phrases.length ? bestReplica(phrases, c.duration) : null;
+        const phrases = found.get(introKey()), r = phrases && phrases.length ? bestReplica(phrases, c.duration, seen.replicaLen) : null;
         if (r && (!pick || r.score > pick.score)) pick = { ...r, i };
       }
       if (pick && fromBank && prefs.filmContinue && clips.length > 1) { const file = clips[pick.i].file; dropClips(); await addClips([file]); pick.i = 0; } // le film continue : les autres films essayés ne servent pas
@@ -4682,6 +4738,9 @@ async function autoTikTok() {
     }
 
     step("Export de la vidéo…");
+    // La description : les hashtags qui reviennent dans les TikToks, en plus de ceux de CUT.
+    const extra = (seen.tags || []).map((t) => t.value).filter((t) => t !== "#fyp" && !$("caption").value.toLowerCase().includes(t)).slice(0, 2);
+    if (extra.length && !captionEdited) $("caption").value = captionIdea() + " " + extra.join(" ");
     autoApplied = { sound: setKey(), values: Object.fromEntries(Object.keys(learnt).map((key) => [key, prefs[key]])) };
     prefs.ytAuto = prefs.igAuto = false; // un TikTok d’AUTOMATIQUE ne part jamais seul sur YouTube ni sur Instagram
     const done = await exportVideo();
@@ -4710,6 +4769,43 @@ let treeTarget = ""; // la feuille ou la branche que la prochaine leçon nourrit
 // ——— Le réseau (fondateurs) : l’arborescence dessinée comme un réseau de neurones. À gauche ce qui la nourrit (TikToks faits
 // sur CUT, corrections après AUTOMATIQUE, leçons, recette de départ), puis ses branches, ses réglages et, à droite, le TikTok
 // d’AUTOMATIQUE. Chaque point lumineux est un signal : plus une branche ou une feuille est nourrie, plus elle en reçoit. ———
+/** Le contenu des TikToks : ce que l’arbre en retient (son, images, textes) et les derniers montages, images comprises. */
+function seenView(brain) {
+  const s = brain.content || { n: 0 }, pc = (x) => Math.round(x * 100) + " %";
+  if (!s.n && !brain.gallery.length) return node("p", { className: "muted", textContent: "Rien encore : chaque export de CUT apportera ses images, son passage et ses textes." });
+  const facts = [
+    s.bpm ? "Tempo médian " + Math.round(s.bpm) + " BPM" : "", s.length ? "passage de " + Math.round(s.length) + " s" : "",
+    s.start != null ? "pris à " + pc(s.start) + " du son" : "", s.dropShare != null ? pc(s.dropShare) + " sur un drop (" + s.drops + ")" : "",
+    s.replicaLen ? "réplique de " + Math.round(s.replicaLen) + " s" : "", s.questions != null ? pc(s.questions) + " des répliques finissent sur une question" : "",
+    s.luma != null ? "image à " + pc(s.luma) + " de luminosité" + (s.cool > .03 ? ", froide" : s.cool < -.03 ? ", chaude" : "") : "", s.shot ? "un plan toutes les " + String(s.shot).replace(".", ",") + " s" : "",
+  ].filter(Boolean);
+  const chips = (title, list) => (list && list.length ? node("div", { className: "seen-chips" }, node("small", { textContent: title }),
+    ...list.map((x) => node("span", { className: "tag", textContent: x.value + " · " + x.n }))) : "");
+  const wave = (env) => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 64 20"); svg.setAttribute("preserveAspectRatio", "none");
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    line.setAttribute("points", env.map((v, i) => i + "," + (20 - v * 19).toFixed(1)).join(" "));
+    svg.append(line);
+    return svg;
+  };
+  const card = (g) => {
+    const c = g.content, t = c.text || {};
+    return node("div", { className: "seen-card" },
+      node("div", { className: "seen-thumbs" }, ...g.thumbs.map((src) => node("img", { src, alt: "", loading: "lazy" }))),
+      ...(c.sound && c.sound.envelope ? [wave(c.sound.envelope)] : []),
+      node("small", { textContent: dayText(g.at) + " · " + (g.kind === "auto" ? "AUTOMATIQUE" : g.kind === "archive" ? "cloud CUT (repris)" : g.founder ? "un fondateur" : "un autre compte")
+        + (c.sound && c.sound.bpm ? " · " + Math.round(c.sound.bpm) + " BPM" : "") + (c.sound && c.sound.drop ? " · drop" : "") }),
+      ...(t.title ? [node("b", { textContent: t.title })] : []),
+      ...(t.replica ? [node("p", { textContent: "« " + t.replica.replace(/\n/g, " / ") + " »" })] : []),
+      ...(t.caption ? [node("p", { className: "muted", textContent: t.caption })] : []));
+  };
+  return node("div", { className: "seen" },
+    node("p", { textContent: plural(s.n, "montage") + " analysé" + (s.n > 1 ? "s" : "") + (facts.length ? " : " + facts.join(" · ") + "." : ".") }),
+    chips("Mots qui reviennent", s.words), chips("Hashtags", s.tags), chips("Films et fonds", s.films),
+    node("div", { className: "seen-grid" }, ...brain.gallery.map(card)));
+}
+
 let neuralStop = () => {};
 function neuralView(brain, leaves, openLeaf) {
   neuralStop();
@@ -4728,6 +4824,7 @@ function neuralView(brain, leaves, openLeaf) {
     add({ kind: "in", label: "TikToks faits sur CUT", n: (c.export || 0) + (c.correction || 0), info: "Chaque export envoie ses réglages : une voix par TikTok." }),
     add({ kind: "in", label: "Corrections après AUTOMATIQUE", n: c.correction || 0, info: "Ce qu’un fondateur change après AUTOMATIQUE compte triple." }),
     add({ kind: "in", label: "Leçons des fondateurs", n: c.note || 0, info: "Une leçon peut régler une feuille tout de suite." }),
+    add({ kind: "in", label: "Images, son et textes", n: (brain.content && brain.content.n) || 0, info: "Ce que l’arbre voit, entend et lit dans les montages exportés." }),
     add({ kind: "in", label: "Recette de départ", n: brain.branches.reduce((n, b) => n + b.leaves.length + b.lessons.length, 0), info: "Au départ, " + brain.source + "." }),
   ];
   const out = add({ kind: "out", label: "TikTok d’AUTOMATIQUE", info: "AUTOMATIQUE monte ses TikToks avec ces " + leaves.size + " réglages." });
@@ -4735,7 +4832,8 @@ function neuralView(brain, leaves, openLeaf) {
     const keys = b.leaves.map((l) => l.key), own = lessonsOn(b.id) + b.leaves.reduce((n, l) => n + lessonsOn(l.key), 0);
     const bn = add({ kind: "branch", label: b.label, b, tiktoks: b.leaves.reduce((n, l) => n + (l.stats ? l.stats.n : 0), 0), lessons: b.lessons.length + own });
     link(ins[0], bn, bn.tiktoks); link(ins[1], bn, fixesOf(keys)); link(ins[2], bn, own + lessonsOn(""));
-    link(ins[3], bn, b.leaves.filter((l) => !l.source).length + b.lessons.length);
+    link(ins[4], bn, b.leaves.filter((l) => !l.source).length + b.lessons.length);
+    link(ins[3], bn, ins[3].n * ({ son: 3, image: 3, texte: 3, film: 2, publier: 2 }[b.id] || 0));
     bn.kids = b.leaves.map((l) => {
       const ln = add({ kind: "leaf", label: l.label, l: leaves.get(l.key), lessons: lessonsOn(l.key), prop: props.get(l.key) });
       link(bn, ln, (l.stats ? l.stats.n : 0) + 3 * ln.lessons + (l.source ? 2 : 0) + .4);
@@ -4765,7 +4863,7 @@ function neuralView(brain, leaves, openLeaf) {
     byY.forEach((b, i) => { if (i) b.y = Math.max(b.y, byY[i - 1].y + gap); });
     byY.reverse().forEach((b, i) => { b.y = Math.min(b.y, i ? byY[i - 1].y - gap : H - 26); });
     byY.reverse().forEach((b, i) => { if (i) b.y = Math.max(b.y, byY[i - 1].y + gap); else b.y = Math.max(b.y, 52); });
-    ins.forEach((n, i) => { n.x = W * .06; n.y = H / 2 + (i - 1.5) * Math.min(100, H / 5); });
+    ins.forEach((n, i) => { n.x = W * .06; n.y = H / 2 + (i - (ins.length - 1) / 2) * Math.min(90, H / 6); });
     out.x = W * .93; out.y = H / 2;
   };
   const radius = (n) => n.kind === "out" ? 15 : n.kind === "in" ? 10 : n.kind === "branch" ? 8 + Math.min(4, Math.sqrt(n.tiktoks + n.lessons) / 2)
@@ -4820,7 +4918,7 @@ function neuralView(brain, leaves, openLeaf) {
     gx.shadowBlur = 0; gx.textBaseline = "middle";
     for (const n of ins) {
       gx.textAlign = "left"; gx.fillStyle = "#fff"; gx.font = "600 12px " + font; gx.fillText(n.label, n.x - 8, n.y + 22);
-      gx.fillStyle = "rgba(244,236,236,.55)"; gx.font = "500 11px " + mono; gx.fillText(n === ins[3] ? "la base" : plural(n.n, "apport"), n.x - 8, n.y + 37);
+      gx.fillStyle = "rgba(244,236,236,.55)"; gx.font = "500 11px " + mono; gx.fillText(n === ins[4] ? "la base" : plural(n.n, n === ins[3] ? "montage" : "apport"), n.x - 8, n.y + 37);
     }
     for (const b of branches) {
       gx.textAlign = "center"; gx.fillStyle = "#fff"; gx.font = "700 13px " + font; gx.fillText(b.label, b.x, b.y - radius(b) - 16);
@@ -4845,7 +4943,7 @@ function neuralView(brain, leaves, openLeaf) {
         n.lessons ? plural(n.lessons, "leçon") : "", n.prop ? "À valider : " + valueText(l, n.prop.value) + " (" + Math.round(n.prop.share * 100) + " %)" : "", "Clic : ouvrir ce réglage"];
     }
     if (n.kind === "branch") return [n.label, plural(n.b.leaves.length, "réglage"), plural(n.lessons, "leçon"), n.tiktoks + " voix de TikToks"];
-    return [n.label, n.kind === "in" && n !== ins[3] ? plural(n.n, "apport") : "", n.info];
+    return [n.label, n.kind === "in" && n !== ins[4] ? plural(n.n, n === ins[3] ? "montage" : "apport") : "", n.info];
   };
   const at = (event) => {
     const r = canvas.getBoundingClientRect(), x = event.clientX - r.left, y = event.clientY - r.top;
@@ -5002,7 +5100,8 @@ async function renderTree() {
     if (row.getAttribute("aria-expanded") !== "true") row.click();
     row.scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  box.replaceChildren(kpis, week, node("h3", { textContent: "Le réseau" }), neuralView(brain, leaves, openLeaf), ...(props.length ? [node("h3", { textContent: "À valider (" + props.length + ")" }), node("div", { className: "tree-props" }, ...props)] : []),
+  box.replaceChildren(kpis, week, node("h3", { textContent: "Le réseau" }), neuralView(brain, leaves, openLeaf),
+    node("h3", { textContent: "Ce qu’elle a vu, entendu et lu" }), seenView(brain), ...(props.length ? [node("h3", { textContent: "À valider (" + props.length + ")" }), node("div", { className: "tree-props" }, ...props)] : []),
     form, node("h3", { textContent: "L’arbre" }), tree, node("h3", { textContent: "Comment elle est nourrie" }), journal);
 }
 
