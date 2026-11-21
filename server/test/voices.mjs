@@ -12,6 +12,10 @@ const say = (v, noise = 0.9) => unit(v.map((x) => x + noise * rand() / 4));
 
 // Une réplique : A, A, B (court, « Quoi ? »), B, A. La phrase courte rejoint la voix la plus proche.
 assert.deepEqual(groupVoices([say(A), say(A), say(B, .3), say(B), say(A)], [2, 1.8, .4, 1.6, 1.7]), [1, 1, 2, 2, 1]);
+// « Écoute-moi bien. » (1 s, empreinte peu sûre) ne fait pas une troisième personne à lui seul : il rejoint la voix la plus proche.
+const short = [say(A, 8), say(A), say(B), say(A), say(A)], shortDurs = [1, 2, 2.1, 1.7, 1.6];
+assert.deepEqual(groupVoices(short, shortDurs), [1, 1, 2, 1, 1]);
+assert.notDeepEqual(groupVoices(short, shortDurs, { minGroup: 0 }), [1, 1, 2, 1, 1], 'sans la règle, elle ferait une voix à part');
 // Une seule voix : tout en 1.
 assert.deepEqual(groupVoices([say(A), say(A), say(A)], [2, 2, 2]), [1, 1, 1]);
 // Jamais plus de max voix, numérotées dans l'ordre d'arrivée.

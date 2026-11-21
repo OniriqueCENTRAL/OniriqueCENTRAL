@@ -2762,7 +2762,7 @@ async function songVoicesAI() {
     say("Séparation de la voix…");
     let voice = null;
     try { const all = await separateAll(); if (!/rapide/.test(all.note)) voice = all.parts.vocals; } catch { /* le son tel quel */ }
-    const { voicesOf } = await import("./assets/voices.js?v=1");
+    const { voicesOf } = await import("./assets/voices.js?v=2");
     const voices = await voicesOf(voice || sound.buffer, lines.map((l) => [l.at, lineEnd(l, lines)]), say, { song: true });
     if (!voices) return say("La reconnaissance des voix ne tourne pas dans ce navigateur : touche une phrase pour changer sa voix.");
     const map = {};
@@ -4791,7 +4791,7 @@ async function introVoicesAI(say = (text) => { $("isync-ai-status").hidden = fal
   const from = Math.floor(prefs.introIn * a.sampleRate), len = Math.max(1, Math.min(a.length - from, Math.ceil((introLen() + .5) * a.sampleRate)));
   const part = new AudioBuffer({ length: len, numberOfChannels: a.numberOfChannels, sampleRate: a.sampleRate });
   for (let ch = 0; ch < a.numberOfChannels; ch++) part.copyToChannel(a.getChannelData(ch).subarray(from, from + len), ch);
-  const { voicesOf } = await import("./assets/voices.js?v=1");
+  const { voicesOf } = await import("./assets/voices.js?v=2");
   const voices = await voicesOf(part, lines.map((l) => [l.at, Math.min(introLen(), lineEnd(l, lines))]), say);
   if (!voices) return say("La reconnaissance des voix ne tourne pas dans ce navigateur : touche une phrase pour changer sa voix.");
   const rows = prefs.introLyrics.split("\n");

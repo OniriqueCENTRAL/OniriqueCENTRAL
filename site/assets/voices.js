@@ -6,9 +6,10 @@
 
 /** Regroupe les phrases par voix. embs : les empreintes (vecteurs de norme 1), durs : la durée de chaque phrase (s).
  *  Les phrases d'au moins minDur secondes se rassemblent tant que leur ressemblance moyenne dépasse threshold (et toujours
- *  jusqu'à max voix au plus) ; les plus courtes, peu fiables seules (« Quoi ? »), rejoignent la voix la plus proche.
+ *  jusqu'à max voix au plus) ; les plus courtes, peu fiables seules (« Quoi ? »), rejoignent la voix la plus proche, comme
+ *  une voix qui n'aurait qu'une phrase de moins de minGroup secondes (« Écoute-moi bien. » seul ne fait pas une personne).
  *  smooth (un son) : une phrase seule entre deux phrases d'une même autre voix la rejoint, un son allant par parties. */
-export function groupVoices(embs, durs, { max = 3, threshold = .4, minDur = 1, smooth = false } = {}) {
+export function groupVoices(embs, durs, { max = 3, threshold = .4, minDur = 1, minGroup = 1.5, smooth = false } = {}) {
   if (!embs.length) return [];
   const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
   const long = embs.map((_, i) => i).filter((i) => durs[i] >= minDur);
@@ -24,6 +25,8 @@ export function groupVoices(embs, durs, { max = 3, threshold = .4, minDur = 1, s
     groups[bi] = groups[bi].concat(groups[bj]);
     groups.splice(bj, 1);
   }
+  const total = (g) => g.reduce((s, i) => s + durs[i], 0);
+  for (let k = groups.length - 1; k >= 0 && groups.length > 1; k--) if (total(groups[k]) < minGroup) groups.splice(k, 1);
   const centroids = groups.map((g) => embs[0].map((_, k) => g.reduce((s, i) => s + embs[i][k], 0)));
   const label = embs.map((e, i) => {
     const own = groups.findIndex((g) => g.includes(i));
