@@ -76,6 +76,7 @@ export async function startVote(i) {
           result = `⚠️ Vote adopté, mais Discord a refusé : ${e.message}`;
         }
       }
+      console.log(`Vote ${kind} contre ${target.user.tag} : ${yes} pour, ${no} contre. ${result}`);
       // Par la réponse à la commande (valable 15 min) : la modifier comme un message ordinaire échouait en silence.
       await i.editReply({ embeds: [view(true, result)], components: [buttons(true)] }).catch((e) => console.error('Fin du vote :', e.message));
     });
@@ -94,9 +95,21 @@ async function voiceMute(target, ms, reason) {
   const entry = { guildId: target.guild.id, userId: target.id, until: Date.now() + ms };
   saveMutes([...loadMutes().filter((m) => !same(m, entry)), entry]);
   const when = `<t:${Math.floor(entry.until / 1000)}:R>`;
-  if (!target.voice.channelId) return `🔇 Vote adopté : ${target} sera muet dès qu’il rejoindra un vocal (fin ${when}).`;
-  await target.voice.setMute(true, reason);
+  // Demandé directement à Discord : le cache des vocaux du bot peut croire la personne absente alors qu'elle parle.
+  const ok = await setServerMute(target.guild, target.id, true, reason);
+  if (!ok) return `🔇 Vote adopté : ${target} sera muet dès qu’il rejoindra un vocal (fin ${when}).`;
   return `🔇 Vote adopté : ${target} est muet en vocal pendant ${formatDuration(ms)} (fin ${when}).`;
+}
+
+// true si c'est fait, false si la personne n'est pas en vocal (erreur 40032 de Discord).
+async function setServerMute(guild, userId, mute, reason) {
+  try {
+    await guild.members.edit(userId, { mute, reason });
+    return true;
+  } catch (e) {
+    if (e.code === 40032) return false;
+    throw e;
+  }
 }
 
 // Lève les mutes arrivés à terme (chaque minute) et applique ou lève ceux des membres qui rejoignent un vocal.
@@ -108,8 +121,9 @@ export function watchMutes(client) {
       if (!guild) { forget(m); continue; }
       const member = await guild.members.fetch(m.userId).catch((e) => (e.code === 10007 ? null : undefined)); // 10007 : a quitté le serveur
       if (member === null) { forget(m); continue; }
-      if (!member?.voice.channelId) continue; // absent du vocal : levé à son retour
-      await member.voice.setMute(false, 'Fin du mute voté').then(() => forget(m), (e) => console.error('Fin du mute :', e.message));
+      if (!member) continue;
+      // absent du vocal : levé à son retour
+      await setServerMute(guild, m.userId, false, 'Fin du mute voté').then((ok) => ok && forget(m), (e) => console.error('Fin du mute :', e.message));
     }
   };
   check();

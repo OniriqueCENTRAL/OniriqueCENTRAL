@@ -20,3 +20,4 @@
 - Pages publiques Spotify : seul l'en-tête `User-Agent: Mozilla/5.0` reçoit la page complète.
 - `/play` : « YouTube bloque le bot » = l'adresse du VPS est bloquée et les cookies du compte de secours sont absents
   ou périmés : relancer `onirique-youtube-cookies` (voir google.md).
+- Votes /mute : ne pas se fier à `member.voice.channelId` (cache du bot, parfois faux) ; demander le mute à Discord et lire l'erreur 40032 (« pas en vocal »).
