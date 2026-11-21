@@ -2632,8 +2632,11 @@ function drawCover(ctx, src, w, h, scale) {
   drawPicIn(ctx, p, (w - dw) / 2, (h - dh) / 2, dw, dh);
   return true;
 }
-/** Le lecteur vidéo de la coupe i, prêt à son premier instant (trois lecteurs tournent : l’actuel et les deux suivants). */
-function prepare(i) {
+/** Le lecteur vidéo de la coupe i, prêt à son premier instant (trois lecteurs tournent : l’actuel et les deux suivants).
+ *  ahead : une coupe à venir, posée PREROLL s avant son début pour être lancée juste avant la coupe (voir preroll). */
+const PREROLL = .2;
+const rolls = (s) => !exact && !recording && !s.hold && !s.cont;
+function prepare(i, ahead = false) {
   const s = segments[i];
   if (!s || clips[s.clip].kind !== "video") return;
   const v = pool[i % 3];
@@ -2641,7 +2644,17 @@ function prepare(i) {
   v.dataset.seg = String(i);
   if (v.src !== clips[s.clip].url) v.src = clips[s.clip].url;
   v.pause();
-  if (!(exact && decoded.has(v.src))) v.currentTime = s.from + (exact ? .001 : 0);
+  if (!(exact && decoded.has(v.src))) v.currentTime = Math.max(0, s.from - (ahead && rolls(s) ? PREROLL * slow() : 0)) + (exact ? .001 : 0);
+}
+/** Pendant l’aperçu, la vidéo de la coupe suivante démarre PREROLL s avant la coupe : une vidéo met quelques images à
+ *  partir, et elle arrivait en retard sur le temps. */
+function preroll(j, t) {
+  const s = segments[j];
+  if (!s || clips[s.clip].kind !== "video" || !rolls(s) || s.t0 - t > PREROLL || s.t0 <= t) return;
+  const v = pool[j % 3];
+  if (v.dataset.seg !== String(j) || !v.paused) return;
+  v.playbackRate = slow();
+  v.play().catch(() => {});
 }
 const segmentAt = (t) => { let i = segments.findIndex((s) => t < s.t1); return i < 0 ? segments.length - 1 : i; };
 
@@ -3088,15 +3101,17 @@ function drawMusic(t, playing) {
   const i = segmentAt(t), s = segments[i], clip = clips[s.clip];
   if (i !== shown) {
     shown = i;
-    prepare(i); prepare(i + 1); prepare(i + 2);
+    prepare(i); prepare(i + 1, true); prepare(i + 2, true);
     pool.forEach((v, k) => { if (k !== i % 3) v.pause(); });
   }
+  if (playing) preroll(i + 1, t);
   let src = clip.kind === "image" ? clip.img : pool[i % 3];
   if (clip.kind === "video") {
     const v = src, rate = slow(), want = s.cont ? Math.min(s.from + t * rate, clip.duration - .05)
       : s.hold ? (t * rate) % Math.max(.1, clip.duration - .05) : s.from + (t - s.t0) * rate;
     if (v.playbackRate !== rate) v.playbackRate = rate;
-    if (playing) { if (v.paused) v.play().catch(() => {}); if (drift(v, want, .25)) v.currentTime = want; }
+    // Pas lancée à l’avance (posée avant son début) : elle part du bon instant.
+    if (playing) { if (v.paused) { if (Math.abs(v.currentTime - want) > .05) v.currentTime = want; v.play().catch(() => {}); } if (drift(v, want, .25)) v.currentTime = want; }
     else seekTo(v, want);
     if (v.readyState < 2 && !v.__frame) return false; // l’image précédente reste le temps que la vidéo arrive
   }
@@ -3234,7 +3249,7 @@ function stop() {
   resumeJob++;
   clearTimeout(resumeTimer); resumeTimer = 0;
   if (playing) {
-    position = now(); playing = false;
+    position = heard(); playing = false; // la pause garde l’image qu’on voyait, et la reprise repart de ce qu’on entendait
     const end = ctx.currentTime + FADE, g0 = source.level.gain;
     g0.cancelScheduledValues(ctx.currentTime); g0.setValueAtTime(g0.value, ctx.currentTime); g0.linearRampToValueAtTime(0, end);
     try { source.stop(end + .01); } catch { /* déjà arrêté */ }
@@ -3257,7 +3272,14 @@ let hearing = 0; // « Écouter le début » en cours (un minuteur)
 // est arrivé au bout (il boucle). Sinon l’aperçu laisse la vidéo jouer, sans sauts.
 let resync = false;
 const drift = (v, want, tolerance) => (recording || resync || v.ended) && Math.abs(v.currentTime - want) > tolerance;
-function loop() { const t = now(); draw(t, playing); resync = false; drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) { followMix(); frame = recording ? setTimeout(loop, 1000 / exportFps()) : requestAnimationFrame(loop); } }
+function loop() { const t = heard(); draw(t, playing); resync = false; drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) { followMix(); frame = recording ? setTimeout(loop, 1000 / exportFps()) : requestAnimationFrame(loop); } }
+/** L’instant qu’on entend : le son sort de l’enceinte ou du casque un peu après avoir été joué (quelques centièmes de
+ *  seconde, jusqu’à 0,3 s en Bluetooth). L’aperçu montre l’image de cet instant, pour que coupes et mots tombent avec le
+ *  son. À l’export, le temps exact. */
+function heard() {
+  if (!playing || recording) return now();
+  return Math.max(0, now() - Math.min(.5, (ctx.outputLatency || 0) + (ctx.baseLatency || 0)));
+}
 /** Après une option qui ne change que l’image (ou l’ordre des coupes) : on redessine sans couper le son. */
 function restyle(rebuild) {
   if (rebuild) { build(); shown = -1; renderClips(); $("reshuffle").hidden = prefs.order !== "mix"; }
@@ -4544,6 +4566,12 @@ function initTabs() {
 function start() {
   initTabs();
   pickEncoder().then((codec) => { encoderCodec = codec; });
+  // En fond, une fois la page posée : les polices des textes et le lecteur des clips, pour qu’un style choisi ou le premier
+  // clip ajouté ne les attendent pas.
+  (window.requestIdleCallback || ((fn) => setTimeout(fn, 1500)))(() => {
+    for (const [family, weight] of FONT_LIST) document.fonts.load(`${weight} 80px "${family}"`).catch(() => {});
+    framesLib();
+  });
   const isAudio = (file) => file.type.startsWith("audio/") || /\.(mp3|wav|flac|m4a|aac|ogg|opus|aiff?)$/i.test(file.name);
   OniriqueAudio.dropZone($("audio-pick"), $("audio-file"), (files) => {
     const audio = files.find(isAudio), others = files.filter((f) => !isAudio(f));

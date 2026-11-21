@@ -987,7 +987,10 @@ app.whenReady().then(async () => {
     // Une fenêtre de l'application est ouverte : l'outil reste caché derrière son image.
     if (frozen) await hideView(view); else await showView(view);
     shownTool = tool;
+    if (tool === 'cut' && !store.cutUsed) store.cutUsed = true;
   });
+  // CUT préparé en fond (page chargée, cachée) pour s'ouvrir sans attente, chez qui s'en sert déjà.
+  handle('tool:warm', (lang) => { if (store.token && store.cutUsed && !toolViews.has('cut')) toolView('cut', lang); });
   // Un clic sur la rubrique déjà ouverte : retour à l'accueil de l'outil (après une page d'écoute, une autre page…).
   // « Retour » : la page d'avant dans l'outil (une page de profil, d'écoute, la carte…), comme le bouton précédent de la souris.
   handle('tool:back', (tool) => toolBack(tool));

@@ -34,7 +34,7 @@ export function go(name, id = null, back = false) {
   document.querySelector('.main')?.scrollTo(0, 0);
 }
 
-let lastLoad = 0;
+let lastLoad = 0, warmed = false;
 export async function refresh() {
   try {
     state.data = await call('load');
@@ -45,6 +45,8 @@ export async function refresh() {
   }
   lastLoad = Date.now();
   render();
+  // Quelques secondes après l'ouverture, CUT se prépare en fond (chez qui s'en sert) : il s'ouvrira sans attendre la page.
+  if (state.data?.me?.user && !warmed) { warmed = true; setTimeout(() => call('tool:warm', window.OniriqueI18n?.lang).catch(() => {}), 8000); }
   fillMissingDemos();
   // Le cadeau de Noël passe avant la fenêtre « nouveauté » (une seule animation à la fois).
   if (!showNoel(state.data?.me?.noel, state.data?.me?.user?.id, { media: (path) => call('media', path), open: (id) => go('plugins', id) })) showNews();

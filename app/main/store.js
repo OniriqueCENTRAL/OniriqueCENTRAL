@@ -79,6 +79,9 @@ module.exports = {
   // L'icône près de l'horloge a déjà été expliquée (une seule fois, à la première fermeture).
   get trayHint() { return !!read().trayHint; },
   set trayHint(v) { read().trayHint = v; write(); },
+  // ONIRIQUE CUT déjà ouvert une fois : il se prépare ensuite en fond à chaque lancement (voir tool:warm).
+  get cutUsed() { return !!read().cutUsed; },
+  set cutUsed(v) { read().cutUsed = v; write(); },
 
   get installed() { return read().installed; },
 
