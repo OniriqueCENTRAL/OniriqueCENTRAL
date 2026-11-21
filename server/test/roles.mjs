@@ -469,7 +469,26 @@ try {
     await call('POST', '/api/downloader/youtube', { body: { url: 'https://evil.test/x' }, expect: 400 });
     await call('POST', '/api/downloader/youtube', { token: founder.token, body: { url: 'https://evil.test/watch?v=dQw4w9WgXcQ' }, expect: 400 });
     await call('POST', '/api/downloader/youtube', { token: founder.token, body: { url: 'https://youtube.com/watch?v=--exec=rm' }, expect: 400 });
-    const { youtubeId, tiktokUrl } = await import('../src/downloader.js');
+    const { youtubeId, tiktokUrl, leadIn } = await import('../src/downloader.js');
+    // Le début coupé : le blanc, et le bruit de fond stable qui précède la musique ; jamais un fondu d'entrée.
+    {
+      const rate = 44100;
+      let seed = 1;
+      const hiss = (level) => { seed = (seed * 1103515245 + 12345) % 2147483648; return level * (seed / 1073741824 - 1); };
+      const stereo = (seconds, sample) => {
+        const out = new Float32Array(Math.round(seconds * rate) * 2);
+        for (let i = 0; i < out.length / 2; i++) out[2 * i] = out[2 * i + 1] = sample(i / rate);
+        return Buffer.from(out.buffer);
+      };
+      const kick = (t, at) => (t >= at ? 0.8 * Math.sin(2 * Math.PI * 55 * (t - at)) : 0);
+      const near = (got, want) => assert.ok(Math.abs(got - want) <= 3, `${got} au lieu de ${want}`);
+      near(leadIn(stereo(2, (t) => kick(t, 0.1)), 2, rate), 0.1 * rate + 1); // blanc numérique (le sinus part de 0)
+      near(leadIn(stereo(3, (t) => (t < 0.5 ? hiss(0.002) : 0) + kick(t, 0.5)), 2, rate), 0.5 * rate + 1); // souffle puis kick
+      near(leadIn(stereo(3, (t) => hiss(0.002) + kick(t, 0.5)), 2, rate), 0.5 * rate); // souffle sous toute la musique
+      assert.ok(leadIn(stereo(3, (t) => Math.min(1, t) * 0.5 * Math.sin(2 * Math.PI * 220 * t)), 2, rate) < 0.01 * rate); // fondu gardé
+      assert.ok(leadIn(stereo(3, (t) => (t < 1 ? hiss(0.02) : 0) + kick(t, 1)), 2, rate) < 5); // bruit trop fort : c'est du son
+      assert.equal(leadIn(stereo(1, () => 0), 2, rate), 0);
+    }
     // TikTok : l'adresse est rebâtie à partir des seules parties vérifiées.
     assert.equal(tiktokUrl('https://www.tiktok.com/@scout2015/video/6718335390845095173?lang=fr'), 'https://www.tiktok.com/@scout2015/video/6718335390845095173');
     assert.equal(tiktokUrl('https://vm.tiktok.com/ZMeNmpa9w/'), 'https://vm.tiktok.com/ZMeNmpa9w/');

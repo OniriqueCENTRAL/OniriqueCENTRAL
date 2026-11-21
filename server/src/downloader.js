@@ -1,7 +1,8 @@
 // Downloader (page downloader) : une vidéo YouTube ou TikTok en MP3, WAV ou MP4, par yt-dlp et FFmpeg sur le serveur.
 // Ouvert à tous ; sans compte ou avec un compte gratuit, un téléchargement par minute ; les rôles ONIRIQUE et au-dessus,
 // sans limite. Le fichier est fait dans un dossier jetable, envoyé, puis effacé.
-// Comme l'outil BPM et tonalité, le blanc du début (sous -60 dB) est retiré : le son démarre sur le premier échantillon.
+// Comme l'outil BPM et tonalité, le blanc du début (sous -60 dB) est retiré, et aussi le bruit de fond qui précède la
+// musique (leadIn) : le son démarre sur le premier échantillon.
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -65,11 +66,33 @@ export function sourceOf(raw) {
   return tiktok ? { site: 'tiktok', url: tiktok } : null;
 }
 
-/** Le nombre d'images (échantillons par voie) avant le premier son au-dessus du seuil, dans du f32le entrelacé. */
-export function leadIn(pcm, channels) {
-  const samples = new Float32Array(pcm.buffer, pcm.byteOffset, Math.floor(pcm.byteLength / 4));
-  for (let i = 0; i < samples.length; i++) if (Math.abs(samples[i]) > SILENCE) return Math.floor(i / channels);
-  return 0; // tout est muet au début : on ne coupe rien
+/** Le nombre d'images (échantillons par voie) avant le premier son, dans du f32le entrelacé à `rate` Hz. Le premier son
+ *  est le premier échantillon au-dessus de -60 dB ; mais un bruit de fond (souffle, micro d'un téléphone) dépasse
+ *  souvent ce seuil bien avant la musique. Il part aussi quand il est stable, 40 dB sous le plus fort du morceau, et que
+ *  la musique en sort d'un coup (12 dB de plus en 10 ms) dans les 3 s : la coupe tombe au début de cette montée. Un
+ *  son qui monte peu à peu (fondu, intro douce) est gardé entier. */
+export function leadIn(pcm, channels, rate) {
+  const x = new Float32Array(pcm.buffer, pcm.byteOffset, Math.floor(pcm.byteLength / 4));
+  const frames = Math.floor(x.length / channels);
+  const level = (i) => { let m = 0; for (let c = 0; c < channels; c++) m = Math.max(m, Math.abs(x[i * channels + c])); return m; };
+  let start = 0;
+  while (start < frames && level(start) <= SILENCE) start++;
+  if (start === frames) return 0; // tout est muet au début : on ne coupe rien
+  const step = Math.round(rate * 0.01), peak = (from) => { let m = 0; for (let i = from; i < Math.min(frames, from + step); i++) m = Math.max(m, level(i)); return m; };
+  let loudest = 0;
+  for (let i = start; i < frames; i++) loudest = Math.max(loudest, level(i));
+  const noise = peak(start);
+  if (noise > loudest / 100) return start;
+  for (let from = start + step; from < Math.min(frames, start + 3 * rate); from += step) {
+    const p = peak(from);
+    if (p <= noise * 2) continue; // toujours le bruit
+    if (p <= noise * 4) return start; // le son monte peu à peu : rien n'est du bruit
+    let cut = from;
+    while (level(cut) <= noise * 2) cut++;
+    while (cut > from - step && level(cut - 1) > noise) cut--;
+    return cut;
+  }
+  return start;
 }
 
 /** Un titre de vidéo utilisable comme nom de fichier sur Windows, Mac et dans un DAW. */
@@ -161,7 +184,7 @@ export function mountDownloader(app, { optionalUser, wrap }) {
       const rate = format === 'wav' ? 48000 : 44100, channels = 2;
       const head = await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', input, '-t', String(SCAN_SECONDS), '-vn',
         '-ac', String(channels), '-ar', String(rate), '-f', 'f32le', 'pipe:1'], { encoding: 'buffer' });
-      const lead = leadIn(head, channels);
+      const lead = leadIn(head, channels, rate);
 
       // 3. Le fichier final, coupé à l'échantillon près. Le MP3 garde l'en-tête LAME qui dit aux logiciels d'ignorer
       //    le court silence que tout encodeur MP3 ajoute : il tombe sur la grille dans un DAW.

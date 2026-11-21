@@ -236,7 +236,7 @@ function wav(audio, from) {
 }
 
 const analyse = (samples) => new Promise((resolve, reject) => {
-  const worker = new Worker("assets/bpm-key-worker.js");
+  const worker = new Worker("assets/bpm-key-worker.js?v=2");
   worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
   worker.onerror = () => { worker.terminate(); reject(new Error("L’analyse a échoué sur ce fichier.")); };
   worker.postMessage({ samples, sampleRate: RATE }, [samples.buffer]);

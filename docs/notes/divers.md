@@ -33,6 +33,16 @@
   tout modèle avant de l'essayer. Deux titres du CLOUD ont des temps faits sur une autre version du son (décalage
   constant d'une minute) : les écarter d'une mesure.
 
+## BPM et tonalité (`site/assets/bpm-key-worker.js`), blanc du Downloader
+- Le même worker sert à BPM et tonalité, PROD du Downloader, CUT, Mes sons, Stems et Transposition : après une
+  modification, augmenter son `?v=` dans ces six pages.
+- Mesuré sur 95 prods dont le nom donne le BPM (60 avec la tonalité), les 240 s du milieu : BPM juste 87 %, tonalité
+  juste 60 %. Profils de Krumhansl : 27 % (quinte ou majeur lus à cause des harmoniques des 808). Un profil appris sur
+  ces prods n'a rien gagné en validation croisée. Les noms se trompent parfois (même prod nommée 114 et 127 BPM).
+- Pièges : compter 3 temps pour choisir le battement fait lire un tempo aux deux tiers (164 → 109) ; un MP3 garde
+  25 ms de blanc (retard de l'encodeur) dans les logiciels qui ignorent son en-tête LAME : le WAV est exact partout.
+  Les MP3 exportés par FL Studio n'ont pas cet en-tête (~29 ms de blanc au début).
+
 ## Application CENTRAL et navigateur
 - L'application reste sur Electron ; son coût vient de l'application elle-même, pas du moteur.
 - Navigateur : ~20 % de RAM en moins que Chrome, même CPU sur la page active. Ne pas promettre plus.
