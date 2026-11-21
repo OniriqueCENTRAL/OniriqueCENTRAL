@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import { config } from './config.js';
 import { db, get, all, run, now, setting, setSetting } from './db.js';
-import { propose, approve, publishedBrain, describe, splitCreativeModules } from './brainlearn.js';
+import { propose, approve, publishedBrain, describe, splitCreativeModules, moduleName } from './brainlearn.js';
 import { HttpError, rateLimit } from './auth.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_artists (
@@ -59,16 +59,20 @@ Lead, backs, adlibs ou doubles : dis-lui quelle voix tu mixes et il lui trouve s
 Et si tu veux mettre les mains dedans, tout est là, dans l'ordre que tu veux :
 • Nettoyage : de-click, de-breath, de-reverb, noise gate, débruiteur, plosives, résonances, de-esser
 • Ton : ONIRIQUE TUNER, préampli N73, EQ paramétrique 8 bandes, EQ analog, Saturation Lab
-• Dynamique : 1176, CL1B à lampe, LA-2A, multiband, compression parallèle
+• Dynamique : F76, CL1B à lampe, L2A, multiband, compression parallèle
 • Effets : réverbe, delay au tempo, doubleur, chorus, flanger, téléphone
 
 VOCALBOX progresse à chaque mise à jour grâce à ONR Neural Learning. C'est facultatif et anonyme, et aucun son n'est jamais envoyé.
 
 VST3 pour Windows, VST3 et Audio Unit pour Mac.`,
 };
-if (get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value !== '5') {   // v5 : réécrite d'un ton plus humain
-  run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
-  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '5') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+{
+  const v = get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value;
+  if (v !== '5' && v !== '6')   // v5 : réécrite d'un ton plus humain
+    run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
+  else if (v === '5')           // v6 (22/11/2026) : « 1176 » devient F76, « LA-2A » L2A ; une retouche faite dans l'admin reste
+    run("UPDATE products SET description = replace(replace(description, '1176', 'F76'), 'LA-2A', 'L2A') WHERE slug = ?", 'vocalbox');
+  if (v !== '6') run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '6') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
 }
 
 // ---- ONR NEURAL LEARNING, sous le contrôle des fondateurs (voir brainlearn.js) : les retours deviennent des propositions,
@@ -303,7 +307,7 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
     if (install.length < 16) throw new HttpError(400, 'Installation ?');
     if (!Array.isArray(b.modules) || b.modules.length < 1 || b.modules.length > 16) throw new HttpError(400, 'Chaîne ?');
     const modules = b.modules.map((m) => ({
-      type: String(m?.type || '').slice(0, 40), instance: Math.max(0, Math.min(2, Number(m?.instance) || 0)), on: m?.on !== false,
+      type: moduleName(String(m?.type || '').slice(0, 40)), instance: Math.max(0, Math.min(2, Number(m?.instance) || 0)), on: m?.on !== false,
       params: Object.fromEntries(Object.entries(m?.params || {}).slice(0, 80).filter(([, v]) => Number.isFinite(Number(v))).map(([k, v]) => [String(k).slice(0, 40), Number(v)])),
     })).filter((m) => m.type);
     const modulesSplit = splitCreativeModules(modules);   // CREATIVE FX : ses effets, séparés

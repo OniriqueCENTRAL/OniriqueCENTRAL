@@ -148,7 +148,7 @@ export function propose(base, overlay, rows, found, refused = new Set(), chains 
   for (const c of chains) {
     if (c.source === 'manual') continue;   // les chaînes construites à la main n'ont pas d'artiste : elles font des styles (6.)
     const artists = parse(c.artists, []);
-    const mods = parse(c.modules, []);
+    const mods = renamed(parse(c.modules, []));
     if (!artists.length || !Array.isArray(mods) || mods.length < 2) continue;
     const key = norm(artists[0]);
     if (!chainGroups.has(key)) chainGroups.set(key, []);
@@ -173,7 +173,7 @@ export function propose(base, overlay, rows, found, refused = new Set(), chains 
   //      donne un nom en les validant (« Drill sombre »), et AUTO MIX les propose quand ce nom est dans la demande.
   const styleGroups = new Map();
   for (const c of chains) {
-    const mods = parse(c.modules, []).filter((m) => m && m.on !== false);
+    const mods = renamed(parse(c.modules, [])).filter((m) => m && m.on !== false);
     if (!Array.isArray(mods) || mods.length < 2) continue;
     let key, words = [];
     if (c.source === 'manual') key = `main:${Number(c.role) || 0}:${[...new Set(mods.map((m) => String(m.type)))].sort().join('+')}`;
@@ -273,6 +273,11 @@ function solve(A, b) {
 
 /** La chaîne type d'un groupe de chaînes partagées : les modules (premier exemplaire) de plus de 60 % d'entre elles, rangés à
  *  leur place moyenne, chacun avec la médiane de ses réglages. */
+/** Le nom d'aujourd'hui d'un module de VOCALBOX : le 22/11/2026, « 1176 FET » est devenu F76 FET et « LA-2A OPTO » L2A OPTO
+ *  (les chaînes et les retours plus anciens gardent l'ancien nom ; VOCALBOX comprend les deux). */
+export const moduleName = (t) => String(t || '').replace(/^1176 FET$/i, 'F76 FET').replace(/^LA-2A OPTO$/i, 'L2A OPTO');
+const renamed = (mods) => (Array.isArray(mods) ? mods.map((m) => (m && typeof m === 'object' ? { ...m, type: moduleName(m.type) } : m)) : mods);
+
 export function communityChainOf(list) {
   const stats = new Map();
   for (const { mods } of list) {

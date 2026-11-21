@@ -178,6 +178,16 @@ async function load() {
   // CREATIVE FX séparé (12/11) : les anciens mix et chaînes montrent DOUBLER, CHORUS, FLANGER, PHONE à part, avec leurs réglages
   for (const f of D.feedback || []) if (f.plan?.modules) f.plan.modules = splitCreative (f.plan.modules);
   for (const c of D.chains) c.modules = splitCreative (c.modules);
+  // F76 / L2A (22/11/2026) : les anciens retours et chaînes disent « 1176 FET » et « LA-2A OPTO », comptés avec les nouveaux
+  const newName = (t) => String(t || "").replace(/^1176 FET$/i, "F76 FET").replace(/^LA-2A OPTO$/i, "L2A OPTO");
+  const renameMods = (mods) => Array.isArray(mods) ? mods.map((m) => (m && typeof m === "object" ? { ...m, type: newName(m.type) } : m)) : mods;
+  for (const f of D.feedback || []) {
+    if (f.plan?.modules) f.plan.modules = renameMods(f.plan.modules);
+    const out = f.extra?.outcome;
+    if (out?.removedModules) out.removedModules = out.removedModules.map(newName);
+    if (out?.addedModules) out.addedModules = out.addedModules.map(newName);
+  }
+  for (const c of D.chains) c.modules = renameMods(c.modules);
   for (const p of D.proposals || []) for (const k of ["chain", "style"]) if (p.changes?.[k]?.modules) p.changes[k].modules = splitCreative (p.changes[k].modules);
   $("gate").hidden = true;
   compute();

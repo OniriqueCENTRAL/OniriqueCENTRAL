@@ -21,7 +21,7 @@
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://onirique.store/#org","name":"Onirique","url":"https://onirique.store/","logo":"https://onirique.store/assets/favicon.png?v=2"},
 {"@type":"WebSite","url":"https://onirique.store/","name":"ONIRIQUE","inLanguage":"fr","publisher":{"@id":"https://onirique.store/#org"}},
-{"@type":"SoftwareApplication","name":"Onirique VocalBox","applicationCategory":"MultimediaApplication","applicationSubCategory":"Plugin audio VST3","operatingSystem":"Windows 10, Windows 11 (64 bits)","description":"Chaîne vocale complète dans un seul plugin VST3 : EQ, Resonance, 1176, LA-2A, multibande, de-esser, plosives et saturation.","publisher":{"@id":"https://onirique.store/#org"}},
+{"@type":"SoftwareApplication","name":"Onirique VocalBox","applicationCategory":"MultimediaApplication","applicationSubCategory":"Plugin audio VST3","operatingSystem":"Windows 10, Windows 11 (64 bits)","description":"Chaîne vocale complète dans un seul plugin VST3 : EQ, Resonance, F76, L2A, multibande, de-esser, plosives et saturation.","publisher":{"@id":"https://onirique.store/#org"}},
 {"@type":"SoftwareApplication","name":"ONIRIQUE CENTRAL","applicationCategory":"UtilitiesApplication","operatingSystem":"Windows 10, Windows 11 (64 bits)","description":"Application gratuite qui installe les plugins Onirique, les met à jour et active les licences.","downloadUrl":"https://onirique.store/telechargement/ONIRIQUE-CENTRAL-Setup.exe","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}}
 ]}
 </script>
@@ -483,7 +483,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .presets span { font: 500 13px/1 var(--f-mono); padding: 10px 14px; border-radius: 99px; border: 1px solid var(--line); color: var(--mist); background: rgba(255,255,255,.03); }
 .legal-note { margin-top: 26px; font-size: 12px; color: var(--haze); max-width: 90ch; }
 
-/* onglets (COMPRESSION : 1176 / LA-2A | MULTIBAND) */
+/* onglets (COMPRESSION : F76 / L2A | MULTIBAND) */
 .tabs { position: absolute; display: flex; gap: calc(var(--u) * 4); border-bottom: 1px solid var(--line); }
 .tabs button { all: unset; cursor: pointer; flex: 1; text-align: center; padding-bottom: calc(var(--u) * 8); font: 700 calc(var(--u) * 12) / 1 var(--f-body); letter-spacing: .12em; color: var(--haze); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .25s, border-color .25s; }
 .tabs button:hover { color: var(--mist); }
@@ -500,7 +500,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .hfd .val { font: 500 calc(var(--u) * 12) / 1 var(--f-mono); color: var(--bone); min-width: 3.5em; text-align: right; font-variant-numeric: tabular-nums; }
 .hfd:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 
-/* VU-mètre de réduction de gain (1176 / LA-2A) */
+/* VU-mètre de réduction de gain (F76 / L2A) */
 .vu { position: absolute; border-radius: calc(var(--u) * 10); background: radial-gradient(120% 100% at 50% 110%, var(--deep), #120a0b); border: 1px solid rgba(255,210,214,.12); overflow: hidden; }
 .vu svg { width: 100%; height: 100%; display: block; }
 .vu .ndl { stroke: var(--bone); stroke-width: 1.6; stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(255,236,238,.6)); transition: transform .08s linear; transform-origin: 50px 66px; }
@@ -930,7 +930,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
         <article class="stage-card reveal"><div class="stage-num">IN</div><h3>INPUT</h3><p>Cale le niveau de ta prise avant tout traitement, avec un mètre stéréo.</p><span class="range">−24 → +24 dB</span></article>
         <article class="stage-card reveal"><div class="stage-num">EQ</div><h3>EQ</h3><p>Un grave façon Pultec, un Mid qui retire le carton, un High/Air qui s’ouvre jusqu’à 20 kHz. Low Cut 85 Hz et Smart S en option. Plus un EQ paramétrique 6 bandes réglé directement dans l’analyseur.</p><span class="range">LOW 80/100/125 · HIGH 8K/10K/20K · 6 BANDES</span></article>
         <article class="stage-card reveal"><div class="stage-num">RS</div><h3>RESONANCE</h3><p>Ne réduit que les crêtes qui dépassent du spectre, au moment où elles sonnent. Trois zones réglables en fréquence, en largeur et en sensibilité. LISTEN fait entendre ce qui est retiré.</p><span class="range">LOW · MID · HIGH · AMOUNT · LISTEN</span></article>
-        <article class="stage-card reveal"><div class="stage-num">CP</div><h3>COMPRESSION</h3><p>Un 1176 rapide, un LA-2A optique, ou les deux en série, avec des VU-mètres de réduction. Inverse l’ordre des deux en un clic.</p><span class="range">1176 · LA-2A · DUO</span></article>
+        <article class="stage-card reveal"><div class="stage-num">CP</div><h3>COMPRESSION</h3><p>Un F76 rapide, un L2A optique, ou les deux en série, avec des VU-mètres de réduction. Inverse l’ordre des deux en un clic.</p><span class="range">F76 · L2A · DUO</span></article>
         <article class="stage-card reveal"><div class="stage-num">MB</div><h3>MULTIBAND</h3><p>Compression opto sur 4 bandes, crémeuse pour la voix. Seuil et gain par bande, écoute en solo et presets dédiés.</p><span class="range">4 BANDES · LISTEN · 8 PRESETS</span></article>
         <article class="stage-card reveal"><div class="stage-num">DS</div><h3>DE-ESSER / PLOSIVES</h3><p>De-esser dynamique deux bandes avec anticipation. PLOSIVES repère les bouffées graves des P et des B et les adoucit, sans latence.</p><span class="range">3 000 → 10 000 Hz · PLOSIVES 0 → 100 %</span></article>
         <article class="stage-card reveal"><div class="stage-num">SL</div><h3>SATURATION LAB</h3><p>Tube, Analog ou Tape pour de la densité et des harmoniques. Changer de type fait un fondu, le volume reste compensé.</p><span class="range">TUBE · ANALOG · TAPE · DRIVE 0 → 10</span></article>
@@ -1008,7 +1008,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <div class="ctl"><div class="ctl-top"><label for="r-low">Low</label><output data-out="low"></output></div><input id="r-low" type="range" data-param="low" min="0" max="1" step="0.001"><small>Du corps et de la profondeur dans le grave.</small></div>
           <div class="ctl"><div class="ctl-top"><label for="r-mud">Mid</label><output data-out="mud"></output></div><input id="r-mud" type="range" data-param="mud" min="0" max="1" step="0.001"><small>Retire l’effet « boîte en carton » entre 300 et 430 Hz.</small></div>
           <div class="ctl"><div class="ctl-top"><label for="r-high">High / Air</label><output data-out="high"></output></div><input id="r-high" type="range" data-param="high" min="0" max="1" step="0.001"><small>Ouvre la voix, de la présence jusqu’à l’air.</small></div>
-          <div class="ctl"><div class="ctl-top"><label for="r-fetIn">1176 Input</label><output data-out="fetIn"></output></div><input id="r-fetIn" type="range" data-param="fetIn" min="0" max="1" step="0.001"><small>Plus tu pousses, plus le 1176 compresse.</small></div>
+          <div class="ctl"><div class="ctl-top"><label for="r-fetIn">F76 Input</label><output data-out="fetIn"></output></div><input id="r-fetIn" type="range" data-param="fetIn" min="0" max="1" step="0.001"><small>Plus tu pousses, plus le F76 compresse.</small></div>
           <div class="ctl"><div class="ctl-top"><label for="r-deessAmt">De-Ess</label><output data-out="deessAmt"></output></div><input id="r-deessAmt" type="range" data-param="deessAmt" min="0" max="1" step="0.001"><small>Freine les sifflantes et les cymbales.</small></div>
           <div class="ctl"><div class="ctl-top"><label for="r-drive">Drive</label><output data-out="drive"></output></div><input id="r-drive" type="range" data-param="drive" min="0" max="1" step="0.001"><small>Densité et harmoniques, sans saut de volume.</small></div>
           <div class="ctl-row">
@@ -1018,7 +1018,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           </div>
         </div>
       </div>
-      <p class="note">Le traitement est fait en direct dans ton navigateur avec Web Audio, pour illustrer le rôle des réglages : EQ, EQ paramétrique, 1176 / LA-2A, de-esser et saturation. Resonance, Multiband et Plosives ne sont pas simulés ici. Le plugin, lui, utilise ses propres algorithmes, différents de cette simulation. Un fichier importé n’est jamais envoyé sur internet.</p>
+      <p class="note">Le traitement est fait en direct dans ton navigateur avec Web Audio, pour illustrer le rôle des réglages : EQ, EQ paramétrique, F76 / L2A, de-esser et saturation. Resonance, Multiband et Plosives ne sont pas simulés ici. Le plugin, lui, utilise ses propres algorithmes, différents de cette simulation. Un fichier importé n’est jamais envoyé sur internet.</p>
     </div>
   </section>
 
@@ -1490,10 +1490,10 @@ function buildVB() {
   fader(ui, "resoLow", 593, 454, 60, 168, "180 Hz"); fader(ui, "resoMid", 663, 454, 60, 168, "1.20 kHz"); fader(ui, "resoHigh", 733, 454, 60, 168, "6.50 kHz");
   knob(ui, "resoAmt", 818, 470, 100);
 
-  // ---- COMPRESSION : onglets 1176 / LA-2A | MULTIBAND
+  // ---- COMPRESSION : onglets F76 / L2A | MULTIBAND
   const comp = card(ui, "COMPRESSION", 954, 96, 504, 576, "compOn");
   const mbPw = power(ui, "mbOn", 954 + 504 - 40, 99, comp.c, "Multiband");
-  vb.tabs = el(ui, "tabs", 966, 134, 480, 28, `<button type="button" role="tab">1176 / LA-2A</button><button type="button" role="tab">MULTIBAND</button>`);
+  vb.tabs = el(ui, "tabs", 966, 134, 480, 28, `<button type="button" role="tab">F76 / L2A</button><button type="button" role="tab">MULTIBAND</button>`);
   vb.tabs.setAttribute("role", "tablist");
   $$("button", vb.tabs).forEach((b, i) => b.addEventListener("click", () => { UI.tab = i; renderAll(); }));
   renders.push(() => {
@@ -1502,22 +1502,22 @@ function buildVB() {
     comp.pw.hidden = UI.tab !== 0; mbPw.hidden = UI.tab !== 1;
     comp.c.classList.toggle("off", UI.tab === 0 ? !S.compOn : !S.mbOn);
   });
-  // onglet 1176 / LA-2A
+  // onglet F76 / L2A
   const g0 = vb.g0 = el(ui, "grp", 0, 0, null, null); g0.style.position = "absolute"; g0.style.inset = "0"; g0.style.pointerEvents = "none";
   const G0 = (fn) => { const before = ui.children.length; fn(); [...ui.children].slice(before).forEach(c => { g0.appendChild(c); c.style.pointerEvents = "auto"; }); };
   G0(() => {
-    seg(ui, "compMode", ["1176", "LA-2A", "DUO"], 966, 172, 480, 28, "Mode de compression");
+    seg(ui, "compMode", ["F76", "L2A", "DUO"], 966, 172, 480, 28, "Mode de compression");
     const ord = el(ui, "pl", 1086, 214, 240, 34, "", "button"); ord.id = "vbOrder"; ord.type = "button";
     ord.setAttribute("aria-label", "Inverser l’ordre des deux compresseurs"); ord.style.gap = "1em"; ord.style.fontSize = U(13);
     ord.addEventListener("click", () => { S.compOrder = S.compOrder ? 0 : 1; touched(); renderAll(); });
     vb.fet = el(ui, "sub", 966, 264, 480, 205);
-    el(ui, "card-t", 980, 281, null, null, "1176 <em>FET</em>").style.setProperty("--ct", 12);
-    seg(ui, "fetRatio", ["4", "8", "12", "20", "ALL"], 1170, 274, 264, 26, "Ratio du 1176");
+    el(ui, "card-t", 980, 281, null, null, "F76 <em>FET</em>").style.setProperty("--ct", 12);
+    seg(ui, "fetRatio", ["4", "8", "12", "20", "ALL"], 1170, 274, 264, 26, "Ratio du F76");
     vb.vuFet = vu(ui, 978, 334, 128, 96);
     [["fetIn", 1118], ["fetOut", 1198], ["fetAttack", 1278], ["fetRelease", 1358]].forEach(([id, x]) => knob(ui, id, x, 320, 72));
     vb.la = el(ui, "sub", 966, 479, 480, 181);
-    el(ui, "card-t", 980, 496, null, null, "LA-2A <em>OPTO</em>").style.setProperty("--ct", 12);
-    seg(ui, "laLimit", ["COMPRESS", "LIMIT"], 1206, 489, 228, 26, "Mode du LA-2A");
+    el(ui, "card-t", 980, 496, null, null, "L2A <em>OPTO</em>").style.setProperty("--ct", 12);
+    seg(ui, "laLimit", ["COMPRESS", "LIMIT"], 1206, 489, 228, 26, "Mode du L2A");
     vb.vuLa = vu(ui, 978, 539, 128, 96);
     knob(ui, "laGain", 1154, 530, 80); knob(ui, "laPeak", 1314, 530, 80);
   });
@@ -1639,7 +1639,7 @@ function renderAll() {
   $$("[data-ab]").forEach(b => b.setAttribute("aria-pressed", (b.dataset.ab === "raw") === S.bypass));
   $$(".big-tg b").forEach(b => b.textContent = S.autoGain ? "ON" : "OFF");
   vb.fet.classList.toggle("dim", S.compMode === 1); vb.la.classList.toggle("dim", S.compMode === 0);
-  const [a, b] = S.compOrder ? ["LA-2A", "1176"] : ["1176", "LA-2A"];
+  const [a, b] = S.compOrder ? ["L2A", "F76"] : ["F76", "L2A"];
   $("#vbOrder").innerHTML = `<span>${a}</span><i>⇄</i><span>${b}</span>`;
   if (vb.order.children.length) renderOrder();
   applyAudio();
@@ -1689,7 +1689,7 @@ function buildAudio() {
   N.bus = g();
   N.mediaG = g(); N.mediaG.gain.value = .5;   // -6 dB : un mix masterisé laisse peu de marge
   N.mediaG.connect(N.bus);
-  // INPUT -> EQ (+ paramétrique) -> COMPRESSION (1176 puis LA-2A) -> DE-ESSER -> SATURATION -> AUTO GAIN -> OUTPUT
+  // INPUT -> EQ (+ paramétrique) -> COMPRESSION (F76 puis L2A) -> DE-ESSER -> SATURATION -> AUTO GAIN -> OUTPUT
   N.in = g(); N.bus.connect(N.in);
   N.hp = f("highpass", 10, .7);
   N.tone = toneEQ(ctx.sampleRate).map(([type, freq, q]) => f(type, freq, q)); N.de = f("peaking", 6200, 2.2);
@@ -1726,7 +1726,7 @@ function applyAudio(snap) {
   const fetOn = S.compOn && S.compMode !== 1, laOn = S.compOn && S.compMode !== 0;
   set(N.fetIn.gain, fetOn ? dbg(S.fetIn) : 1); set(N.fetOut.gain, fetOn ? dbg(S.fetOut) : 1);
   set(N.c1.threshold, fetOn ? [-20, -18, -17, -16, -21][S.fetRatio] : 0); set(N.c1.ratio, fetOn ? [4, 8, 12, 20, 20][S.fetRatio] : 1); set(N.c1.knee, fetOn ? [8, 6, 5, 4, 3][S.fetRatio] : 0);
-  set(N.c1.attack, .00002 + (7 - S.fetAttack) / 6 * .00078); set(N.c1.release, .05 + (7 - S.fetRelease) / 6 * 1.05);   // 7 = le plus rapide, comme un 1176
+  set(N.c1.attack, .00002 + (7 - S.fetAttack) / 6 * .00078); set(N.c1.release, .05 + (7 - S.fetRelease) / 6 * 1.05);   // 7 = le plus rapide, comme un F76
   set(N.c2.threshold, laOn ? -S.laPeak * .45 : 0); set(N.c2.ratio, laOn ? (S.laLimit ? 10 : 3) : 1); set(N.c2.knee, S.laLimit ? 6 : 14);
   set(N.c2.attack, .01); set(N.c2.release, .5); set(N.laOut.gain, laOn ? dbg(S.laGain) : 1);
   set(N.de.frequency, e.deF); set(N.de.gain, e.de);
