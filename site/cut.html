@@ -174,6 +174,15 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .dist span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dist i { display: block; height: 6px; min-width: 2px; border-radius: 0 3px 3px 0; background: var(--ember); }
 .dist small { text-align: right; font-variant-numeric: tabular-nums; }
+.neural { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 16px;
+  background: radial-gradient(ellipse at 55% 45%, rgba(var(--acc),.1), transparent 70%), rgba(0,0,0,.3); }
+.neural canvas { display: block; width: 100%; }
+.neural-tip { position: absolute; z-index: 2; display: grid; gap: 2px; max-width: 260px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: rgba(9,8,10,.94); color: var(--label); font-size: 13px; line-height: 1.4; pointer-events: none; }
+.neural-tip b { color: #fff; font-weight: 600; }
+.neural-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--haze); font-size: 12px; }
+.neural-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
+.neural-legend i.ring { border: 1.5px solid rgb(var(--acc)); }
 .tree-journal { display: grid; margin: 0; padding: 0; list-style: none; }
 .tree-journal li { display: grid; grid-template-columns: 120px 190px 1fr; gap: 4px 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .tree-journal small { color: var(--haze); font-variant-numeric: tabular-nums; }
@@ -4698,6 +4707,176 @@ const dayText = (ms) => new Date(ms).toLocaleString("fr-FR", { day: "numeric", m
 const valueText = (l, v) => (l.type === "bool" ? (v ? "Oui" : "Non") : l.options && l.options[v] != null ? l.options[v]
   : l.type === "number" ? String(v).replace(".", ",") + (l.unit ? "\u00a0" + l.unit : "") : String(v));
 let treeTarget = ""; // la feuille ou la branche que la prochaine leçon nourrit
+// ——— Le réseau (fondateurs) : l’arborescence dessinée comme un réseau de neurones. À gauche ce qui la nourrit (TikToks faits
+// sur CUT, corrections après AUTOMATIQUE, leçons, recette de départ), puis ses branches, ses réglages et, à droite, le TikTok
+// d’AUTOMATIQUE. Chaque point lumineux est un signal : plus une branche ou une feuille est nourrie, plus elle en reçoit. ———
+let neuralStop = () => {};
+function neuralView(brain, leaves, openLeaf) {
+  neuralStop();
+  const css = getComputedStyle(document.documentElement), acc = css.getPropertyValue("--acc").trim() || "229, 56, 74";
+  const font = css.getPropertyValue("--f-body").trim() || "sans-serif", mono = css.getPropertyValue("--f-mono").trim() || "monospace";
+  const wrap = node("div", { className: "neural" }), canvas = node("canvas"), tip = node("div", { className: "neural-tip", hidden: true });
+  canvas.setAttribute("role", "img");
+  canvas.setAttribute("aria-label", "L’arborescence en réseau : ce qui la nourrit, ses branches, ses réglages et le TikTok d’AUTOMATIQUE");
+  const gx = canvas.getContext("2d"), c = brain.counts, props = new Map(brain.proposals.map((p) => [p.key, p]));
+  const lessonsOn = (id) => brain.lessons.filter((x) => x.leaf === id).length;
+  const fixesOf = (keys) => brain.journal.filter((r) => r.kind === "correction").reduce((n, r) => n + r.changed.filter((x) => keys.includes(x.key)).length, 0);
+  const nodes = [], edges = [], leafNodes = [];
+  const add = (n) => { nodes.push({ fire: 0, out: [], x: 0, y: 0, ...n }); return nodes.at(-1); };
+  const link = (a, b, w) => { const e = { a, b, w }; edges.push(e); a.out.push(e); };
+  const ins = [
+    add({ kind: "in", label: "TikToks faits sur CUT", n: (c.export || 0) + (c.correction || 0), info: "Chaque export envoie ses réglages : une voix par TikTok." }),
+    add({ kind: "in", label: "Corrections après AUTOMATIQUE", n: c.correction || 0, info: "Ce qu’un fondateur change après AUTOMATIQUE compte triple." }),
+    add({ kind: "in", label: "Leçons des fondateurs", n: c.note || 0, info: "Une leçon peut régler une feuille tout de suite." }),
+    add({ kind: "in", label: "Recette de départ", n: brain.branches.reduce((n, b) => n + b.leaves.length + b.lessons.length, 0), info: "Au départ, " + brain.source + "." }),
+  ];
+  const out = add({ kind: "out", label: "TikTok d’AUTOMATIQUE", info: "AUTOMATIQUE monte ses TikToks avec ces " + leaves.size + " réglages." });
+  const branches = brain.branches.map((b) => {
+    const keys = b.leaves.map((l) => l.key), own = lessonsOn(b.id) + b.leaves.reduce((n, l) => n + lessonsOn(l.key), 0);
+    const bn = add({ kind: "branch", label: b.label, b, tiktoks: b.leaves.reduce((n, l) => n + (l.stats ? l.stats.n : 0), 0), lessons: b.lessons.length + own });
+    link(ins[0], bn, bn.tiktoks); link(ins[1], bn, fixesOf(keys)); link(ins[2], bn, own + lessonsOn(""));
+    link(ins[3], bn, b.leaves.filter((l) => !l.source).length + b.lessons.length);
+    bn.kids = b.leaves.map((l) => {
+      const ln = add({ kind: "leaf", label: l.label, l: leaves.get(l.key), lessons: lessonsOn(l.key), prop: props.get(l.key) });
+      link(bn, ln, (l.stats ? l.stats.n : 0) + 3 * ln.lessons + (l.source ? 2 : 0) + .4);
+      link(ln, out, 1 + (l.stats ? l.stats.n : 0) * .2);
+      leafNodes.push(ln);
+      return ln;
+    });
+    if (!bn.kids.length) link(bn, out, bn.lessons); // une branche faite seulement de leçons (la publication)
+    return bn;
+  });
+  const most = {};
+  for (const e of edges) most[e.a.kind] = Math.max(most[e.a.kind] || 0, e.w);
+  for (const e of edges) e.alpha = e.w ? .05 + .3 * Math.sqrt(e.w / most[e.a.kind]) : 0;
+
+  // La place des neurones : les réglages en colonne, chaque branche au milieu des siens.
+  let W = 0, H = 0, dpr = 1, labels = true;
+  const layout = () => {
+    W = wrap.clientWidth; labels = W > 700;
+    H = Math.max(440, leafNodes.length * (labels ? 17 : 12) + 76);
+    dpr = Math.min(2, devicePixelRatio || 1);
+    canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = H + "px";
+    const top = 38, span = H - 76;
+    leafNodes.forEach((n, i) => { n.x = W * (labels ? .56 : .7); n.y = top + span * (i + .5) / leafNodes.length; });
+    for (const b of branches) { b.x = W * (labels ? .3 : .38); b.y = b.kids.length ? b.kids.reduce((s, l) => s + l.y, 0) / b.kids.length : H - 26; }
+    // des branches assez espacées pour que leurs noms ne se chevauchent pas (vers le bas, puis vers le haut depuis le bas)
+    const gap = 54, byY = [...branches].sort((a, b) => a.y - b.y);
+    byY.forEach((b, i) => { if (i) b.y = Math.max(b.y, byY[i - 1].y + gap); });
+    byY.reverse().forEach((b, i) => { b.y = Math.min(b.y, i ? byY[i - 1].y - gap : H - 26); });
+    byY.reverse().forEach((b, i) => { if (i) b.y = Math.max(b.y, byY[i - 1].y + gap); else b.y = Math.max(b.y, 52); });
+    ins.forEach((n, i) => { n.x = W * .06; n.y = H / 2 + (i - 1.5) * Math.min(100, H / 5); });
+    out.x = W * .93; out.y = H / 2;
+  };
+  const radius = (n) => n.kind === "out" ? 15 : n.kind === "in" ? 10 : n.kind === "branch" ? 8 + Math.min(4, Math.sqrt(n.tiktoks + n.lessons) / 2)
+    : 3.5 + Math.min(4, Math.sqrt((n.l.stats ? n.l.stats.n : 0) + n.lessons));
+  const colorOf = (n) => n.kind === "leaf" ? (n.l.source ? (n.l.source.from === "note" ? `rgb(${acc})` : "#fff") : "rgba(244,236,236,.5)")
+    : n.kind === "in" ? (n.n ? `rgb(${acc})` : "rgba(244,236,236,.3)") : n.kind === "out" ? "#fff" : "rgba(255,214,218,.92)";
+  const bez = ({ a, b }, t) => { const dx = (b.x - a.x) / 2, u = 1 - t;
+    return [u * u * u * a.x + 3 * u * u * t * (a.x + dx) + 3 * u * t * t * (b.x - dx) + t * t * t * b.x, u * u * u * a.y + 3 * u * u * t * a.y + 3 * u * t * t * b.y + t * t * t * b.y]; };
+  const cut = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+
+  // Les signaux : partis des entrées au rythme de ce qu’elles apportent, ils suivent les liens selon leur poids.
+  const parts = [];
+  const pick = (n) => { const total = n.out.reduce((s, e) => s + e.w, 0); if (!total) return null; let r = Math.random() * total; for (const e of n.out) if ((r -= e.w) <= 0) return e; return n.out.at(-1); };
+  const spawn = (e) => { if (e && parts.length < 260) parts.push({ e, t: 0, v: .006 + Math.random() * .007 }); };
+  const rate = ins.map((n) => (n.n ? Math.min(.45, .05 + .06 * Math.log1p(n.n)) : 0));
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let raf = 0, hover = null;
+  const frame = (now) => {
+    if ($("tree-page").hidden || !canvas.isConnected) return neuralStop();
+    if (!still) ins.forEach((n, i) => { if (Math.random() < rate[i]) spawn(pick(n)); });
+    gx.setTransform(dpr, 0, 0, dpr, 0, 0); gx.clearRect(0, 0, W, H);
+    for (const e of edges) {
+      if (!e.alpha) continue;
+      const lit = hover && (e.a === hover || e.b === hover);
+      gx.strokeStyle = `rgba(${acc}, ${lit ? .8 : e.alpha.toFixed(3)})`; gx.lineWidth = lit ? 1.6 : 1;
+      const dx = (e.b.x - e.a.x) / 2;
+      gx.beginPath(); gx.moveTo(e.a.x, e.a.y); gx.bezierCurveTo(e.a.x + dx, e.a.y, e.b.x - dx, e.b.y, e.b.x, e.b.y); gx.stroke();
+    }
+    gx.shadowColor = `rgb(${acc})`;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.t += p.v;
+      if (p.t >= 1) {
+        parts.splice(i, 1); p.e.b.fire = 1;
+        if (p.e.b.kind !== "out" && (p.e.b.kind !== "leaf" || Math.random() < .55)) spawn(pick(p.e.b));
+        continue;
+      }
+      const [x, y] = bez(p.e, p.t);
+      gx.shadowBlur = 8; gx.fillStyle = "#fff"; gx.beginPath(); gx.arc(x, y, 1.7, 0, 7); gx.fill();
+    }
+    for (const n of nodes) {
+      n.fire *= .92;
+      const r = radius(n);
+      if (n.prop) { // une proposition à valider : un anneau qui bat
+        gx.shadowBlur = 0; gx.strokeStyle = `rgba(${acc}, ${.5 + .4 * Math.sin(now / 260)})`; gx.lineWidth = 1.5;
+        gx.beginPath(); gx.arc(n.x, n.y, r + 4 + 2 * Math.sin(now / 260), 0, 7); gx.stroke();
+      }
+      gx.shadowBlur = 6 + n.fire * 22 + (n === hover ? 14 : 0); gx.fillStyle = colorOf(n);
+      gx.beginPath(); gx.arc(n.x, n.y, r + n.fire * 2.5, 0, 7); gx.fill();
+      if (n.kind === "out") { gx.shadowBlur = 0; gx.strokeStyle = `rgba(${acc}, .9)`; gx.lineWidth = 2; gx.beginPath(); gx.arc(n.x, n.y, r + 5 + n.fire * 4, 0, 7); gx.stroke(); }
+    }
+    gx.shadowBlur = 0; gx.textBaseline = "middle";
+    for (const n of ins) {
+      gx.textAlign = "left"; gx.fillStyle = "#fff"; gx.font = "600 12px " + font; gx.fillText(n.label, n.x - 8, n.y + 22);
+      gx.fillStyle = "rgba(244,236,236,.55)"; gx.font = "500 11px " + mono; gx.fillText(n === ins[3] ? "la base" : plural(n.n, "apport"), n.x - 8, n.y + 37);
+    }
+    for (const b of branches) {
+      gx.textAlign = "center"; gx.fillStyle = "#fff"; gx.font = "700 13px " + font; gx.fillText(b.label, b.x, b.y - radius(b) - 16);
+      gx.fillStyle = "rgba(244,236,236,.55)"; gx.font = "500 10px " + mono; gx.fillText(plural(b.tiktoks, "voix").replace("voixs", "voix") + " · " + plural(b.lessons, "leçon"), b.x, b.y - radius(b) - 4);
+    }
+    if (labels) for (const n of leafNodes) {
+      gx.textAlign = "left"; gx.font = (n === hover ? "600 " : "400 ") + "11px " + font;
+      gx.fillStyle = n === hover ? "#fff" : n.prop ? `rgb(${acc})` : "rgba(244,236,236,.72)";
+      gx.fillText(cut(n.label, 34) + " · " + cut(valueText(n.l, n.l.value), 18), n.x + 10, n.y);
+    }
+    gx.textAlign = "center"; gx.fillStyle = "#fff"; gx.font = "700 13px " + font; gx.fillText("TikTok", out.x, out.y + 34);
+    gx.fillStyle = "rgba(244,236,236,.55)"; gx.font = "500 10px " + mono; gx.fillText("AUTOMATIQUE", out.x, out.y + 48);
+    raf = still ? 0 : requestAnimationFrame(frame);
+  };
+
+  // Survol : le neurone et ses liens s’allument, une bulle dit ce qu’il sait ; un clic sur un réglage l’ouvre dans l’arbre.
+  const lines = (n) => {
+    if (n.kind === "leaf") {
+      const l = n.l, st = l.stats;
+      return [l.label, "Réglage : " + valueText(l, l.value), !l.source ? "Recette de départ" : (l.source.from === "note" ? "Leçon de " : "Validé par ") + l.source.by,
+        st ? plural(st.n, "TikTok") + " · « " + valueText(l, st.values[0].value) + " » à " + Math.round(st.values[0].share * 100) + " %" : "Pas encore nourri par un TikTok",
+        n.lessons ? plural(n.lessons, "leçon") : "", n.prop ? "À valider : " + valueText(l, n.prop.value) + " (" + Math.round(n.prop.share * 100) + " %)" : "", "Clic : ouvrir ce réglage"];
+    }
+    if (n.kind === "branch") return [n.label, plural(n.b.leaves.length, "réglage"), plural(n.lessons, "leçon"), n.tiktoks + " voix de TikToks"];
+    return [n.label, n.kind === "in" && n !== ins[3] ? plural(n.n, "apport") : "", n.info];
+  };
+  const at = (event) => {
+    const r = canvas.getBoundingClientRect(), x = event.clientX - r.left, y = event.clientY - r.top;
+    let best = null, d = 16;
+    for (const n of nodes) { const k = Math.hypot(n.x - x, n.y - y); if (k < Math.max(d, radius(n) + 5) && (!best || k < d)) { best = n; d = k; } }
+    if (!best && labels) best = leafNodes.find((n) => x > n.x && x < n.x + 230 && Math.abs(y - n.y) < 7) || null;
+    return { n: best, x, y };
+  };
+  canvas.onmousemove = (event) => {
+    const { n, x, y } = at(event);
+    hover = n; canvas.style.cursor = n && n.kind !== "in" && n.kind !== "out" ? "pointer" : "default";
+    tip.hidden = !n;
+    if (!n) return;
+    const [head, ...rest] = lines(n).filter(Boolean);
+    tip.replaceChildren(node("b", { textContent: head }), ...rest.map((t) => node("span", { textContent: t })));
+    tip.style.left = Math.min(x + 16, W - 270) + "px"; tip.style.top = Math.min(y + 12, H - tip.offsetHeight - 8) + "px";
+    if (still) frame(performance.now());
+  };
+  canvas.onmouseleave = () => { hover = null; tip.hidden = true; if (still) frame(performance.now()); };
+  canvas.onclick = (event) => { const { n } = at(event); if (n && n.kind === "leaf") openLeaf(n.l.key); else if (n && n.kind === "branch" && n.kids.length) openLeaf(n.kids[0].l.key); };
+  const legend = node("div", { className: "neural-legend" },
+    ...[[`rgb(${acc})`, "ce qui nourrit l’arbre, ou réglé par une leçon"], ["#fff", "réglage validé par un fondateur"], ["rgba(244,236,236,.5)", "recette de départ"]]
+      .map(([color, text]) => node("span", {}, node("i", { style: "background:" + color }), text)),
+    node("span", {}, node("i", { className: "ring" }), "proposition à valider"), node("span", {}, "chaque point lumineux est un signal ; plus un réglage est nourri, plus il en reçoit"));
+  wrap.append(canvas, tip, legend);
+  const ro = new ResizeObserver(() => { if (!wrap.clientWidth) return; layout(); cancelAnimationFrame(raf); frame(performance.now()); });
+  ro.observe(wrap);
+  neuralStop = () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  return wrap;
+}
+
 async function renderTree() {
   const box = $("tree-body");
   if (!box.children.length) box.append(node("p", { className: "muted", textContent: "Chargement…" }));
@@ -4792,7 +4971,7 @@ async function renderTree() {
       node("span", {}, node("b", { textContent: valueText(l, l.value), style: l.type === "color" ? "color:" + l.value : "" }), node("small", { className: "from" + (l.source ? " lit" : ""), textContent: from })),
       node("small", { textContent: (st ? plural(st.n, "TikTok") + " · « " + valueText(l, st.values[0].value) + " » à " + Math.round(st.values[0].share * 100) + " %" : "pas encore nourrie")
         + (own.length ? " · " + plural(own.length, "leçon") : "") }));
-    row.setAttribute("aria-expanded", "false");
+    row.setAttribute("aria-expanded", "false"); row.dataset.key = l.key;
     row.onclick = () => { more.hidden = !more.hidden; row.setAttribute("aria-expanded", String(!more.hidden)); };
     return node("li", {}, row, more);
   };
@@ -4817,7 +4996,13 @@ async function renderTree() {
     node("small", { textContent: dayText(r.at) }), node("b", { textContent: KINDS[r.kind] || r.kind }), node("span", { textContent: journalText(r) }))))
     : node("p", { className: "muted", textContent: "Rien encore : chaque export de CUT et chaque leçon apparaîtront ici." });
 
-  box.replaceChildren(kpis, week, ...(props.length ? [node("h3", { textContent: "À valider (" + props.length + ")" }), node("div", { className: "tree-props" }, ...props)] : []),
+  const openLeaf = (key) => {
+    const row = box.querySelector('.leaf[data-key="' + key + '"]');
+    if (!row) return;
+    if (row.getAttribute("aria-expanded") !== "true") row.click();
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+  box.replaceChildren(kpis, week, node("h3", { textContent: "Le réseau" }), neuralView(brain, leaves, openLeaf), ...(props.length ? [node("h3", { textContent: "À valider (" + props.length + ")" }), node("div", { className: "tree-props" }, ...props)] : []),
     form, node("h3", { textContent: "L’arbre" }), tree, node("h3", { textContent: "Comment elle est nourrie" }), journal);
 }
 
@@ -5487,7 +5672,7 @@ function start() {
     $("tree-short").hidden = false;
     const openTree = () => { $("tree-page").hidden = false; document.body.style.overflow = "hidden"; renderTree(); };
     $("tree-short").onclick = $("tree-open").onclick = openTree;
-    $("tree-close").onclick = () => { $("tree-page").hidden = true; document.body.style.overflow = ""; };
+    $("tree-close").onclick = () => { $("tree-page").hidden = true; document.body.style.overflow = ""; neuralStop(); };
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("tree-page").hidden) $("tree-close").click(); });
     $("auto-go").onclick = autoTikTok;
   }
