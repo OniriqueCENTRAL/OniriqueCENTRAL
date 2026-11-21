@@ -30,7 +30,7 @@ Ce fichier est lu au début de chaque session, par chaque membre de l'équipe. I
 - `plugins.md` : dépôts des plugins, propriétaires, publication des versions, licences, notes de version, interfaces.
 - `discord.md` : bot, patch notes, annonces des sorties.
 - `google.md` : YouTube, Gmail, Pinterest (réglages côté Google avant le code).
-- `divers.md` : ROCKY, trailer, scan ACRCloud, charte Nuit & Braise, navigateur.
+- `divers.md` : ROCKY, trailer, scan ACRCloud, IA des paroles, charte Nuit & Braise, navigateur.
 
 ## Erreurs déjà faites
 Quand une erreur est trouvée et corrigée, ajouter **une ligne** dans la note du sujet, rubrique « Pièges »

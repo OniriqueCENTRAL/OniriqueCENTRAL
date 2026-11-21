@@ -1,5 +1,6 @@
 // Les paroles écrites et calées mot par mot par une IA, pour ONIRIQUE CUT et ONIRIQUE CLOUD : la voix est d'abord isolée
-// (Demucs, assets/demucs-worker.js), puis Whisper l'écoute (assets/whisper-worker.js). Tout tourne dans le navigateur.
+// (Demucs, assets/demucs-worker.js). Des paroles déjà écrites sont calées lettre par lettre sur cette voix (assets/ctc-worker.js) ;
+// sinon Whisper les écrit (assets/whisper-worker.js), puis chaque mot est recalé de la même façon. Tout tourne dans le navigateur.
 //
 //   const lrc = await transcribe(audioBuffer, (message) => …)          // le morceau entier : la voix est isolée ici
 //   const lrc = await transcribe(vocalsBuffer, status, { isolated: true })
@@ -11,6 +12,12 @@ const stamp = (x) => { const cs = Math.round(x * 100); return String(Math.floor(
 /** Des mots datés en LRC mot par mot : une ligne par phrase (un silence, une ponctuation finale, une majuscule de début
  *  de phrase, ou 10 mots au plus). */
 export function wordsToLrc(words, ends = false, film = false) {
+  const lines = sentences(words, film);
+  return lines.map((l, k) => "[" + stamp(l[0].start) + "] " + l.map((w) => "<" + stamp(w.start) + ">" + w.text).join(" ")
+    + blank(ends, l.at(-1).end, lines[k + 1] && lines[k + 1][0].start)).join("\n");
+}
+/** Les mots datés, coupés en phrases (voir wordsToLrc). */
+function sentences(words, film) {
   const lines = [];
   let line = [];
   words.forEach((w, i) => {
@@ -24,8 +31,7 @@ export function wordsToLrc(words, ends = false, film = false) {
     line.push(w);
   });
   if (line.length) lines.push(line);
-  return lines.map((l, k) => "[" + stamp(l[0].start) + "] " + l.map((w) => "<" + stamp(w.start) + ">" + w.text).join(" ")
-    + blank(ends, l.at(-1).end, lines[k + 1] && lines[k + 1][0].start)).join("\n");
+  return lines;
 }
 /** ends : la fin d'une phrase avant un blanc (plus de 0,3 s sans voix), en ligne datée vide ; sinon rien. */
 function blank(ends, end, next) {
@@ -43,12 +49,20 @@ function close(a, b) {
   return d[a.length][b.length] <= Math.max(a.length, b.length) / 3 ? 1 : -1;
 }
 
+/** Les lignes d'un texte écrit, sans leurs temps (LRC ligne ou mot par mot), en mots. */
+const writtenLines = (text) => text.split("\n").map((l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(/<[^>]*>\s*/g, "").trim()).filter(Boolean).map((l) => l.split(/\s+/));
+
+/** rows : les mots datés ({ text, at, end }), ligne par ligne → LRC mot par mot. */
+const lrcOf = (rows, ends) => rows.map((ws, li) => "[" + stamp(ws[0].at) + "] " + ws.map((w) => "<" + stamp(w.at) + ">" + w.text).join(" ")
+  + blank(ends, ws.at(-1).end ?? ws.at(-1).at + .5, rows[li + 1] && rows[li + 1][0].at)).join("\n");
+
 /** Cale des paroles déjà écrites sur les mots entendus par l'IA : le texte écrit est gardé tel quel, l'IA ne donne que le
  *  moment de chaque mot. Alignement mot à mot (Needleman-Wunsch) ; un mot écrit que l'IA n'a pas reconnu prend un temps
- *  réparti entre ses voisins reconnus. Rend du LRC mot par mot, une ligne par ligne écrite. */
+ *  réparti entre ses voisins reconnus. Rend du LRC mot par mot, une ligne par ligne écrite. Sert quand le calage lettre par
+ *  lettre (assets/ctc-worker.js) ne peut pas tourner. */
 export function alignLyrics(text, heard, ends = false) {
-  const lines = text.split("\n").map((l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(/<[^>]*>\s*/g, "").trim()).filter(Boolean);
-  const written = lines.flatMap((l, line) => l.split(/\s+/).map((t) => ({ text: t, line, key: norm(t.replace(/\*\*/g, "")), at: null })));
+  const lines = writtenLines(text);
+  const written = lines.flatMap((l, line) => l.map((t) => ({ text: t, line, key: norm(t.replace(/\*\*/g, "")), at: null })));
   const n = written.length, m = heard.length, keys = heard.map((w) => norm(w.text));
   if (!n || !m) return "";
   // Le meilleur alignement : +2 mot identique, +1 mot proche, −1 mot différent ou sauté.
@@ -74,9 +88,7 @@ export function alignLyrics(text, heard, ends = false) {
     else if (to !== null) for (let k = a + 1; k < b; k++) written[k].at = Math.max(0, to - .35 * (b - k));
     else return "";
   }
-  const rows = lines.map((_, li) => written.filter((w) => w.line === li));
-  return rows.map((ws, li) => "[" + stamp(ws[0].at) + "] " + ws.map((w) => "<" + stamp(w.at) + ">" + w.text).join(" ")
-    + blank(ends, ws.at(-1).end ?? ws.at(-1).at + .5, rows[li + 1] && rows[li + 1][0].at)).join("\n");
+  return lrcOf(lines.map((_, li) => written.filter((w) => w.line === li)), ends);
 }
 
 /** Les mots d'un dialogue de film, nettoyés : sans les tirets de dialogue des sous-titres (« - T'es »), et une fin de mot
@@ -120,20 +132,57 @@ export async function isolateVoice(buffer, status = () => {}) {
   } catch { return null; }
 }
 
+/** Le calage lettre par lettre d'un texte écrit (lines : ses mots, ligne par ligne) sur la voix (assets/ctc-worker.js) :
+ *  [{ at, end }] pour chaque mot, ou null s'il ne peut pas tourner ici (pas de carte graphique adaptée, son trop long). */
+async function alignWritten(voice, lines, status, listening = "L'IA suit tes paroles sur la voix…") {
+  try {
+    const [audio] = await resample(voice, 16000, 1);
+    const out = await runWorker(new URL("ctc-worker.js?v=1", import.meta.url), { audio, lines }, [audio.buffer], (d) => status(d.phase === "download"
+      ? "Téléchargement de l'IA de calage (632 Mo, une seule fois sur cet appareil)… " + pct(d.value) : d.phase === "load" ? "IA de calage déjà sur cet appareil : chargement…"
+        : d.phase === "align" ? "Calage des mots…" : listening + " " + pct(d.value)));
+    return out.words;
+  } catch { return null; }
+}
+
 /** buffer : le morceau tel quel. voice : sa voix isolée, si on l'a déjà (sinon elle est isolée ici).
  *  written : des paroles déjà écrites (avec ou sans temps) à caler ; sinon l'IA les écrit elle-même.
- *  La voix isolée ne sert qu'à repérer où l'on chante : Whisper écoute le morceau tel quel, qu'il comprend mieux (mesuré sur
- *  deux titres de euhZ : 44,7 et 37,7 % de mots faux, contre 50,7 et 44,4 % sur la voix isolée, abîmée par la séparation). */
+ *  La voix isolée sert à caler les mots et à repérer où l'on chante : Whisper, lui, écoute le morceau tel quel, qu'il comprend
+ *  mieux (mesuré sur deux titres de euhZ : 44,7 et 37,7 % de mots faux, contre 50,7 et 44,4 % sur la voix isolée). Le calage,
+ *  au contraire, est bien plus juste sur la voix isolée (95 % des mots à moins de 250 ms, contre 90 % sur le morceau). */
 export async function transcribe(buffer, status = () => {}, { voice = null, language = "french", written = "", ends = false, film = false } = {}) {
   // film : un dialogue s'entend bien tel quel ; isoler la voix (172 Mo d'IA en plus) donnait exactement le même texte, en plus lent.
   const guideVoice = film ? buffer : voice || (await isolateVoice(buffer, status)) || buffer;
+  // Des paroles écrites : l'IA des lettres les suit sur la voix, sans passer par ce que Whisper croit entendre.
+  const lines = writtenLines(written);
+  if (lines.length) {
+    const words = await alignWritten(guideVoice, lines, status);
+    if (words) {
+      let k = 0;
+      const lrc = lrcOf(lines.map((l) => l.map((text) => ({ text, ...words[k++] }))), ends);
+      return { lrc, words: k, device: "gpu", aligned: true };
+    }
+  }
   const [audio] = await resample(buffer, 16000, 1), [guide] = await resample(guideVoice, 16000, 1);
   const out = await runWorker(new URL("whisper-worker.js?v=2", import.meta.url), { audio, guide, language }, [audio.buffer, guide.buffer], (d) => status(d.phase === "download"
     ? "Téléchargement de l'IA des paroles (760 Mo, une seule fois sur cet appareil)… " + pct(d.value) : d.phase === "load" ? "IA des paroles déjà sur cet appareil : chargement… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
-  const heard = film ? filmWords(out.words) : out.words;
+  const heard = film ? filmWords(out.words) : out.words.map((w) => ({ ...w, start: Math.max(0, w.start - WHISPER_LATE) }));
   if (written.trim() && heard.length) {
     const lrc = alignLyrics(written, heard, ends);
     return { lrc, words: lrc ? (lrc.match(/</g) || []).length : 0, device: out.device, aligned: true, heard };
   }
-  return { lrc: wordsToLrc(heard, ends, film), words: heard.length, device: out.device, aligned: false, heard };
+  const words = heard.length ? await refineWords(heard, guideVoice, film, status) : heard;
+  return { lrc: wordsToLrc(words, ends, film), words: words.length, device: out.device, aligned: false, heard: words };
+}
+
+// Dans une chanson, Whisper date ses mots 150 ms trop tard en moyenne (mesuré sur les titres du CLOUD calés à la main) : ses
+// temps sont avancés d'autant quand l'IA des lettres ne peut pas les recaler (26 → 58 % des mots à moins de 100 ms).
+const WHISPER_LATE = 0.15;
+
+/** Les mots écrits par Whisper, recalés par l'IA des lettres sur la voix, phrase par phrase (erreur médiane 160 → 50 ms) ;
+ *  tels quels si elle ne peut pas tourner ici. */
+async function refineWords(words, voice, film, status) {
+  const times = await alignWritten(voice, sentences(words, film).map((l) => l.map((w) => w.text)), status, "L'IA cale chaque mot sur la voix…");
+  if (!times) return words;
+  const out = words.map((w, i) => ({ ...w, start: times[i].at, end: Math.max(times[i].end, times[i].at) }));
+  return film ? filmWords(out) : out;
 }

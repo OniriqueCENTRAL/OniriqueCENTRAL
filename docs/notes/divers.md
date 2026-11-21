@@ -21,6 +21,18 @@
   Spotify for Artists, qui n'a pas d'API. Réservé aux fondateurs (rôle `founder`) : chaque lecture coûte un crédit
   CaptAPI, une par jour au plus par artiste (`server/src/spotifystats.js`). Clé posée par `onirique-captapi`.
 
+## IA des paroles (CUT, CLOUD : `site/assets/ai-lyrics.js`)
+- Demucs isole la voix ; des paroles écrites sont calées lettre par lettre sur cette voix (wav2vec2 français,
+  `ctc-worker.js` + `ctc-align.js`, 632 Mo, WebGPU avec demi-précision) ; sans texte, Whisper écrit puis chaque mot est
+  recalé de la même façon. Sans carte graphique adaptée, l'ancien calage par les mots de Whisper prend le relais.
+- Mesuré sur les titres du CLOUD calés à la main (8 titres mot par mot, 42 ligne par ligne) : erreur médiane 50 ms,
+  73 % des mots à moins de 100 ms (contre 160 ms et 26 % avant). Réglages dans `SETTINGS` de `ctc-align.js`.
+- Références : les titres calés à la main ont ~50 % de centièmes pairs et des écarts irréguliers ; ceux calés par l'IA
+  ont surtout des centièmes pairs, et des écarts réguliers trahissent des temps interpolés (pas une référence).
+- Pièges : les modèles MMS de Meta (forced-aligner) sont sous licence CC-BY-NC, interdite ici ; vérifier la licence de
+  tout modèle avant de l'essayer. Deux titres du CLOUD ont des temps faits sur une autre version du son (décalage
+  constant d'une minute) : les écarter d'une mesure.
+
 ## Application CENTRAL et navigateur
 - L'application reste sur Electron ; son coût vient de l'application elle-même, pas du moteur.
 - Navigateur : ~20 % de RAM en moins que Chrome, même CPU sur la page active. Ne pas promettre plus.

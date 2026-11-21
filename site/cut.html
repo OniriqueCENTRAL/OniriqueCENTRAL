@@ -2300,7 +2300,7 @@ async function autoLyrics() {
   const status = (text) => { $("lyrics-auto-status").textContent = text; };
   $("lyrics-auto").disabled = true;
   try {
-    const ai = await import("./assets/ai-lyrics.js?v=2");
+    const ai = await import("./assets/ai-lyrics.js?v=3");
     // La voix seule (séparée par Demucs, déjà calculée pour l’écoute des pistes) se comprend bien mieux que le morceau avec sa prod.
     status("Séparation de la voix…");
     let voice = null;
@@ -4370,7 +4370,7 @@ async function aiIsync(write = false) {
     const from = Math.floor(prefs.introIn * a.sampleRate), len = Math.max(1, Math.floor(introLen() * a.sampleRate));
     const part = new AudioBuffer({ length: len, numberOfChannels: a.numberOfChannels, sampleRate: a.sampleRate });
     for (let ch = 0; ch < a.numberOfChannels; ch++) part.copyToChannel(a.getChannelData(ch).subarray(from, from + len), ch);
-    const ai = await import("./assets/ai-lyrics.js?v=2");
+    const ai = await import("./assets/ai-lyrics.js?v=3");
     const written = write ? "" : prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
     const out = await aiWork(() => ai.transcribe(part, status, { written, ends: true, film: true }));
     if (!out.words) return status(written ? "L’IA n’a pas réussi à caler ce texte sur la réplique." : "L’IA n’a pas entendu de paroles dans la réplique.");
