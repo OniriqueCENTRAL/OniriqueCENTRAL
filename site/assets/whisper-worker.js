@@ -7,10 +7,13 @@
 //     →  { type: "done", device, words: [{ text, start, end }] }   ou   { type: "error", message }
 import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6/dist/transformers.min.js";
 
-// Sur la carte graphique : Whisper « large-v3-turbo » (bien plus juste en français, ~760 Mo) ; sur le processeur, « small »
+// Sur la carte graphique : Whisper « large-v3-turbo » (bien plus juste en français, 760 Mo à 1,6 Go) ; sur le processeur, « small »
 // (~250 Mo, plus rapide à faire tourner). Versions figées des modèles.
 const GPU = { model: "onnx-community/whisper-large-v3-turbo_timestamped", revision: "b3f77bf9a8c4d5ea3415827033d1ffea7955fd9a",
   device: "webgpu", dtype: { encoder_model: "q4", decoder_model_merged: "q4" } };
+// Sur une carte graphique qui calcule en demi-précision, l'encodeur garde ses poids sur 16 bits au lieu de 4 : 34,2 % de mots
+// faux au lieu de 36,5 % (24 titres du CLOUD, mieux ou pareil sur 22), même vitesse, mais ~1,6 Go à télécharger.
+const GPU16 = { ...GPU, dtype: { encoder_model: "fp16", decoder_model_merged: "q4" } };
 const CPU = { model: "onnx-community/whisper-small_timestamped", revision: "65caa70f294b46e1c33ff820aae6b16d048ab818", device: "wasm", dtype: "q8" };
 env.allowLocalModels = false;
 // Le modèle se garde dans les fichiers du navigateur (OPFS) : le cache web refuse les fichiers de plus de ~200 Mo, et le gros
@@ -42,6 +45,7 @@ async function transcriber(post) {
   if (ready) return ready;
   const adapter = self.navigator.gpu ? await self.navigator.gpu.requestAdapter().catch(() => null) : null;
   device = adapter ? "gpu" : "cpu";
+  const half = !!adapter && adapter.features.has("shader-f16");
   // Le téléchargement : plusieurs fichiers, dont on suit la somme.
   const files = new Map();
   const progress_callback = (x) => {
@@ -51,11 +55,13 @@ async function transcriber(post) {
     for (const [l, t] of files.values()) { loaded += l; total += t; }
     // Seuls les fichiers du modèle (.onnx) comptent : le moteur, lui, vient du cache ordinaire du navigateur.
     const fetching = [...files.keys()].some((f) => /\.onnx/.test(f) && !onDisk.has(String(f).split("/").pop()));
-    post({ type: "progress", phase: fetching ? "download" : "load", value: loaded / total });
+    post({ type: "progress", phase: fetching ? "download" : "load", value: loaded / total, size: half ? "1,6 Go" : adapter ? "760 Mo" : "250 Mo" });
   };
-  const { model, ...options } = adapter ? GPU : CPU;
+  const { model, ...options } = half ? GPU16 : adapter ? GPU : CPU;
   ready = pipeline("automatic-speech-recognition", model, { progress_callback, ...options });
   ready.catch(() => { ready = null; });
+  // L'ancien encodeur sur 4 bits (425 Mo) ne sert plus sur cette carte : on rend la place.
+  if (half) ready.then(async () => { for await (const name of (await folder()).keys()) if (name.endsWith("encoder_model_q4.onnx")) await (await folder()).removeEntry(name); }).catch(() => {});
   return ready;
 }
 

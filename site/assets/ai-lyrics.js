@@ -163,8 +163,8 @@ export async function transcribe(buffer, status = () => {}, { voice = null, lang
     }
   }
   const [audio] = await resample(buffer, 16000, 1), [guide] = await resample(guideVoice, 16000, 1);
-  const out = await runWorker(new URL("whisper-worker.js?v=2", import.meta.url), { audio, guide, language }, [audio.buffer, guide.buffer], (d) => status(d.phase === "download"
-    ? "Téléchargement de l'IA des paroles (760 Mo, une seule fois sur cet appareil)… " + pct(d.value) : d.phase === "load" ? "IA des paroles déjà sur cet appareil : chargement… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
+  const out = await runWorker(new URL("whisper-worker.js?v=3", import.meta.url), { audio, guide, language }, [audio.buffer, guide.buffer], (d) => status(d.phase === "download"
+    ? "Téléchargement de l'IA des paroles (" + (d.size || "760 Mo") + ", une seule fois sur cet appareil)… " + pct(d.value) : d.phase === "load" ? "IA des paroles déjà sur cet appareil : chargement… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
   const heard = film ? filmWords(out.words) : out.words.map((w) => ({ ...w, start: Math.max(0, w.start - WHISPER_LATE) }));
   if (written.trim() && heard.length) {
     const lrc = alignLyrics(written, heard, ends);
