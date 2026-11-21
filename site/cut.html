@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=9887cfcb"></script>
+<script src="assets/i18n.js?v=fa46659e"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -108,6 +108,78 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .cloud-short { display: inline-flex; justify-self: center; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.3); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
 .cloud-short:hover { border-color: var(--ember); }
 .cloud-short svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+/* AUTOMATIQUE (fondateurs) : le bouton, puis les étapes et la barre de progression pendant que le TikTok se monte */
+.auto { display: grid; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+.auto .go { padding: 15px 26px; font-size: 14px; }
+.auto-run { display: grid; gap: 10px; }
+.auto-run p { margin: 0; }
+.auto-run .bar { height: 10px; }
+.auto-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.auto-steps li { padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); }
+.auto-steps li.on { border-color: var(--ember); color: #fff; }
+.auto-steps li.done { background: rgba(255,255,255,.06); color: var(--mist); }
+.auto-steps li.fail { border-color: var(--ember); background: rgba(var(--acc-lo), .45); color: #fff; }
+/* L’arborescence (fondateurs) : ce que CUT a appris, branche par branche, et comment elle est nourrie */
+.tree-body, #tree-page .cloud-head { max-width: 1080px; margin: 0 auto; }
+.tree-body { display: grid; gap: 14px; }
+#tree-close { flex: none; white-space: nowrap; }
+.tree-body h3 { margin: 18px 0 0; font: 500 12px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.tree-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.tree-kpis > div { display: grid; gap: 2px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.2); }
+.tree-kpis b { font: 800 28px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.tree-kpis span { color: var(--mist); font-size: 14px; }
+.tree-kpis small { color: var(--haze); font-size: 12px; }
+.tree-props { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.tree-prop { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid var(--ember); border-radius: 14px; background: rgba(0,0,0,.25); }
+.tree-prop p { margin: 0; font-size: 15px; }
+.tree-prop s { color: var(--haze); }
+.tree-prop small { color: var(--haze); font-size: 12px; }
+.tree-feed label { display: grid; gap: 6px; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.tree-feed textarea, .tree-feed input, .tree-feed select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.35);
+  color: var(--mist); font: 400 15px/1.5 var(--f-body); text-transform: none; letter-spacing: 0; }
+.tree-feed select { background: var(--deep); }
+.tree-feed textarea { min-height: 90px; resize: vertical; }
+.tree-feed :is(textarea, input, select):focus { outline: none; border-color: var(--ember); }
+.tree-value { display: grid; gap: 6px; }
+.tree-value .muted { font-size: 13px; }
+.tree, .tree ul { margin: 0; padding: 0; list-style: none; }
+.tree ul { padding-left: 26px; }
+.tree ul > li { position: relative; }
+.tree ul > li::before { content: ""; position: absolute; left: -15px; top: 0; bottom: 0; border-left: 1px solid rgba(255,210,214,.2); }
+.tree ul > li:last-child::before { bottom: auto; height: 21px; }
+.tree ul > li::after { content: ""; position: absolute; left: -15px; top: 21px; width: 11px; border-top: 1px solid rgba(255,210,214,.2); }
+.tree > li + li { margin-top: 6px; }
+.branch > summary { display: flex; align-items: baseline; gap: 12px; padding: 10px 4px; cursor: pointer; list-style: none; }
+.branch > summary::-webkit-details-marker { display: none; }
+.branch > summary b { font: 700 17px var(--f-display); }
+.branch > summary b::before { content: "▸ "; color: var(--ember-text); }
+.branch[open] > summary b::before { content: "▾ "; }
+.branch > summary small, .tree .lesson small { color: var(--haze); font-size: 12px; }
+.tree .lesson { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 8px 4px 8px 0; font-size: 14px; }
+.tree .lesson p { margin: 0; flex: 1 1 320px; }
+.tree .lesson.base p { color: var(--label); }
+.tree .lesson .mini { padding: 4px 8px; }
+.leaf { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(140px, 1fr) minmax(150px, 1.1fr); gap: 4px 14px; align-items: center; width: 100%;
+  padding: 10px 12px; border: 0; border-radius: 10px; background: transparent; color: var(--mist); text-align: left; cursor: pointer; font: 400 14px/1.35 var(--f-body); }
+.leaf:hover, .leaf[aria-expanded="true"] { background: rgba(255,255,255,.04); }
+.leaf b { color: #fff; margin-right: 8px; }
+.leaf small { color: var(--haze); font-size: 12px; }
+.leaf .from { white-space: nowrap; }
+.leaf .from.lit { color: var(--ember-text); }
+.leaf-more { display: grid; gap: 8px; padding: 2px 12px 14px; color: var(--label); font-size: 13px; }
+.leaf-more p { margin: 0; }
+.leaf-more > .mini { justify-self: start; }
+.dist { display: grid; gap: 5px; max-width: 520px; }
+.dist div { display: grid; grid-template-columns: minmax(90px, 170px) 1fr 44px; gap: 10px; align-items: center; }
+.dist span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dist i { display: block; height: 6px; min-width: 2px; border-radius: 0 3px 3px 0; background: var(--ember); }
+.dist small { text-align: right; font-variant-numeric: tabular-nums; }
+.tree-journal { display: grid; margin: 0; padding: 0; list-style: none; }
+.tree-journal li { display: grid; grid-template-columns: 120px 190px 1fr; gap: 4px 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.tree-journal small { color: var(--haze); font-variant-numeric: tabular-nums; }
+.tree-journal b { font-weight: 600; color: var(--mist); }
+.tree-journal .note b, .tree-journal .correction b { color: var(--ember-text); }
+@media (max-width: 700px) { .leaf { grid-template-columns: 1fr; } .tree-journal li { grid-template-columns: 1fr; } .tree ul { padding-left: 18px; } }
 .cloud-open { width: 100%; display: flex; justify-content: center; gap: 10px; align-items: baseline; }
 .cloud-open small { font-weight: 500; opacity: .75; }
 .cloud-page { position: fixed; inset: 0; z-index: 90; overflow-y: auto; padding: 0 24px 40px; background: var(--night); }
@@ -514,6 +586,15 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
           <div class="row" id="bpm-row" hidden>
             <div class="bpm"><button class="mini" type="button" id="bpm-half" title="Deux fois plus lent">½</button><output id="bpm">—</output><button class="mini" type="button" id="bpm-double" title="Deux fois plus vite">×2</button><small>BPM</small></div>
             <div class="row" style="gap:6px"><span class="muted">Caler les coupes</span><button class="mini" type="button" id="nudge-minus" title="Coupes un peu plus tôt">−</button><button class="mini" type="button" id="nudge-plus" title="Coupes un peu plus tard">+</button></div>
+          </div>
+          <div class="auto" id="auto-box" hidden>
+            <div class="row"><button class="go" type="button" id="auto-go">Automatique</button><button class="mini" type="button" id="tree-open">Voir l’arborescence</button></div>
+            <p class="muted">Un TikTok monté tout seul avec ce que l’arborescence a appris : le meilleur passage, les paroles, le style, une réplique de film qui répond au son, puis l’export, gardé dans ton cloud CUT. Corrige ensuite ce qui ne va pas et réexporte : l’arborescence apprend de tes corrections.</p>
+            <div class="auto-run" id="auto-run" hidden>
+              <ol class="auto-steps" id="auto-steps"></ol>
+              <div class="bar" role="progressbar" aria-label="Création du TikTok" aria-valuemin="0" aria-valuemax="100" id="auto-meter"><i id="auto-bar"></i></div>
+              <p class="muted" id="auto-text" aria-live="polite"></p>
+            </div>
           </div>
         </div>
       </div>
@@ -924,6 +1005,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             </div>
           </details>
           <label class="check mute" id="keep-box" hidden><input type="checkbox" id="keepCloud"> Garder aussi dans mon cloud CUT</label>
+          <label class="check mute"><input type="checkbox" id="learn"> Aider CUT à apprendre : les réglages du montage partent à l’export, jamais le son, les images ni les textes</label>
           <div class="adv-links"><span>Avancé</span><button class="mini" type="button" id="adv-open" disabled>Timeline des sons</button><button class="mini" type="button" id="adv-open-video" disabled>Timeline vidéo</button></div>
           <div id="lib-panel" hidden><button class="go cloud-open" type="button" id="cloud-open">Mes vidéos CUT <small>voir, programmer, modifier</small></button></div>
           <!-- Les Shorts YouTube des fondateurs : un menu déroulant, fermé tant qu’on ne l’ouvre pas. -->
@@ -1009,6 +1091,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
       <button class="go wide" type="button" id="export-hq" disabled title="1080 × 1920, 60 images par seconde, 50 Mb/s : la vidéo la plus fluide et la plus nette, fichier plus lourd">Export Haute qualité</button>
       <button class="cloud-short" type="button" id="cloud-short" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4zM13 5h7v6h-7zM4 13h7v6H4zM13 13h7v6h-7z"/></svg>Mes vidéos CUT</button>
+      <button class="cloud-short" type="button" id="tree-short" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v4H4zM14 10h6v4h-6zM14 17h6v4h-6zM7 8v11h7M7 12h7"/></svg>Arborescence</button>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       </div>
     </aside>
@@ -1029,6 +1112,14 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       </div>
       <div class="cloud-grid" id="lib-list"></div>
       <p class="muted cloud-foot">Sur ton téléphone : <a href="mes-videos" target="_blank" rel="noopener">onirique.store/mes-videos</a> (appweb ONIRIQUE CUT) pour envoyer tes vidéos vers TikTok.</p>
+    </section>
+
+    <section class="cloud-page" id="tree-page" hidden aria-label="Arborescence de CUT">
+      <header class="cloud-head">
+        <div><h2>L’arborescence de CUT</h2><p class="muted" id="tree-info"></p></div>
+        <button class="mini" type="button" id="tree-close">Fermer ✕</button>
+      </header>
+      <div class="tree-body" id="tree-body"></div>
     </section>
 
     <section class="adv" id="adv" hidden aria-label="Timeline des sons">
@@ -1203,6 +1294,7 @@ let clips = [], segments = [], lyrics = [], lyricsAll = [], seed = 1, focus = 0;
 // Le titre de ONIRIQUE CLOUD en cours (null pour un fichier) et ses paroles telles que CLOUD les a.
 let cloud = null;
 let isFounder = false; // membres ONIRIQUE, admins et fondateurs (pas les abonnés) : un cloud CUT pour garder leurs vidéos et les Shorts
+let role = ""; // le rôle du compte : AUTOMATIQUE et l’arborescence sont aux fondateurs
 const LAST = "onirique.cut.last";
 
 // ——— Accès : membres ONIRIQUE et abonnés CLOUD (le même droit que ONIRIQUE CLOUD) ———
@@ -1213,6 +1305,7 @@ async function gate() {
   const me = await response.json().catch(() => ({}));
   if (!(me.rights || []).includes("sounds")) return lock("ONIRIQUE CUT est réservé aux membres", $("locked-text").textContent, "cloud", "Voir l’abonnement");
   isFounder = !!(me.user && ["vip", "beta", "betaf", "admin", "founder"].includes(me.user.role));
+  role = me.user?.role || "";
   $("studio").hidden = false;
   start();
 }
@@ -1745,6 +1838,7 @@ async function loadSound(file, extra = {}) {
     showCloudLyrics();
     $("audio-state").textContent = "« " + file.name + " » · " + OniriqueAudio.clock(buffer.duration) + (bpm ? "" : " · tempo introuvable, règle-le à la main");
     $("bpm-row").hidden = $("step-window").hidden = $("step-clips").hidden = $("step-edit").hidden = false;
+    $("auto-box").hidden = role !== "founder";
     refresh();
     offerClips();
   } catch (error) {
@@ -2357,6 +2451,7 @@ function aiStems(a, n, what, b = sound.buffer, status = "stem-status") {
           ? "Téléchargement de l’IA de séparation (172 Mo, une seule fois sur cet appareil)… " + pct(data.value)
           : data.phase === "load" ? "IA de séparation déjà sur cet appareil : chargement…"
           : "Séparation par IA de " + what + "… " + pct(data.value);
+        if (autoSay && data.type !== "done" && data.type !== "error") autoSay($(status).textContent);
       };
       demucs.onerror = (event) => reject(new Error(event.message || "L’IA de séparation n’a pas pu démarrer."));
       demucs.postMessage({ L, R }, [L.buffer, R.buffer]);
@@ -2467,7 +2562,7 @@ async function autoLyrics() {
   if (!sound.buffer) return;
   // Des paroles déjà là : l’IA les cale mot par mot sans toucher au texte (aucune faute) ; sinon elle les écrit.
   const written = $("lyrics").value.trim();
-  const status = (text) => { $("lyrics-auto-status").textContent = text; };
+  const status = (text) => { $("lyrics-auto-status").textContent = text; if (autoSay) autoSay(text); };
   $("lyrics-auto").disabled = true;
   try {
     const ai = await import("./assets/ai-lyrics.js?v=4");
@@ -3741,11 +3836,13 @@ function setStatus(message, part) {
   $("status").hidden = !message;
   $("status-text").textContent = message || "";
   $("status-bar").style.width = Math.round((part || 0) * 100) + "%";
+  if (autoSay && message) autoSay(message, part || 0);
 }
 const fileName = (ext, suffix = "") => (($("title").value.trim() || sound.name || "video").replace(/[\\/:*?"<>|]+/g, "").slice(0, 60) + " - ONIRIQUE CUT" + suffix + "." + ext);
 function save(blob, name) { const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name }); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 60_000); }
 
-/** L’export : une vidéo, ou une par fond (« Une vidéo par fond ») rangées dans un dossier choisi quand le navigateur le permet. */
+/** L’export : une vidéo, ou une par fond (« Une vidéo par fond ») rangées dans un dossier choisi quand le navigateur le permet.
+ *  Réussi : { cloud } (gardée ou non dans le cloud CUT) ; sinon undefined. */
 async function exportVideo(series = null, high = false) {
   const mime = pickMime();
   if (!encoderCodec && (!mime || !screen.captureStream)) { alert("Ce navigateur ne sait pas enregistrer de vidéo. Ouvre ONIRIQUE CUT dans Chrome, Edge ou Safari."); return; }
@@ -3793,8 +3890,10 @@ async function exportVideo(series = null, high = false) {
       + (shorts.length ? " Short YouTube programmé : " + shorts.join(", ") + "." : "") + (shortError ? " Short YouTube : " + shortError : "")
       + (reels.length ? " Reel Instagram programmé : " + reels.join(", ") + "." : "") + (reelError ? " Reel Instagram : " + reelError : ""), 1);
     if (savedToCloud) renderLibrary();
+    if (!series) learnSend();
     // Fini pendant qu’on était sur un autre onglet : l’onglet le dit dans son titre jusqu’à ce qu’on y revienne.
     if (document.hidden) { const title = document.title; document.title = "✓ Vidéo prête · " + title; document.addEventListener("visibilitychange", () => { document.title = title; }, { once: true }); }
+    return { cloud: savedToCloud > 0 };
   } catch (error) {
     setStatus(error.message || "L’export a échoué.", 0);
   } finally {
@@ -4447,6 +4546,281 @@ function openVideo(v, edit, sub) {
   };
 }
 
+// ——— L’arborescence de CUT (serveur : cutbrain.js) : ce qui fait un TikTok qui marche, appris des TikToks faits ici, des
+// corrections après AUTOMATIQUE et des leçons des fondateurs. Chaque export lui envoie les réglages du montage, jamais le
+// son, les images ni les textes (case « Aider CUT à apprendre »). ———
+let learnKeys = null; // les réglages que l’arborescence apprend (ses feuilles)
+let autoRunning = false, autoSay = null; // pendant AUTOMATIQUE : les messages des IA et de l’export vont dans sa barre
+let autoApplied = null; // { sound, values } : ce qu’AUTOMATIQUE a réglé sur ce son ; un export fait ensuite à la main dit ce qui a été corrigé
+async function learnSend() {
+  if (prefs.learn === false) return;
+  const snapshot = { ...prefs }, auto = autoRunning, before = autoApplied && autoApplied.sound === setKey() ? autoApplied.values : null;
+  try {
+    learnKeys ||= (await bankFetch("/api/cut/learn")).keys;
+    const settings = Object.fromEntries(learnKeys.filter((k) => k in snapshot).map((k) => [k, snapshot[k]]));
+    await bankFetch("/api/cut/learn", jsonBody("POST", { kind: auto ? "auto" : "export", settings, ...(!auto && before ? { auto: before } : {}) }));
+  } catch { /* l’apprentissage ne gêne jamais un export */ }
+}
+
+// ——— AUTOMATIQUE (fondateurs) : un TikTok monté tout seul avec ce que l’arborescence a appris, puis exporté ———
+const AUTO_STEPS = [["Passage", 3], ["Paroles", 35], ["Style", 2], ["Clips", 10], ["Réplique", 20], ["Export", 30]];
+/** La luminosité moyenne (0 à 1) d’un clip vidéo entre from et to s : 5 images réduites à 16 × 16. */
+async function lumaOf(c, from, to) {
+  const v = Object.assign(document.createElement("video"), { muted: true, preload: "auto", src: c.url });
+  await new Promise((resolve) => { v.onloadeddata = v.onerror = resolve; setTimeout(resolve, 4000); });
+  const canvas = Object.assign(document.createElement("canvas"), { width: 16, height: 16 }), g2 = canvas.getContext("2d", { willReadFrequently: true });
+  let sum = 0, n = 0;
+  for (let i = 0; i < 5; i++) {
+    v.currentTime = from + (Math.max(from + .1, to) - from) * (i + .5) / 5;
+    await new Promise((resolve) => { v.onseeked = resolve; setTimeout(resolve, 2000); });
+    if (v.readyState < 2) continue;
+    g2.drawImage(v, 0, 0, 16, 16);
+    const d = g2.getImageData(0, 0, 16, 16).data;
+    for (let j = 0; j < d.length; j += 4) { sum += (.2126 * d[j] + .7152 * d[j + 1] + .0722 * d[j + 2]) / 255; n++; }
+  }
+  v.removeAttribute("src"); v.load();
+  return n ? sum / n : 1; // illisible : l’image froide reste
+}
+/** La meilleure fin de réplique parmi les phrases d’un clip (branche « Le film » de l’arborescence) : elle reprend des mots du
+ *  passage, finit sur une question et dure au moins 6 s. */
+function bestReplica(phrases, duration) {
+  const passage = lyrics.filter((l) => l.at >= sound.start - .5 && l.at < sound.start + span());
+  const sung = echoWords((passage.length ? passage : lyrics).map((l) => l.text).join(" "));
+  let best = null;
+  phrases.forEach((p, k) => {
+    const r = replicaEnding(phrases, k, duration), len = r.to - r.from;
+    const hits = echoWords(r.phrases.flatMap((x) => x.words.map((w) => w.text)).join(" ")).filter((w) => sung.some((s) => echoes(w, s))).length;
+    const score = 2 * hits + (/\?\s*$/.test(p.words.map((w) => w.text).join(" ")) ? 1.5 : 0) + (len >= 6 ? 1 : 0) - (len < 2.5 ? 3 : 0);
+    if (!best || score > best.score) best = { k, score };
+  });
+  return best;
+}
+const shuffled = (list) => list.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(([, x]) => x);
+async function autoTikTok() {
+  if (!sound.buffer || autoRunning || busy.export) return;
+  autoRunning = true;
+  const sum = AUTO_STEPS.reduce((s, x) => s + x[1], 0), items = AUTO_STEPS.map(([name]) => node("li", { textContent: name }));
+  let k = -1, from = 0, reached = 0, subDone = 0, subLast = 0, subPart = 0;
+  const paint = (part, message) => {
+    reached = Math.max(reached, from + AUTO_STEPS[k][1] * Math.min(1, Math.max(0, part)));
+    const p = Math.round((reached / sum) * 100);
+    $("auto-bar").style.width = p + "%"; $("auto-meter").setAttribute("aria-valuenow", p);
+    if (message) $("auto-text").textContent = p + " % · " + message;
+  };
+  const step = (message) => {
+    if (k >= 0) { items[k].className = "done"; from += AUTO_STEPS[k][1]; }
+    items[++k].className = "on"; subDone = subLast = subPart = 0;
+    paint(0, message);
+  };
+  // Une étape d’IA enchaîne plusieurs phases de 0 à 100 % (téléchargement, puis calcul…) : chacune remplit 60 % de ce qui reste.
+  autoSay = (message, part) => {
+    if (part != null) return paint(part, message);
+    const p = Number(/(\d+)\s*%/.exec(message)?.[1]) / 100;
+    if (Number.isFinite(p)) { if (p < subLast) subDone = subPart; subLast = p; subPart = subDone + (1 - subDone) * .6 * p; }
+    paint(subPart, message);
+  };
+  $("auto-steps").replaceChildren(...items);
+  $("auto-run").hidden = false; $("auto-go").disabled = true;
+  const keep = { ytAuto: prefs.ytAuto, igAuto: prefs.igAuto };
+  try {
+    step("Ce que l’arborescence a appris…");
+    const learnt = (await bankFetch("/api/cut/brain")).values;
+    stop(); manual = null; position = 0;
+    prefs.duration = learnt.duration; savePrefs(); syncAll(); sound.start = bestStart(); refresh();
+    paint(1, "Le meilleur passage : " + OniriqueAudio.clock(sound.start) + ", " + learnt.duration + " s.");
+
+    step("Les paroles…");
+    await autoLyrics();
+
+    step("Le style appris…");
+    const preset = PRESETS[learnt.preset] || PRESETS.classic;
+    Object.assign(prefs, TEXT_STYLES[learnt.textStyle] || TEXT_STYLES[preset.textStyle], preset, learnt, { batch: "one", afterClip: -1 });
+    savePrefs(); syncAll();
+    await Promise.all([prefs.lyricFont, prefs.iFont].map((f) => { const [family, weight] = fontOf(f); return document.fonts.load(weight + ' 80px "' + family + '"').catch(() => {}); }));
+
+    step(prefs.introOn ? "Des films pour la réplique…" : "Les clips…");
+    const fromBank = prefs.introOn ? !clips.some((c) => c.kind === "video") : !clips.length;
+    if (fromBank) {
+      const bank = (await bankFetch("/api/cut/backgrounds")).backgrounds, films = bank.filter((b) => b.type.startsWith("video/"));
+      // shortcut: les fonds sont tirés au hasard dans la banque (3 films essayés, sinon 4 fonds) ; l’arborescence ne choisit pas encore le film.
+      const picks = prefs.introOn && films.length ? shuffled(films).slice(0, 3) : shuffled(bank).slice(0, 4);
+      for (const [i, b] of picks.entries()) await bankAdd(b, (t) => autoSay(t, (i + (Number(/(\d+)\s*%/.exec(t)?.[1]) || 0) / 100) / picks.length));
+    }
+    if (!clips.length) throw new Error("aucun clip : ajoute des vidéos, ou garde des fonds dans ta banque de fonds.");
+
+    step(prefs.introOn ? "La réplique…" : "Pas de réplique dans ce style.");
+    if (prefs.introOn) {
+      const films = clips.map((c, i) => [c, i]).filter(([c]) => c.kind === "video");
+      let pick = null;
+      for (const [n, [c, i]] of films.entries()) {
+        prefs.introClip = i;
+        autoSay("L’IA écoute « " + c.name + " » (" + (n + 1) + " / " + films.length + ")…", n / films.length);
+        await findReplica();
+        const phrases = found.get(introKey()), r = phrases && phrases.length ? bestReplica(phrases, c.duration) : null;
+        if (r && (!pick || r.score > pick.score)) pick = { ...r, i };
+      }
+      if (pick && fromBank && prefs.filmContinue && clips.length > 1) { const file = clips[pick.i].file; dropClips(); await addClips([file]); pick.i = 0; } // le film continue : les autres films essayés ne servent pas
+      if (pick) {
+        prefs.introClip = pick.i; savePrefs(); refresh();
+        await pickReplica(pick.k, false);
+        const c = introClip(), end = prefs.introIn + introLen();
+        // La recette : une image froide après le drop seulement sur un film clair.
+        // shortcut: seuil de 0,25 posé sans mesure ; à régler si un film clair perd son image froide (ou l’inverse).
+        if (prefs.coldDrop && c && await lumaOf(c, end, Math.min(c.duration, end + span())) < .25) prefs.coldDrop = false;
+      } else prefs.introOn = false;
+      savePrefs(); syncAll(); refresh();
+      paint(1, pick ? "Réplique trouvée dans « " + introClip().name + " »." : "Aucun dialogue entendu dans les films : le TikTok se fait sans réplique.");
+    }
+
+    step("Export de la vidéo…");
+    autoApplied = { sound: setKey(), values: Object.fromEntries(Object.keys(learnt).map((key) => [key, prefs[key]])) };
+    prefs.ytAuto = prefs.igAuto = false; // un TikTok d’AUTOMATIQUE ne part jamais seul sur YouTube ni sur Instagram
+    const done = await exportVideo();
+    if (!done) throw new Error($("status-text").textContent || "l’export n’a pas abouti.");
+    items[k].className = "done";
+    paint(1, "Ton TikTok est prêt : il est dans tes téléchargements" + (done.cloud ? " et dans « Mes vidéos CUT »" : "")
+      + ". Regarde-le, corrige ce qui ne va pas, puis réexporte : l’arborescence apprend de tes corrections.");
+  } catch (error) {
+    if (items[k]) items[k].className = "fail";
+    $("auto-text").textContent = "AUTOMATIQUE s’est arrêté : " + error.message;
+  } finally {
+    Object.assign(prefs, keep); savePrefs();
+    autoSay = null; autoRunning = false; $("auto-go").disabled = false;
+  }
+}
+
+// ——— Le menu Arborescence (fondateurs) : chaque branche et ses réglages, d’où ils viennent et ce que les TikToks ont choisi ;
+// les propositions à valider ; les leçons ; le journal de ce qui la nourrit ———
+const KINDS = { export: "TikTok fait à la main", correction: "Corrigé après AUTOMATIQUE", auto: "Fait par AUTOMATIQUE", note: "Leçon d’un fondateur" };
+const plural = (n, word) => n + " " + word + (n > 1 ? "s" : "");
+const dayText = (ms) => new Date(ms).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+/** Un réglage tel qu’on le lit dans CUT (« Coupe franche », « 30 s », « Oui »). */
+const valueText = (l, v) => (l.type === "bool" ? (v ? "Oui" : "Non") : l.options && l.options[v] != null ? l.options[v]
+  : l.type === "number" ? String(v).replace(".", ",") + (l.unit ? "\u00a0" + l.unit : "") : String(v));
+let treeTarget = ""; // la feuille ou la branche que la prochaine leçon nourrit
+async function renderTree() {
+  const box = $("tree-body");
+  if (!box.children.length) box.append(node("p", { className: "muted", textContent: "Chargement…" }));
+  let brain;
+  try { brain = await bankFetch("/api/cut/brain"); } catch (error) { box.replaceChildren(node("p", { className: "muted", textContent: error.message })); return; }
+  const leaves = new Map(brain.branches.flatMap((b) => b.leaves.map((l) => [l.key, { ...l, branch: b }])));
+  const c = brain.counts, w = brain.week, hand = (c.export || 0) + (c.correction || 0), weekHand = (w.export || 0) + (w.correction || 0);
+  $("tree-info").textContent = "Au départ, " + brain.source + ". AUTOMATIQUE suit ses réglages ; les TikToks faits sur CUT et tes leçons les font évoluer.";
+
+  const kpi = (n, label, sub) => node("div", {}, node("b", { textContent: String(n) }), node("span", { textContent: label }), node("small", { textContent: sub }));
+  const kpis = node("div", { className: "tree-kpis" },
+    kpi(hand, "TikToks faits sur CUT", brain.founders + " des fondateurs, " + (hand - brain.founders) + " des autres comptes"),
+    kpi(c.correction || 0, "Corrigés après AUTOMATIQUE", "un réglage corrigé compte triple"),
+    kpi(c.auto || 0, "Faits par AUTOMATIQUE", "ils ne votent pas : l’arbre ne s’apprend pas lui-même"),
+    kpi(c.note || 0, "Leçons des fondateurs", "une leçon peut régler une feuille tout de suite"));
+  const week = node("p", { className: "muted", style: "margin:0", textContent: "Ces 7 derniers jours : " + plural(weekHand, "TikTok") + " fait" + (weekHand > 1 ? "s" : "") + " sur CUT, "
+    + plural(w.correction || 0, "correction") + ", " + plural(w.auto || 0, "TikTok") + " d’AUTOMATIQUE, " + plural(w.note || 0, "leçon") + "." });
+
+  const decide = (p, decision) => async () => {
+    try { await bankFetch("/api/cut/brain/proposals", jsonBody("POST", { key: p.key, value: p.value, decision })); } catch (error) { alert(error.message); }
+    renderTree();
+  };
+  const props = brain.proposals.map((p) => {
+    const l = leaves.get(p.key);
+    return node("div", { className: "tree-prop" },
+      node("small", { textContent: l.branch.label + " › " + l.label }),
+      node("p", {}, node("s", { textContent: valueText(l, p.from) }), " → ", node("b", { textContent: valueText(l, p.value) })),
+      node("small", { textContent: "Choisi à " + Math.round(p.share * 100) + " %, sur " + plural(p.n, "TikTok") }),
+      node("div", { className: "row" }, node("button", { className: "go", type: "button", textContent: "Valider", onclick: decide(p, "approve") }),
+        node("button", { className: "mini", type: "button", textContent: "Refuser", onclick: decide(p, "refuse") })));
+  });
+
+  // Nourrir l’arbre : une leçon sur tout l’arbre, une branche ou une feuille (avec, pour une feuille, le réglage à prendre).
+  const target = node("select", {}, node("option", { value: "", textContent: "Tout l’arbre" }), ...brain.branches.map((b) => node("optgroup", { label: b.label },
+    node("option", { value: b.id, textContent: "Toute la branche « " + b.label + " »" }), ...b.leaves.map((l) => node("option", { value: l.key, textContent: l.label })))));
+  const text = node("textarea", { rows: 3, maxLength: 600, placeholder: "Ce qui marche, ce qu’il faut éviter, et pourquoi." });
+  const link = node("input", { type: "url", placeholder: "https://www.tiktok.com/@…/video/…" });
+  const valueBox = node("div", { className: "tree-value" });
+  let valueInput = null;
+  const syncValue = () => {
+    treeTarget = target.value;
+    const l = leaves.get(target.value);
+    const choices = l && (l.type === "bool" ? { true: "Oui", false: "Non" } : l.options || (l.buckets && Object.fromEntries(l.buckets.map((b) => [b, b + " " + l.unit]))));
+    valueInput = !l ? null : choices
+      ? node("select", {}, node("option", { value: "", textContent: "Ne rien régler" }), ...Object.entries(choices).map(([v, t]) => node("option", { value: v, textContent: t })))
+      : node("input", l.type === "number" ? { type: "number", min: l.min, max: l.max, step: l.step, placeholder: "Ne rien régler" } : { type: "text", maxLength: 7, placeholder: "#ff2525 (vide : ne rien régler)" });
+    valueBox.replaceChildren(...(l ? [node("label", {}, "Le réglage à prendre tout de suite (aujourd’hui : " + valueText(l, l.value) + ")", valueInput)] : []));
+  };
+  target.value = treeTarget; target.onchange = syncValue; syncValue();
+  const send = node("button", { className: "go", type: "button", textContent: "Nourrir l’arbre" });
+  send.onclick = async () => {
+    const l = leaves.get(target.value), raw = valueInput ? valueInput.value.trim() : "";
+    const value = !l || raw === "" ? undefined : l.type === "bool" ? raw === "true" : l.type === "number" ? Number(raw) : raw;
+    send.disabled = true;
+    try { await bankFetch("/api/cut/brain/notes", jsonBody("POST", { leaf: target.value, text: text.value, link: link.value.trim(), value })); treeTarget = ""; renderTree(); }
+    catch (error) { alert(error.message); send.disabled = false; }
+  };
+  const form = node("details", { className: "panel tree-feed", open: !!treeTarget || !brain.lessons.length },
+    node("summary", { textContent: "Nourrir l’arbre : une leçon, un TikTok d’exemple, un réglage" }),
+    node("div", { className: "stack" }, node("label", {}, "Ce que tu lui apprends", target), node("label", {}, "La leçon", text), valueBox,
+      node("label", {}, "Un TikTok d’exemple (facultatif)", link), node("div", { className: "row" }, send)));
+
+  const lessonNode = (x) => {
+    const l = leaves.get(x.leaf), set = !!l && Object.hasOwn(x.settings, l.key);
+    const remove = node("button", { className: "mini", type: "button", textContent: "Retirer", title: "Retirer cette leçon" });
+    remove.onclick = async () => {
+      if (!confirm("Retirer cette leçon ?" + (set ? " Le réglage qu’elle a posé revient à celui d’avant." : ""))) return;
+      try { await bankFetch("/api/cut/brain/notes/" + x.id, { method: "DELETE" }); } catch (error) { alert(error.message); }
+      renderTree();
+    };
+    return node("li", { className: "lesson" }, node("p", { textContent: (x.text || "") + (set ? (x.text ? " → " : "→ ") + valueText(l, x.settings[l.key]) : "") }),
+      node("small", { textContent: (x.author || "Un fondateur") + " · " + dayText(x.at) }),
+      ...(x.link ? [node("a", { href: x.link, target: "_blank", rel: "noopener", textContent: "TikTok d’exemple" })] : []), remove);
+  };
+  const lessonsOf = (id) => brain.lessons.filter((x) => x.leaf === id);
+  const leafNode = (l) => {
+    const st = l.stats, own = lessonsOf(l.key);
+    const from = !l.source ? "recette de départ" : (l.source.from === "note" ? "leçon de " : "validé par ") + l.source.by;
+    const more = node("div", { className: "leaf-more", hidden: true },
+      ...(l.why ? [node("p", { textContent: l.why })] : []),
+      ...(l.source ? [node("p", { className: "muted", textContent: (l.source.why ? (l.source.from === "note" ? "« " + l.source.why + " » · " : "Appris : " + l.source.why + " · ") : "")
+        + "recette de départ : " + valueText(l, l.base) + " · changé le " + dayText(l.source.at) })] : []),
+      st ? node("div", { className: "dist" }, ...st.values.map((x) => node("div", {}, node("span", { textContent: valueText(l, x.value) }),
+        node("i", { style: "width:" + Math.round(x.share * 100) + "%" }), node("small", { textContent: Math.round(x.share * 100) + " %" }))))
+        : node("p", { className: "muted", textContent: "Aucun TikTok ne l’a encore nourrie." }),
+      ...(own.length ? [node("ul", {}, ...own.map(lessonNode))] : []),
+      node("button", { className: "mini", type: "button", textContent: "Nourrir cette feuille", onclick: () => {
+        target.value = l.key; syncValue(); form.open = true; form.scrollIntoView({ behavior: "smooth", block: "center" }); text.focus({ preventScroll: true });
+      } }));
+    const row = node("button", { className: "leaf", type: "button" },
+      node("span", { textContent: l.label }),
+      node("span", {}, node("b", { textContent: valueText(l, l.value), style: l.type === "color" ? "color:" + l.value : "" }), node("small", { className: "from" + (l.source ? " lit" : ""), textContent: from })),
+      node("small", { textContent: (st ? plural(st.n, "TikTok") + " · « " + valueText(l, st.values[0].value) + " » à " + Math.round(st.values[0].share * 100) + " %" : "pas encore nourrie")
+        + (own.length ? " · " + plural(own.length, "leçon") : "") }));
+    row.setAttribute("aria-expanded", "false");
+    row.onclick = () => { more.hidden = !more.hidden; row.setAttribute("aria-expanded", String(!more.hidden)); };
+    return node("li", {}, row, more);
+  };
+  const branch = (label, sub, kids) => node("li", {}, node("details", { className: "branch", open: true },
+    node("summary", {}, node("b", { textContent: label }), node("small", { textContent: sub })), node("ul", {}, ...kids)));
+  const tree = node("ul", { className: "tree" },
+    ...(lessonsOf("").length ? [branch("Tout l’arbre", plural(lessonsOf("").length, "leçon"), lessonsOf("").map(lessonNode))] : []),
+    ...brain.branches.map((b) => branch(b.label, [b.leaves.length ? plural(b.leaves.length, "réglage") : "", plural(b.lessons.length + lessonsOf(b.id).length, "leçon")].filter(Boolean).join(" · "),
+      [...b.lessons.map((t) => node("li", { className: "lesson base" }, node("p", { textContent: t }), node("small", { textContent: "recette de départ" }))),
+        ...lessonsOf(b.id).map(lessonNode), ...b.leaves.map(leafNode)])));
+
+  const journalText = (r) => {
+    if (r.kind === "note") {
+      const l = leaves.get(r.leaf), b = brain.branches.find((x) => x.id === r.leaf), set = !!l && Object.hasOwn(r.settings, l.key);
+      return (r.author || "Un fondateur") + " (" + (l ? l.label : b ? b.label : "tout l’arbre") + ") : " + (r.note || "") + (set ? " → " + valueText(l, r.settings[l.key]) : "");
+    }
+    if (r.kind === "correction") return r.changed.filter((x) => leaves.has(x.key)).map((x) => { const l = leaves.get(x.key); return l.label + " : " + valueText(l, x.from) + " → " + valueText(l, x.to); }).join(" · ");
+    return ["preset", "duration", "transition"].filter((key) => key in r.settings).map((key) => valueText(leaves.get(key), r.settings[key])).join(" · ")
+      + (r.kind === "export" ? " · " + (r.founder ? "un fondateur" : "un autre compte") : "");
+  };
+  const journal = brain.journal.length ? node("ol", { className: "tree-journal" }, ...brain.journal.map((r) => node("li", { className: r.kind },
+    node("small", { textContent: dayText(r.at) }), node("b", { textContent: KINDS[r.kind] || r.kind }), node("span", { textContent: journalText(r) }))))
+    : node("p", { className: "muted", textContent: "Rien encore : chaque export de CUT et chaque leçon apparaîtront ici." });
+
+  box.replaceChildren(kpis, week, ...(props.length ? [node("h3", { textContent: "À valider (" + props.length + ")" }), node("div", { className: "tree-props" }, ...props)] : []),
+    form, node("h3", { textContent: "L’arbre" }), tree, node("h3", { textContent: "Comment elle est nourrie" }), journal);
+}
+
 // ——— Les commandes ———
 const marks = [];
 function chips(id, key, after = refresh) {
@@ -4694,7 +5068,7 @@ function replicaLrc(list, from) {
     + (list[k + 1] && list[k + 1].start - p.end < .3 ? "" : "\n[" + t(p.end) + "]")).join("\n");
 }
 const found = new Map(); // introKey() → les phrases du clip (transcrit une fois par visite)
-const findStatus = (text) => { $("find-status").hidden = !text; $("find-status").textContent = text; };
+const findStatus = (text) => { $("find-status").hidden = !text; $("find-status").textContent = text; if (autoSay && text) autoSay(text); };
 /** Transcrit tout le clip de la réplique (une seule fois), puis montre ses phrases. */
 async function findReplica() {
   const c = introClip(), key = introKey();
@@ -4742,8 +5116,8 @@ function renderFound() {
     : best.length ? "En haut, les phrases qui reprennent un mot de ton son. Touche une phrase : la réplique finit dessus, juste avant le drop."
       : "Aucune phrase ne reprend un mot de ton son : choisis à l’oreille. Touche une phrase : la réplique finit dessus.");
 }
-/** La réplique finit sur la phrase k : début, durée et paroles mot par mot réglés, puis on l’écoute. */
-function pickReplica(k) {
+/** La réplique finit sur la phrase k : début, durée et paroles mot par mot réglés, puis on l’écoute (sauf hear false). */
+function pickReplica(k, hear = true) {
   const c = introClip(), phrases = found.get(introKey());
   if (!c || !phrases) return;
   const r = replicaEnding(phrases, k, c.duration);
@@ -4752,8 +5126,8 @@ function pickReplica(k) {
   $("introLyrics").value = prefs.introLyrics;
   savePrefs(); position = 0; refresh(); restyle(); renderVoices();
   $("find-list").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === String(k))));
-  $("intro-hear").click();
-  introVoicesAI(findStatus).catch(() => {});
+  if (hear) $("intro-hear").click();
+  return introVoicesAI(findStatus).catch(() => {});
 }
 /** Terminer : les paroles de la réplique s’écrivent en LRC (temps depuis le début de la réplique), mot par mot si on l’a fait. */
 function finishIsync() {
@@ -5109,6 +5483,16 @@ function start() {
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("cloud-page").hidden) closeCloud(); });
     document.addEventListener("click", (event) => { if (!event.target.closest(".vmenu, .vmore")) document.querySelectorAll(".vmenu").forEach((m) => { m.remove(); }); });
   }
+  if (role === "founder") {
+    $("tree-short").hidden = false;
+    const openTree = () => { $("tree-page").hidden = false; document.body.style.overflow = "hidden"; renderTree(); };
+    $("tree-short").onclick = $("tree-open").onclick = openTree;
+    $("tree-close").onclick = () => { $("tree-page").hidden = true; document.body.style.overflow = ""; };
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("tree-page").hidden) $("tree-close").click(); });
+    $("auto-go").onclick = autoTikTok;
+  }
+  $("learn").checked = prefs.learn !== false;
+  $("learn").onchange = () => { prefs.learn = $("learn").checked; savePrefs(); };
   $("mute").onchange = () => {
     prefs.mute = $("mute").checked; savePrefs(); applyMute();
   };
@@ -5260,7 +5644,7 @@ function start() {
   // Les raccourcis du studio (hors champ de saisie, hors timeline et synchro) : Espace lit, 1 à 6 changent d’étape, E exporte,
   // ← et → reculent ou avancent d’une seconde.
   document.addEventListener("keydown", (event) => {
-    if (adv.open || isync || event.ctrlKey || event.metaKey || event.altKey || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName) || event.target.isContentEditable) return;
+    if (adv.open || isync || !$("tree-page").hidden || event.ctrlKey || event.metaKey || event.altKey || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName) || event.target.isContentEditable) return;
     const tab = ["son", "clips", "style", "texte", "image", "film", "publier"][Number(event.key) - 1];
     if (event.key === " ") { if (!$("play").disabled) { event.preventDefault(); if (!event.repeat) $("play").click(); } }
     else if (tab) showTab(tab);

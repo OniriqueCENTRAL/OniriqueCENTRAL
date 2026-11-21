@@ -37,6 +37,7 @@ import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from
 import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
 import { mountCut, shortTitle } from './cut.js';
+import { mountCutBrain } from './cutbrain.js';
 import { mountBeatStoreHooks } from './beatstore.js';
 import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
@@ -624,6 +625,7 @@ export function createApp() {
   // Notes, ups et top 3 de la semaine des playlists d'ONIRIQUE CLOUD.
   mountRatings(app, { requireUser });
   mountCut(app, { requireUser, receiveFile, wrap });
+  mountCutBrain(app, { requireUser });   // l'arborescence de CUT : ce qu'il apprend des TikToks, et AUTOMATIQUE
   // Envoi de fichiers : des fichiers lourds partagés par un lien qui expire.
   mountEnvoi(app, { requireVerified, receiveFile, wrap });
   // Les clips partagés depuis ONIRIQUE CENTRAL (page /clip, lue par Discord).

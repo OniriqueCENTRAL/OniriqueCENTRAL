@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "source": "la recette apprise sur les montages de @cmoipriilick et sur la vidéo « DEAD » (cloud CUT, 21/11/2026)",
+  "branches": [
+    {
+      "id": "son", "label": "Le son",
+      "lessons": [
+        "Passage de 25 à 30 s, sur le refrain ou sur un début de couplet.",
+        "Éviter les phrases sensibles pour TikTok (suicide, etc.) dans le passage."
+      ],
+      "leaves": [
+        { "key": "duration", "label": "Durée du passage", "type": "number", "buckets": [8, 15, 30, 60], "unit": "s", "value": 30,
+          "why": "Le temps d’un refrain ou d’un début de couplet." },
+        { "key": "loop", "label": "Boucle (la fin s’enchaîne avec le début)", "type": "bool", "value": false }
+      ]
+    },
+    {
+      "id": "clips", "label": "Les clips",
+      "lessons": [
+        "Pour un montage de film : un seul extrait, le même film continue après le drop.",
+        "Éviter l’écran de fin YouTube des extraits."
+      ],
+      "leaves": [
+        { "key": "order", "label": "Ordre des clips", "type": "choice", "options": { "seq": "Dans l’ordre", "mix": "Mélangés" }, "value": "seq" },
+        { "key": "bestMoments", "label": "Prendre les meilleurs moments des clips", "type": "bool", "value": true }
+      ]
+    },
+    {
+      "id": "style", "label": "Le style",
+      "lessons": [],
+      "leaves": [
+        { "key": "preset", "label": "Style rapide", "type": "choice", "value": "drop",
+          "options": { "classic": "Classique", "pixel": "Mot par mot pixel", "red": "Mot par mot rouge", "card": "Carte paroles", "film": "Extrait de film", "drop": "Réplique → drop" },
+          "why": "La réplique de film puis le couplet ramène des inconnus ; sans film, la vidéo plaît surtout aux abonnés." }
+      ]
+    },
+    {
+      "id": "texte", "label": "Le texte",
+      "lessons": [
+        "Retirer les ad-libs et la fin de la phrase d’avant.",
+        "Enlever les virgules et les points affichés ; garder « ? » (espace insécable dans « Quoi ? »).",
+        "Voix : vérifier ce que l’IA a reconnu (sur DEAD, elle trouvait 2 voix sur 3) et corriger d’un clic par phrase."
+      ],
+      "leaves": [
+        { "key": "lyricsMode", "label": "Paroles à l’écran", "type": "choice", "options": { "line": "Ligne entière", "word": "Mot par mot", "card": "Carte paroles" }, "value": "word" },
+        { "key": "lyricsPlace", "label": "Place des paroles", "type": "choice", "options": { "top": "En haut", "middle": "Au milieu", "bottom": "En bas" }, "value": "middle" },
+        { "key": "textStyle", "label": "Style du texte", "type": "choice", "value": "pixel",
+          "options": { "classic": "Classique", "pixel": "Pixel blanc", "red": "Rouge", "white": "Blanc gras", "neon": "Néon", "retro": "Rétro" } },
+        { "key": "lyricFont", "label": "Police des paroles", "type": "choice", "value": "Press Start 2P", "fonts": true },
+        { "key": "textSize", "label": "Taille du texte", "type": "number", "min": 50, "max": 200, "step": 10, "unit": "%", "value": 100 },
+        { "key": "glow", "label": "Lueur des paroles", "type": "number", "min": 0, "max": 100, "step": 10, "value": 0, "why": "Des mots pixel nets, sans lueur." },
+        { "key": "caps", "label": "Majuscules", "type": "bool", "value": true },
+        { "key": "rhyme", "label": "Dernier mot de chaque phrase en couleur (la rime)", "type": "bool", "value": true },
+        { "key": "rhymeColor", "label": "Couleur de la rime", "type": "color", "value": "#ff2525" },
+        { "key": "strongFx", "label": "Effet des mots forts", "type": "choice", "value": "none",
+          "options": { "none": "Aucun", "pop": "Pop", "zoom": "Zoom", "shake": "Secousse", "flash": "Flash blanc" } },
+        { "key": "place", "label": "Place du titre", "type": "choice", "options": { "top": "En haut", "middle": "Au milieu", "bottom": "En bas", "none": "Masqué" }, "value": "none" },
+        { "key": "hookOn", "label": "Accroche au-dessus de l’image", "type": "bool", "value": false }
+      ]
+    },
+    {
+      "id": "image", "label": "L’image",
+      "lessons": ["Une coupe franche sur le temps : pas de fondu, pas de flash."],
+      "leaves": [
+        { "key": "frame", "label": "Cadre de l’image", "type": "choice", "options": { "full": "Plein écran", "169": "Bande 16:9", "43": "Bande 4:3", "11": "Carré" }, "value": "43" },
+        { "key": "cadence", "label": "Rythme des coupes", "type": "choice", "options": { "1": "Chaque temps", "2": "Tous les 2 temps", "4": "Chaque mesure", "mix": "Varié" }, "value": "2" },
+        { "key": "zoom", "label": "Zoom sur le beat", "type": "bool", "value": false },
+        { "key": "flash", "label": "Flash aux coupes", "type": "bool", "value": false },
+        { "key": "retro", "label": "Look rétro", "type": "bool", "value": false },
+        { "key": "bw", "label": "Noir et blanc", "type": "bool", "value": false },
+        { "key": "shake", "label": "Secousse sur le beat", "type": "bool", "value": false },
+        { "key": "rgbSplit", "label": "Décalage RVB sur le beat", "type": "bool", "value": false },
+        { "key": "fadeEnds", "label": "Fondu au noir au début et à la fin", "type": "bool", "value": false }
+      ]
+    },
+    {
+      "id": "film", "label": "Le film",
+      "lessons": [
+        "Une réplique de 8 à 30 s, d’une scène connue et émouvante, qui répond à un mot ou à l’idée des paroles.",
+        "Elle finit sur sa phrase la plus forte, souvent une question.",
+        "Couper la réplique avant les gros bruitages.",
+        "Transition : 1,5 à 2 s de plan de réaction muet à la fin de la réplique, ou le son qui commence sur du noir.",
+        "Après le drop : caler le film pour que le moment fort tombe sur le drop et qu’une phrase clé tombe sur une image clé."
+      ],
+      "leaves": [
+        { "key": "introOn", "label": "Commencer par une réplique de film", "type": "bool", "value": true },
+        { "key": "introSubMode", "label": "Texte de la réplique", "type": "choice", "options": { "sub": "Sous-titre (cinéma)", "word": "Mot par mot", "stack": "Empilé" }, "value": "word" },
+        { "key": "iFont", "label": "Police de la réplique", "type": "choice", "value": "Anton", "fonts": true },
+        { "key": "iColor", "label": "Couleur de la réplique", "type": "color", "value": "#ff2525" },
+        { "key": "iSize", "label": "Taille de la réplique", "type": "number", "min": 50, "max": 200, "step": 10, "unit": "%", "value": 80,
+          "why": "Environ 45 % de la largeur : trop gros, le texte écrase la scène." },
+        { "key": "transition", "label": "Transition vers la musique", "type": "choice", "value": "cut",
+          "options": { "cut": "Coupe franche", "flash": "Flash blanc", "black": "Fondu au noir", "zoom": "Zoom", "whip": "Glissement", "blur": "Flou", "shake": "Secousse", "glitch": "Glitch", "rewind": "Rembobinage VHS", "freeze": "Arrêt sur image" } },
+        { "key": "blackStart", "label": "Le son commence sur du noir", "type": "choice", "options": { "0": "Non", "2": "2 temps", "4": "1 mesure", "8": "2 mesures" }, "value": "2",
+          "why": "Les paroles seules sur du noir, puis l’image arrive sur le temps." },
+        { "key": "coldDrop", "label": "Après le drop, une image plus sombre et plus froide", "type": "bool", "value": true,
+          "why": "Seulement sur un film clair : sur un film déjà sombre, AUTOMATIQUE la retire." },
+        { "key": "dropGap", "label": "Silence juste avant le drop", "type": "bool", "value": false },
+        { "key": "filmContinue", "label": "Le film continue sous la musique", "type": "bool", "value": true },
+        { "key": "filmVol", "label": "Volume du film", "type": "number", "min": 0, "max": 200, "step": 25, "unit": "%", "value": 150 },
+        { "key": "filmDialog", "label": "Ne garder que les dialogues du film", "type": "bool", "value": false },
+        { "key": "underPart", "label": "Musique sous la réplique", "type": "choice", "value": "none",
+          "options": { "none": "Rien", "full": "Le son entier", "prod": "La prod", "melo": "Mélodie", "drums": "Drums", "bass": "Basse", "vocals": "Voix seule" } },
+        { "key": "slowmo", "label": "Vitesse des clips", "type": "choice", "options": { "100": "Normale", "75": "Ralenti 75 %", "50": "Ralenti 50 %" }, "value": "100" }
+      ]
+    },
+    {
+      "id": "publier", "label": "La publication",
+      "lessons": [
+        "Description : la réplique et un émoji, puis 3 hashtags : #undergroundmusic, le film, le personnage.",
+        "Avant d’exporter un essai, couper les Shorts et les Reels automatiques."
+      ],
+      "leaves": []
+    }
+  ],
+  "fonts": ["Hanken Grotesk", "Unbounded", "Press Start 2P", "Silkscreen", "VT323", "Anton", "Bebas Neue", "Grenze Gotisch", "Permanent Marker", "JetBrains Mono"]
+}

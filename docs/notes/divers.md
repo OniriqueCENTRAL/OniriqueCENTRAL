@@ -38,6 +38,17 @@
   Limites : une phrase de moins d'une seconde (« Quoi ? ») et deux rappeurs au timbre proche peuvent tomber dans la
   mauvaise voix : un clic sur la phrase corrige. WavLM-sv écarté (pas de licence indiquée).
 
+## Arborescence de CUT et AUTOMATIQUE (`server/src/cutbrain.js`, `cut-brain.json`)
+- L'arbre part de la recette de `cut-brain.json` (une feuille = un réglage de `prefs` dans `site/cut.html`, mêmes clés et
+  mêmes valeurs) : une feuille ajoutée là doit exister dans CUT. Menu « Arborescence » de CUT, réservé aux fondateurs.
+- Nourri par les exports (réglages seulement, et le rôle du compte ; case « Aider CUT à apprendre »), les corrections
+  faites après AUTOMATIQUE (comptent triple) et les leçons des fondateurs (une leçon peut régler une feuille). Les TikToks
+  d'AUTOMATIQUE ne votent pas. Proposition à valider : 5 TikToks et 60 % d'accord ; un refus tient 30 jours.
+- AUTOMATIQUE : durée de l'arbre et meilleur passage, paroles par l'IA, style de l'arbre, fonds tirés au hasard dans la
+  banque si aucun clip (3 films essayés), réplique qui reprend des mots du passage et finit sur une question, image froide
+  retirée sur un film sombre, export sans Shorts ni Reels automatiques, gardé dans le cloud CUT.
+- Avant de monter un TikTok soi-même pour un fondateur : lire l'arbre (`/api/cut/brain`, session fondateur).
+
 ## BPM et tonalité (`site/assets/bpm-key-worker.js`), blanc du Downloader
 - Le même worker sert à BPM et tonalité, PROD du Downloader, CUT, Mes sons, Stems et Transposition : après une
   modification, augmenter son `?v=` dans ces six pages.
