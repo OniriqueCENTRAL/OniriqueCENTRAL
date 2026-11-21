@@ -1174,7 +1174,7 @@ const PRESETS = {
   drop: { frame: "43", retro: false, lyricsMode: "word", lyricsPlace: "middle", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "pixel", introOn: true,
     introSubMode: "word", iOwn: true, iFont: "Anton", iColor: "#ff2525", iSize: 80, iStroke: 7, iStrokeColor: "#3a0000", iShadowColor: "#000000", iShadowBlur: 24, iShadowOffset: 0,
     iGlow: 0, iMark: false, iBox: false, iCaps: true, iPlace: "middle", voice1: "#ff2525", voice2: "#ffffff", voice3: "#ffd23f",
-    transition: "cut", dropGap: false, coldDrop: true, rhyme: true, rhymeColor: "#ff2525", filmContinue: true },
+    transition: "cut", dropGap: false, coldDrop: true, glow: 0, rhyme: true, rhymeColor: "#ff2525", filmContinue: true },
   card: { frame: "43", retro: false, lyricsMode: "card", lyricsPlace: "bottom", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "classic" },
 };
 const FRAMES = { full: 0, 169: 9 / 16, 43: 3 / 4, 11: 1 };
@@ -3322,7 +3322,7 @@ function drawMusic(t, playing) {
   }
   const r = frameRect();
   // Après le drop, une image plus sombre et plus froide que celle de la réplique : le passage au son se voit.
-  if (prefs.coldDrop && introLen() > 0) { g.save(); g.globalCompositeOperation = "multiply"; g.fillStyle = "#8fa8cc"; g.fillRect(r.x, r.y, r.w, r.h); g.restore(); }
+  if (prefs.coldDrop && introLen() > 0) { g.save(); g.globalCompositeOperation = "multiply"; g.fillStyle = "#b4c6e0"; g.fillRect(r.x, r.y, r.w, r.h); g.restore(); }
   drawEffects(r, beatEnv);
   // Un léger voile en haut et en bas (plein écran) : le texte reste lisible sur n’importe quelle image.
   if (!r.y) {
@@ -5185,7 +5185,7 @@ function start() {
   $("song-voices-ai").onclick = () => songVoicesAI();
   chips("textStyle", "textStyle", () => { Object.assign(prefs, TEXT_STYLES[prefs.textStyle]); savePrefs(); loadFont(prefs.lyricFont); syncControls(); restyle(); });
   chips("preset", "preset", () => {
-    Object.assign(prefs, PRESETS[prefs.preset], TEXT_STYLES[PRESETS[prefs.preset].textStyle]); savePrefs();
+    Object.assign(prefs, TEXT_STYLES[PRESETS[prefs.preset].textStyle], PRESETS[prefs.preset]); savePrefs(); // le style rapide peut retoucher son style de texte (lueur…)
     if (PRESETS[prefs.preset].introOn) { position = 0; refresh(); showTab("film"); } // l’extrait de film : on va choisir la réplique
     [prefs.lyricFont, prefs.iFont].forEach(loadFont); syncControls(); // iFont : « Réplique → drop » règle aussi la police de la réplique
     redraw();
