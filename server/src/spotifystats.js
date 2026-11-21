@@ -1,7 +1,8 @@
 // Les chiffres Spotify d'un artiste (auditeurs mensuels, abonnés, titres les plus écoutés, villes), montrés sur sa page
 // de profil et sur la carte des membres. Spotify ne donne pas ces chiffres aux applications : ils sont lus chez CaptAPI
 // (clé CAPTAPI_KEY, posée sur le VPS par onirique-captapi), qui facture chaque lecture. Pour borner la facture : réservé
-// aux fondateurs, et une lecture par jour au plus par artiste ; entre deux, la base garde la dernière.
+// aux fondateurs et aux comptes qu'un fondateur ouvre dans l'administration, et une lecture par jour au plus par
+// artiste ; entre deux, la base garde la dernière.
 import { db, get, run, now } from './db.js';
 import { HttpError } from './auth.js';
 import { config } from './config.js';
@@ -14,8 +15,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS spotify_artists (
 )`);
 
 const DAY = 24 * 3600_000;
-/** Seuls les fondateurs lient leur profil d'artiste, et seuls les leurs s'affichent (un ancien fondateur n'est plus relu). */
-export const spotifyAllowed = (user) => user?.role === 'founder';
+/** Les fondateurs et les comptes ouverts par un fondateur (users.spotify) ; un accès retiré n'est plus affiché ni relu. */
+export const spotifyAllowed = (user) => user?.role === 'founder' || !!user?.spotify;
 const ID = /^[A-Za-z0-9]{22}$/;
 /** L'identifiant d'un artiste, lu dans son lien (open.spotify.com/…/artist/…), son URI ou l'identifiant seul ; '' si rien de tel. */
 export function artistIdOf(value) {

@@ -467,6 +467,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS link_stats (
 // Le mini ROCKY bâtisseur de l'application (assets/rocky-builder.js) : 1 animé, 0 coupé dans les Paramètres de l'app.
 if (!hasColumn('users', 'rocky')) db.exec('ALTER TABLE users ADD COLUMN rocky INTEGER NOT NULL DEFAULT 1');
 // La couleur d'accent du site choisie par le compte (« #rrggbb » ; vide : la braise d'origine).
+// Chiffres Spotify ouverts par un fondateur à un compte qui n'est pas fondateur (chaque lecture CaptAPI est facturée).
+if (!hasColumn('users', 'spotify')) db.exec('ALTER TABLE users ADD COLUMN spotify INTEGER NOT NULL DEFAULT 0');
 if (!hasColumn('users', 'accent')) db.exec("ALTER TABLE users ADD COLUMN accent TEXT NOT NULL DEFAULT ''");
 for (const column of ['totp_secret TEXT', 'totp_pending TEXT', 'totp_step INTEGER', 'totp_recovery TEXT']) {
   if (!hasColumn('users', column.split(' ')[0])) db.exec(`ALTER TABLE users ADD COLUMN ${column}`);

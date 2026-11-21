@@ -520,6 +520,15 @@ async function toolsWeek(user) {
 }
 
 // Valide une adresse à la main, pour un compte dont le lien de validation n'arrive pas.
+async function toggleSpotify(user) {
+  try {
+    await api("PATCH", "/admin/users/" + user.id, { spotify: !user.spotify });
+    await loadUsers();
+  } catch (error) {
+    $("error").textContent = error.message;
+  }
+}
+
 async function verifyEmail(user) {
   if (!window.confirm(`Valider à la main l'adresse ${user.email} ? À faire seulement si vous êtes sûr que cette adresse est bien celle de la personne.`)) return;
   try {
@@ -590,6 +599,9 @@ async function loadUsers(more = false) {
     if (trials) trials.onclick = () => resetTrials(u);
     const tools = el("button", { className: "act", type: "button", textContent: u.toolsUntil ? "Outils jusqu'au " + date(u.toolsUntil) : "Outils 7 jours" });
     tools.onclick = () => toolsWeek(u);
+    // Chiffres Spotify sur sa page de profil (lectures facturées) : un fondateur les ouvre ou les ferme ; les fondateurs les ont déjà.
+    const spotify = founder && u.role !== "founder" ? el("button", { className: "act", type: "button", textContent: u.spotify ? "Retirer Spotify" : "Ouvrir Spotify" }) : null;
+    if (spotify) spotify.onclick = () => toggleSpotify(u);
     const verify = u.emailVerified ? null : el("button", { className: "act", type: "button", textContent: "Valider l'e-mail" });
     if (verify) verify.onclick = () => verifyEmail(u);
     const a2f = u.twoFactor && (founder || !isStaff(u) || u.id === me.id) ? el("button", { className: "act", type: "button", textContent: "Retirer l'A2F" }) : null;
@@ -608,7 +620,7 @@ async function loadUsers(more = false) {
       el("td", { textContent: u.spent ? euros(u.spent) : "—" }),
       el("td", { textContent: u.subscribed ? "Abonné" : "—" }),
       el("td", { textContent: date(u.createdAt) }),
-      el("td", { className: "actions" }, view, u.linkPage ? el("a", { className: "act", href: u.linkPage, target: "_blank", rel: "noopener", textContent: "Page de liens" }) : null, trials, tools, verify, a2f, role, erase));
+      el("td", { className: "actions" }, view, u.linkPage ? el("a", { className: "act", href: u.linkPage, target: "_blank", rel: "noopener", textContent: "Page de liens" }) : null, trials, tools, spotify, verify, a2f, role, erase));
     return row;
   }));
   $("count").textContent = users.length + (users.length > 1 ? " comptes affichés" : " compte affiché") + (extra ? ", d'autres à voir." : ".");

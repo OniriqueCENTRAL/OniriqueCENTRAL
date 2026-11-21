@@ -159,7 +159,7 @@ const notify = (userId, kind, actorId, page, body = '') => {
 
 export function mountProfiles(app, { requireUser, receiveImage, receiveFile, removeMedia, wrap }) {
   const pageOf = (handle) => {
-    const p = get('SELECT p.*, u.name, u.avatar, u.role FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.handle = ?', String(handle || '').toLowerCase());
+    const p = get('SELECT p.*, u.name, u.avatar, u.role, u.spotify FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.handle = ?', String(handle || '').toLowerCase());
     if (!p) throw new HttpError(404, "Cette page de profil n'existe pas.");
     return p;
   };
@@ -371,7 +371,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
   let mapCache = null;
   app.get('/api/members/map', (req, res) => {
     if (mapCache && Date.now() - mapCache.at < 30_000) return res.set('Cache-Control', 'public, max-age=60').type('json').send(mapCache.body);
-    const members = all(`SELECT p.user_id, p.handle, p.city, p.place, p.cv, p.color, u.name, u.avatar, u.role, lp.handle AS link_handle,
+    const members = all(`SELECT p.user_id, p.handle, p.city, p.place, p.cv, p.color, u.name, u.avatar, u.role, u.spotify, lp.handle AS link_handle,
         (SELECT COUNT(*) FROM user_follows f WHERE f.followed_id = p.user_id) AS followers
       FROM user_profiles p JOIN users u ON u.id = p.user_id LEFT JOIN link_pages lp ON lp.user_id = p.user_id
       WHERE p.city != '' ORDER BY followers DESC LIMIT 5000`).filter((m) => placeOf(m));

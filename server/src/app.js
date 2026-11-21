@@ -1806,7 +1806,7 @@ export function createApp() {
     const order = USER_SORTS[req.query.sort] || USER_SORTS.recent;
     const limit = Math.min(Math.max(int(req.query.limit, 500) || 500, 1), 500), offset = Math.max(int(req.query.offset, 0) || 0, 0);
     res.json(all(
-      `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt, u.email_verified AS emailVerified, u.totp_secret IS NOT NULL AS twoFactor,
+      `SELECT u.id, u.email, u.name, u.role, u.spotify, u.created_at AS createdAt, u.email_verified AS emailVerified, u.totp_secret IS NOT NULL AS twoFactor,
          CASE WHEN u.avatar IS NULL THEN NULL ELSE '/api/media/' || u.avatar END AS avatar,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
          (SELECT COALESCE(SUM(o.amount_cents), 0) FROM orders o WHERE o.user_id = u.id AND o.provider != 'demo') AS spent,
@@ -1840,6 +1840,11 @@ export function createApp() {
         throw new HttpError(403, 'Seul un fondateur peut donner ou retirer le rôle admin.');
       }
       run('UPDATE users SET role = ? WHERE id = ?', req.body.role, user.id);
+    }
+    // Les chiffres Spotify sur sa page : chaque lecture est facturée, donc seul un fondateur les ouvre.
+    if (typeof req.body.spotify === 'boolean') {
+      if (!founder) throw new HttpError(403, 'Seul un fondateur ouvre les chiffres Spotify à un compte.');
+      run('UPDATE users SET spotify = ? WHERE id = ?', req.body.spotify ? 1 : 0, user.id);
     }
     // Valider une adresse à la main, pour un compte dont le lien n'arrive pas.
     if (req.body.emailVerified === true && !user.email_verified) {

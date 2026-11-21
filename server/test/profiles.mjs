@@ -159,6 +159,9 @@ try {
     assert.equal((await call('GET', '/api/profiles/nov.music')).spotify, null); // pas fondateur : ignoré
     run('UPDATE users SET role = ? WHERE id = ?', 'admin', a.id);
     assert.equal((await call('GET', '/api/me/profile/page', { token: a.token })).spotifyAllowed, false); // un admin non plus
+    run('UPDATE users SET role = ?, spotify = 1 WHERE id = ?', 'user', a.id); // ouvert par un fondateur
+    assert.equal((await call('GET', '/api/me/profile/page', { token: a.token })).spotifyAllowed, true);
+    run('UPDATE users SET spotify = 0 WHERE id = ?', a.id);
     run('UPDATE users SET role = ? WHERE id = ?', 'founder', a.id);
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: 'https://example.com/artist/x' }, expect: 400 });
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: `https://open.spotify.com/intl-fr/artist/${ARTIST}?si=abc` } });
