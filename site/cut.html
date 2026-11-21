@@ -325,6 +325,23 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
 .bank .tile span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bank .tile i { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.7); font-style: normal; }
 .bank .tile i:hover { background: var(--ember); }
+/* Les dossiers de la banque : une barre (dossier ouvert, nouveau dossier, renommer), des tuiles dossier où l’on dépose les clips. */
+.bank-bar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bank-bar b { font: 700 14px var(--f-display); margin-right: auto; }
+.bank-bar small { flex-basis: 100%; color: var(--haze); font: 500 12px var(--f-body); }
+.bank .folder { aspect-ratio: 9 / 16; display: grid; place-content: center; gap: 6px; border: 1px dashed var(--line); border-radius: 10px; background: rgba(255,255,255,.03); color: var(--mist); text-align: center; cursor: pointer; font: 600 12px/1.25 var(--f-body); padding: 6px; overflow-wrap: anywhere; }
+.bank .folder svg { width: 34px; height: 34px; margin: 0 auto; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.bank .folder small { color: var(--haze); font-weight: 500; }
+.bank .folder:hover, .bank .folder.over, .bank-bar .over { border-color: var(--ember); color: var(--ember); }
+.bank .tile .add { left: 5px; right: auto; }
+.bank .tile .play { position: absolute; top: calc(50% - 26px); left: calc(50% - 18px); width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,.6); display: grid; place-items: center; pointer-events: none; }
+.bank .tile .play svg { width: 16px; height: 16px; fill: #fff; margin-left: 2px; }
+/* La fenêtre d’un fond de la banque : le regarder avant de l’ajouter, le ranger. */
+#bdlg { width: min(420px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border: 1px solid var(--line); color: var(--mist); }
+#bdlg::backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(4px); }
+#bdlg .bdlg-body { display: grid; gap: 12px; padding: 16px; }
+#bdlg video, #bdlg img { width: 100%; max-height: calc(100dvh - 230px); object-fit: contain; border-radius: 12px; background: #000; display: block; }
+#bdlg label { display: grid; gap: 6px; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
 kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font: 500 11px var(--f-mono); color: var(--mist); }
 @media (pointer: coarse) { .keys { display: none; } }
 .caption-box { max-width: 340px; width: 100%; justify-self: center; }
@@ -1024,6 +1041,15 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
   </aside>
 </main>
 
+<dialog id="bdlg" aria-labelledby="bdlg-title">
+  <div class="bdlg-body">
+    <div class="vdlg-head"><span id="bdlg-title">Fond</span><button class="mini" type="button" id="bdlg-x" aria-label="Fermer">✕</button></div>
+    <video id="bdlg-video" controls playsinline preload="metadata" disablepictureinpicture></video>
+    <img id="bdlg-img" alt="">
+    <label>Dossier<select id="bdlg-folder" aria-label="Dossier de ce fond"></select></label>
+    <div class="row" style="flex-wrap:wrap"><button class="go" type="button" id="bdlg-add">Ajouter aux clips</button><span class="muted" id="bdlg-msg" aria-live="polite"></span></div>
+  </div>
+</dialog>
 <dialog id="vdlg" aria-labelledby="vdlg-title">
   <div class="vdlg-body">
     <div class="vplayer" id="vplayer">
@@ -1950,52 +1976,135 @@ function analyzeLater(c) {
   });
 }
 
-// ——— La banque de fonds (fondateurs) : des clips gardés dans le cloud CUT, à réutiliser d’un son à l’autre ———
+// ——— La banque de fonds : des clips gardés dans le cloud CUT, rangés en dossiers, à réutiliser d’un son à l’autre ———
 const bankFetch = (path, options = {}) => fetch(path, { ...options, headers: { Authorization: "Bearer " + TOKEN, ...(options.headers || {}) } })
   .then(async (r) => { const data = await r.json().catch(() => ({})); if (!r.ok) throw new Error(data.error || "Ta banque de fonds ne répond pas."); return data; });
+let bankFolder = null, bankData = { backgrounds: [], folders: [], used: 0, max: null }; // le dossier ouvert (null : la racine)
+const FOLDER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6l2 2h8.4A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>';
+const node = (tag, props = {}, ...kids) => { const x = Object.assign(document.createElement(tag), props); x.append(...kids); return x; };
+const gigas = (n) => (n / 1024 ** 3).toFixed(n < 1024 ** 3 / 10 ? 2 : 1).replace(/\.0+$/, "").replace(".", ",") + " Go";
+const jsonBody = (method, body) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+/** Un fond de la banque ajouté aux clips du montage (téléchargé depuis le cloud CUT). */
+async function bankAdd(b, say = (t) => { $("bank-state").textContent = t; }) {
+  say("Ajout de « " + b.name + " »…");
+  let blob;
+  try { blob = await download(b.url, (p) => say("Ajout de « " + b.name + " »… " + pct(p))); }
+  catch (error) { say("Ce fond n’a pas pu être téléchargé (" + error.message + ")."); return; }
+  await addClips([new File([blob], b.name, { type: b.type, lastModified: b.createdAt })]);
+  say("« " + b.name + " » ajouté aux clips.");
+}
+/** Ranger un fond dans un dossier (null : hors dossier). */
+async function bankMove(b, folderId) {
+  try { await bankFetch("/api/cut/backgrounds/" + b.id, jsonBody("PATCH", { folderId })); b.folderId = folderId; }
+  catch (error) { alert(error.message); }
+  renderBank();
+}
+/** Une cible où déposer un fond glissé (tuile dossier, ou « Tous les fonds » pour le sortir de son dossier). */
+function dropTarget(target, folderId) {
+  target.addEventListener("dragover", (e) => { if (e.dataTransfer.types.includes("text/x-onirique-bg")) { e.preventDefault(); target.classList.add("over"); } });
+  target.addEventListener("dragleave", () => target.classList.remove("over"));
+  target.addEventListener("drop", (e) => {
+    e.preventDefault(); target.classList.remove("over");
+    const b = bankData.backgrounds.find((x) => String(x.id) === e.dataTransfer.getData("text/x-onirique-bg"));
+    if (b && (b.folderId ?? null) !== folderId) bankMove(b, folderId);
+  });
+}
+/** La fenêtre d’un fond : on le regarde (sans l’ajouter aux clips), on le range, ou on l’ajoute. */
+function bankShow(b) {
+  const video = $("bdlg-video"), img = $("bdlg-img"), isImage = b.type.startsWith("image/");
+  $("bdlg-title").textContent = b.name; $("bdlg-msg").textContent = "";
+  video.hidden = isImage; img.hidden = !isImage;
+  if (isImage) { video.removeAttribute("src"); img.src = b.url; } else { img.removeAttribute("src"); video.src = b.url; video.play().catch(() => {}); }
+  $("bdlg-folder").replaceChildren(new Option("Aucun dossier", ""), ...bankData.folders.map((f) => new Option(f.name, f.id)));
+  $("bdlg-folder").value = b.folderId ?? "";
+  $("bdlg-folder").onchange = async () => { await bankMove(b, $("bdlg-folder").value ? Number($("bdlg-folder").value) : null); $("bdlg-msg").textContent = "Rangé."; };
+  $("bdlg-add").onclick = () => bankAdd(b, (t) => { $("bdlg-msg").textContent = t; });
+  $("bdlg").showModal();
+}
 async function renderBank() {
   const box = $("bank");
-  box.replaceChildren(Object.assign(document.createElement("p"), { className: "muted", textContent: "Chargement…" }));
-  try {
-    const { backgrounds } = await bankFetch("/api/cut/backgrounds");
-    if (!backgrounds.length) { box.firstChild.textContent = "Ta banque est vide : ajoute des clips, puis « Garder ces clips dans ma banque »."; return; }
-    box.replaceChildren(...backgrounds.map((b) => {
-      const tile = Object.assign(document.createElement("button"), { type: "button", className: "tile", title: "Ajouter « " + b.name + " » aux clips" });
-      const look = b.type.startsWith("image/") ? Object.assign(document.createElement("img"), { src: b.url, alt: "", loading: "lazy" })
-        : Object.assign(document.createElement("video"), { src: b.url + "#t=1", muted: true, preload: "metadata", playsInline: true });
-      const drop = Object.assign(document.createElement("i"), { textContent: "×", title: "Retirer de ma banque" });
-      drop.onclick = async (event) => {
-        event.stopPropagation();
-        if (!confirm("Retirer « " + b.name + " » de ta banque de fonds ?")) return;
-        await bankFetch("/api/cut/backgrounds/" + b.id, { method: "DELETE" }).catch((e) => alert(e.message));
+  if (!box.children.length) box.append(node("p", { className: "muted", textContent: "Chargement…" }));
+  try { bankData = await bankFetch("/api/cut/backgrounds"); bankData.folders ||= []; }
+  catch (error) { box.replaceChildren(node("p", { className: "muted", textContent: error.message })); return; }
+  const { backgrounds, folders } = bankData;
+  const open = folders.find((f) => f.id === bankFolder) || null;
+  if (!open) bankFolder = null;
+  const bar = node("div", { className: "bank-bar" });
+  if (open) {
+    const back = node("button", { className: "mini", type: "button", textContent: "← Tous les fonds", title: "Revenir à la banque (dépose un fond ici pour le sortir du dossier)", onclick: () => { bankFolder = null; renderBank(); } });
+    dropTarget(back, null);
+    bar.append(back, node("b", { textContent: open.name }),
+      node("button", { className: "mini", type: "button", textContent: "Renommer", onclick: async () => {
+        const name = prompt("Nouveau nom du dossier :", open.name);
+        if (!name || !name.trim() || name.trim() === open.name) return;
+        await bankFetch("/api/cut/background-folders/" + open.id, jsonBody("PATCH", { name })).catch((e) => alert(e.message));
         renderBank();
-      };
-      tile.onclick = async () => {
-        $("bank-state").textContent = "Ajout de « " + b.name + " »…";
-        let blob;
-        try { blob = await download(b.url, (p) => { $("bank-state").textContent = "Ajout de « " + b.name + " »… " + pct(p); }); }
-        catch (error) { $("bank-state").textContent = "Ce fond n’a pas pu être téléchargé (" + error.message + ")."; return; }
-        await addClips([new File([blob], b.name, { type: b.type, lastModified: b.createdAt })]);
-        $("bank-state").textContent = "« " + b.name + " » ajouté.";
-      };
-      tile.append(look, Object.assign(document.createElement("span"), { textContent: b.name }), drop);
-      return tile;
-    }));
-  } catch (error) { box.firstChild.textContent = error.message; }
+      } }),
+      node("button", { className: "mini", type: "button", textContent: "Supprimer le dossier", onclick: async () => {
+        if (!confirm("Supprimer le dossier « " + open.name + " » ? Ses fonds restent dans ta banque, hors dossier.")) return;
+        await bankFetch("/api/cut/background-folders/" + open.id, { method: "DELETE" }).catch((e) => alert(e.message));
+        bankFolder = null; renderBank();
+      } }));
+  } else bar.append(node("b", { textContent: "Ma banque de fonds" }), node("button", { className: "mini", type: "button", textContent: "+ Nouveau dossier", onclick: async () => {
+    const name = prompt("Nom du dossier (par exemple « Harry Potter ») :");
+    if (!name || !name.trim()) return;
+    try { bankFolder = (await bankFetch("/api/cut/background-folders", jsonBody("POST", { name }))).id; }
+    catch (error) { alert(error.message); }
+    renderBank();
+  } }));
+  // La place prise : limitée avec l’abonnement CLOUD (3 Go), libre pour les membres ONIRIQUE.
+  if (bankData.max) bar.append(node("small", { textContent: gigas(bankData.used) + " utilisés sur " + gigas(bankData.max) + (bankData.used >= bankData.max * .9 ? " : ta banque est presque pleine, retire des fonds pour en garder d’autres." : "") }));
+  const tiles = [];
+  if (!open) for (const f of folders) {
+    const n = backgrounds.filter((b) => b.folderId === f.id).length;
+    const tile = node("button", { type: "button", className: "folder", title: "Ouvrir « " + f.name + " » (glisse un fond dessus pour l’y ranger)", onclick: () => { bankFolder = f.id; renderBank(); } });
+    tile.insertAdjacentHTML("afterbegin", FOLDER_SVG);
+    tile.append(node("span", { textContent: f.name }), node("small", { textContent: n + " fond" + (n > 1 ? "s" : "") }));
+    dropTarget(tile, f.id);
+    tiles.push(tile);
+  }
+  for (const b of backgrounds.filter((x) => (x.folderId ?? null) === bankFolder)) {
+    const isImage = b.type.startsWith("image/");
+    const tile = node("button", { type: "button", className: "tile", draggable: true, title: (isImage ? "Voir" : "Regarder") + " « " + b.name + " »" + (folders.length ? " (glisse-le sur un dossier pour le ranger)" : "") });
+    const look = isImage ? node("img", { src: b.url, alt: "", loading: "lazy" }) : node("video", { src: b.url + "#t=1", muted: true, preload: "metadata", playsInline: true, loop: true });
+    // Au survol, la vidéo se lit sans le son : on voit ce qu’elle contient sans l’ouvrir.
+    if (!isImage) { tile.onmouseenter = () => look.play().catch(() => {}); tile.onmouseleave = () => look.pause(); }
+    tile.ondragstart = (e) => { e.dataTransfer.setData("text/x-onirique-bg", String(b.id)); e.dataTransfer.effectAllowed = "move"; };
+    tile.onclick = () => bankShow(b);
+    const add = node("i", { className: "add", textContent: "+", title: "Ajouter aux clips" });
+    add.onclick = (event) => { event.stopPropagation(); bankAdd(b); };
+    const drop = node("i", { textContent: "×", title: "Retirer de ma banque" });
+    drop.onclick = async (event) => {
+      event.stopPropagation();
+      if (!confirm("Retirer « " + b.name + " » de ta banque de fonds ?")) return;
+      await bankFetch("/api/cut/backgrounds/" + b.id, { method: "DELETE" }).catch((e) => alert(e.message));
+      renderBank();
+    };
+    tile.append(look, node("span", { textContent: b.name }), add, drop);
+    if (!isImage) { const play = node("b", { className: "play" }); play.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; tile.append(play); }
+    tiles.push(tile);
+  }
+  const empty = !tiles.length && node("p", { className: "muted", style: "grid-column:1/-1;margin:0", textContent: open
+    ? "Ce dossier est vide : glisse un fond sur son nom depuis « Tous les fonds », ou ajoute des clips puis « Garder ces clips dans ma banque » (ils iront dans ce dossier)."
+    : "Ta banque est vide : ajoute des clips, puis « Garder ces clips dans ma banque »." });
+  box.replaceChildren(bar, ...tiles, ...(empty ? [empty] : []));
 }
 /** Envoie dans la banque les clips qui n’y sont pas encore (même nom et même taille). */
 async function saveToBank() {
   const button = $("bank-save");
   button.disabled = true;
   try {
-    const { backgrounds } = await bankFetch("/api/cut/backgrounds"), there = new Set(backgrounds.map((b) => b.name + "|" + b.size));
+    const { backgrounds, used, max } = await bankFetch("/api/cut/backgrounds"), there = new Set(backgrounds.map((b) => b.name + "|" + b.size));
     const todo = clips.filter((c) => c.file && !there.has(c.file.name + "|" + c.file.size));
     if (!todo.length) { $("bank-state").textContent = clips.length ? "Ces clips sont déjà dans ta banque." : "Ajoute d’abord des clips."; return; }
+    const size = todo.reduce((n, c) => n + c.file.size, 0);
+    if (max && used + size > max) { $("bank-state").textContent = "Pas assez de place : ta banque fait " + gigas(max) + " avec l’abonnement CLOUD (" + gigas(used) + " utilisés), ces clips font " + gigas(size) + ". Retire des fonds, ou garde moins de clips."; return; }
     for (const [i, c] of todo.entries()) {
-      await upload("/api/cut/backgrounds?name=" + encodeURIComponent(c.file.name), c.file, "json",
+      await upload("/api/cut/backgrounds?name=" + encodeURIComponent(c.file.name) + (bankFolder ? "&folder=" + bankFolder : ""), c.file, "json",
         (p) => { $("bank-state").textContent = "Envoi " + (i + 1) + " / " + todo.length + "… " + pct(p); });
     }
-    $("bank-state").textContent = todo.length + " clip" + (todo.length > 1 ? "s gardés" : " gardé") + " dans ta banque de fonds.";
+    const where = bankFolder && bankData.folders.find((f) => f.id === bankFolder);
+    $("bank-state").textContent = todo.length + " clip" + (todo.length > 1 ? "s gardés" : " gardé") + (where ? " dans le dossier « " + where.name + " »." : " dans ta banque de fonds.");
     if (!$("bank").hidden) renderBank();
   } catch (error) { $("bank-state").textContent = error.message || "L’envoi dans ta banque n’a pas marché."; }
   finally { button.disabled = false; }
@@ -4749,10 +4858,15 @@ function start() {
   $("fastExport").checked = !!prefs.fastExport;
   $("fastExport").onchange = () => { prefs.fastExport = $("fastExport").checked; savePrefs(); };
   // Fondateurs : le cloud CUT (la case est cochée d’office).
+  // La banque de fonds : pour tous (abonnés CLOUD : 3 Go ; membres ONIRIQUE : sans limite).
+  $("bank-row").hidden = false;
+  $("bank-open").onclick = () => { $("bank").hidden = !$("bank").hidden; if (!$("bank").hidden) renderBank(); };
+  $("bank-save").onclick = saveToBank;
+  $("bdlg-x").onclick = () => $("bdlg").close();
+  $("bdlg").addEventListener("close", () => { const v = $("bdlg-video"); v.pause(); v.removeAttribute("src"); v.load(); });
+  $("bdlg").addEventListener("click", (e) => { if (e.target === $("bdlg")) $("bdlg").close(); }); // un clic à côté ferme
   if (isFounder) {
-    $("keep-box").hidden = $("lib-panel").hidden = $("bank-row").hidden = false;
-    $("bank-open").onclick = () => { $("bank").hidden = !$("bank").hidden; if (!$("bank").hidden) renderBank(); };
-    $("bank-save").onclick = saveToBank;
+    $("keep-box").hidden = $("lib-panel").hidden = false;
     // Shorts YouTube : seulement si ce compte y a droit ; la case n’agit que pour une vidéo gardée dans le cloud CUT.
     bankFetch("/api/cut/youtube").then((state) => {
       if (!state.allowed) return;

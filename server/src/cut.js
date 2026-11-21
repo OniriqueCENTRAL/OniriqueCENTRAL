@@ -146,6 +146,14 @@ db.exec(`CREATE TABLE IF NOT EXISTS cut_backgrounds (
   size       INTEGER NOT NULL,
   created_at INTEGER NOT NULL
 )`);
+// Les dossiers de la banque (« Harry Potter », « Mangas »…) : chaque fond est dans un dossier, ou dans aucun.
+db.exec(`CREATE TABLE IF NOT EXISTS cut_bg_folders (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+)`);
+if (!all('PRAGMA table_info(cut_backgrounds)').some((c) => c.name === 'folder_id')) db.exec('ALTER TABLE cut_backgrounds ADD COLUMN folder_id INTEGER');
 // Un Short fait depuis le cloud CUT garde la vidéo d'où il vient : elle ne peut pas partir deux fois.
 if (!all('PRAGMA table_info(youtube_videos)').some((c) => c.name === 'cut_video_id')) db.exec('ALTER TABLE youtube_videos ADD COLUMN cut_video_id INTEGER');
 const LIBRARY_MAX = 1024 * 1024 * 1024; // une vidéo gardée : 1 Go au plus
@@ -175,7 +183,7 @@ const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.du
 const shortUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/short/${id}?e=${e}&s=${sign(`cutshort.${id}.${e}`)}`; };
 const reelUrl = (id, hours = 6) => { const e = now() + hours * 3600_000; return `/api/cut/reel/${id}?e=${e}&s=${sign(`cutreel.${id}.${e}`)}`; };
 const backgroundUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/background/${id}?e=${e}&s=${sign(`cutbg.${id}.${e}`)}`; };
-const backgroundView = (b) => ({ id: b.id, name: b.name, type: b.mime, size: b.size, createdAt: b.created_at, url: backgroundUrl(b.id) });
+const backgroundView = (b) => ({ id: b.id, name: b.name, type: b.mime, size: b.size, createdAt: b.created_at, folderId: b.folder_id || null, url: backgroundUrl(b.id) });
 // L'aperçu (une image de la vidéo, 360 px de large) est fait par ffmpeg à sa première demande, puis gardé à côté de la
 // vidéo. Un à la fois : le serveur a peu de mémoire.
 let posterQueue = Promise.resolve();
@@ -425,31 +433,75 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
   });
 
   // ——— La banque de fonds des fondateurs : des clips gardés pour les réutiliser d'un son à l'autre ———
+  // La banque est ouverte aux abonnés CLOUD, limitée à 3 Go ; les membres ONIRIQUE n'ont pas de limite (max null).
+  const bankMax = (user) => (['vip', 'beta', 'betaf', 'admin', 'founder'].includes(user.role) ? null : setting('cut_bank_max', 3 * 1024 ** 3));
+  const bankUsed = (userId) => get('SELECT COALESCE(SUM(size), 0) AS n FROM cut_backgrounds WHERE user_id = ?', userId).n;
   const bgDir = path.join(config.dataDir, 'cut-backgrounds');
   fs.mkdirSync(bgDir, { recursive: true });
   const bgKept = new Set(all('SELECT stored_as FROM cut_backgrounds').map((b) => b.stored_as));
   for (const name of fs.readdirSync(bgDir)) if (!bgKept.has(name)) fs.rmSync(path.join(bgDir, name), { force: true });
-  app.post('/api/cut/backgrounds', requireUser, member, onirique, wrap(async (req, res) => {
+  app.post('/api/cut/backgrounds', requireUser, member, wrap(async (req, res) => {
     rateLimit(`cut-bg:${req.user.id}`, 200, 3600_000);
     const length = Number(req.headers['content-length']);
     if (!Number.isFinite(length) || length <= 0) throw new HttpError(411, 'Taille du fichier inconnue.');
     const disk = fs.statfsSync(config.dataDir), total = disk.blocks * disk.bsize, used = total - disk.bavail * disk.bsize;
     if ((used + length) / total > setting('sounds_disk_max', 0.8)) throw new HttpError(507, "Le disque du serveur est presque plein : le fond n'a pas été gardé.");
-    const stored = await receiveFile(req, bgDir, LIBRARY_MAX), file = path.join(bgDir, stored.storedAs);
+    const max = bankMax(req.user);
+    if (max && bankUsed(req.user.id) + length > max) throw new HttpError(413, `Ta banque de fonds est pleine (${max / 1024 ** 3} Go avec l'abonnement CLOUD) : retire des fonds pour en garder d'autres.`);
+    const stored = await receiveFile(req, bgDir, max ? Math.min(LIBRARY_MAX, max - bankUsed(req.user.id)) : LIBRARY_MAX), file = path.join(bgDir, stored.storedAs);
     const head = Buffer.alloc(16), fd = fs.openSync(file, 'r');
     fs.readSync(fd, head, 0, 16, 0);
     fs.closeSync(fd);
     const mime = backgroundType(head);
     if (!mime) { fs.rmSync(file, { force: true }); throw new HttpError(400, 'Vidéo (MP4, MOV, WebM) ou photo (JPEG, PNG, WebP) attendue.'); }
     const name = String(req.query.name || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '').trim().slice(0, 100) || 'Fond';
-    const id = run('INSERT INTO cut_backgrounds (user_id, name, stored_as, mime, size, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-      req.user.id, name, stored.storedAs, mime, stored.size, now()).lastInsertRowid;
+    const folder = get('SELECT id FROM cut_bg_folders WHERE id = ? AND user_id = ?', Number(req.query.folder) || 0, req.user.id);
+    const id = run('INSERT INTO cut_backgrounds (user_id, name, stored_as, mime, size, created_at, folder_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      req.user.id, name, stored.storedAs, mime, stored.size, now(), folder ? folder.id : null).lastInsertRowid;
     res.status(201).json(backgroundView(get('SELECT * FROM cut_backgrounds WHERE id = ?', id)));
   }));
-  app.get('/api/cut/backgrounds', requireUser, member, onirique, (req, res) => {
-    res.json({ backgrounds: all('SELECT * FROM cut_backgrounds WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map(backgroundView) });
+  app.get('/api/cut/backgrounds', requireUser, member, (req, res) => {
+    res.json({ backgrounds: all('SELECT * FROM cut_backgrounds WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map(backgroundView),
+      folders: all('SELECT id, name FROM cut_bg_folders WHERE user_id = ? ORDER BY name COLLATE NOCASE', req.user.id),
+      used: bankUsed(req.user.id), max: bankMax(req.user) });
   });
-  app.delete('/api/cut/backgrounds/:id', requireUser, member, onirique, (req, res) => {
+  // Ranger un fond dans un dossier (folderId null : hors dossier), ou le renommer.
+  app.patch('/api/cut/backgrounds/:id', requireUser, member, (req, res) => {
+    const b = get('SELECT * FROM cut_backgrounds WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
+    if (!b) throw new HttpError(404, 'Fond introuvable.');
+    if ('folderId' in (req.body || {})) {
+      const f = req.body.folderId == null ? null : get('SELECT id FROM cut_bg_folders WHERE id = ? AND user_id = ?', Number(req.body.folderId) || 0, req.user.id);
+      if (req.body.folderId != null && !f) throw new HttpError(404, 'Dossier introuvable.');
+      run('UPDATE cut_backgrounds SET folder_id = ? WHERE id = ?', f ? f.id : null, b.id);
+    }
+    if (typeof req.body?.name === 'string') run('UPDATE cut_backgrounds SET name = ? WHERE id = ?', folderName(req.body.name) || b.name, b.id);
+    res.json(backgroundView(get('SELECT * FROM cut_backgrounds WHERE id = ?', b.id)));
+  });
+  const folderName = (x) => String(x || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  app.post('/api/cut/background-folders', requireUser, member, (req, res) => {
+    const name = folderName(req.body?.name);
+    if (!name) throw new HttpError(400, 'Donne un nom au dossier.');
+    if (all('SELECT 1 FROM cut_bg_folders WHERE user_id = ?', req.user.id).length >= 200) throw new HttpError(400, 'Pas plus de 200 dossiers.');
+    const id = run('INSERT INTO cut_bg_folders (user_id, name, created_at) VALUES (?, ?, ?)', req.user.id, name, now()).lastInsertRowid;
+    res.status(201).json({ id: Number(id), name });
+  });
+  app.patch('/api/cut/background-folders/:id', requireUser, member, (req, res) => {
+    const f = get('SELECT * FROM cut_bg_folders WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
+    if (!f) throw new HttpError(404, 'Dossier introuvable.');
+    const name = folderName(req.body?.name);
+    if (!name) throw new HttpError(400, 'Donne un nom au dossier.');
+    run('UPDATE cut_bg_folders SET name = ? WHERE id = ?', name, f.id);
+    res.json({ id: f.id, name });
+  });
+  // Supprimer un dossier : ses fonds restent dans la banque, hors dossier.
+  app.delete('/api/cut/background-folders/:id', requireUser, member, (req, res) => {
+    const f = get('SELECT * FROM cut_bg_folders WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
+    if (!f) throw new HttpError(404, 'Dossier introuvable.');
+    run('UPDATE cut_backgrounds SET folder_id = NULL WHERE folder_id = ?', f.id);
+    run('DELETE FROM cut_bg_folders WHERE id = ?', f.id);
+    res.json({ ok: true });
+  });
+  app.delete('/api/cut/backgrounds/:id', requireUser, member, (req, res) => {
     const b = get('SELECT * FROM cut_backgrounds WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
     if (!b) throw new HttpError(404, 'Fond introuvable.');
     run('DELETE FROM cut_backgrounds WHERE id = ?', b.id);
