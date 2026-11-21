@@ -1,0 +1,13 @@
+{
+ "Trouver la réplique dans tout le clip": "Find the line in the whole clip",
+ "Répondent à ton son": "Echo your track",
+ "Tout le clip": "The whole clip",
+ "La réplique finit sur cette phrase, juste avant le drop": "The line ends on this sentence, right before the drop",
+ "Ajoute d'abord un clip vidéo pour la réplique.": "Add a video clip for the line first.",
+ "L'IA n'a pas entendu de dialogue dans ce clip.": "The AI didn't hear any dialogue in this clip.",
+ "Ajoute les paroles de ton son (onglet Texte) pour voir les répliques qui lui répondent. Touche une phrase : la réplique finit dessus.": "Add your track's lyrics (Text tab) to see the lines that echo it. Tap a sentence: the line ends on it.",
+ "En haut, les phrases qui reprennent un mot de ton son. Touche une phrase : la réplique finit dessus, juste avant le drop.": "At the top, the sentences that pick up a word from your track. Tap a sentence: the line ends on it, right before the drop.",
+ "Aucune phrase ne reprend un mot de ton son : choisis à l'oreille. Touche une phrase : la réplique finit dessus.": "No sentence picks up a word from your track: choose by ear. Tap a sentence: the line ends on it.",
+ "Réplique → drop": "Line → drop",
+ "Réplique en mots rouges, puis paroles pixel": "Line in red words, then pixel lyrics"
+}
