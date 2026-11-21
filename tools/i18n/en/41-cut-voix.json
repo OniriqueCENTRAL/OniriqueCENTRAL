@@ -1,0 +1,23 @@
+{
+ "Plusieurs personnes parlent : une couleur de texte par voix": "Several people speak: one text color per voice",
+ "Voix 3": "Voice 3",
+ "Voix {}": "Voice {}",
+ "Reconnaître les voix (IA)": "Recognize the voices (AI)",
+ "L’IA reconnaît les voix toute seule après la transcription. Touche une phrase pour la passer à la voix suivante. IA des voix : WeSpeaker ResNet34 (licence CC BY 4.0), dans ton navigateur : rien n’est envoyé.": "The AI recognizes the voices on its own after the transcription. Tap a sentence to move it to the next voice. Voice AI: WeSpeaker ResNet34 (CC BY 4.0 license), in your browser: nothing is sent.",
+ "Plusieurs voix sur le son (feat) : une couleur par voix": "Several voices on the track (feat): one color per voice",
+ "La voix 1 garde la couleur du texte. L’IA reconnaît les voix toute seule après « Écrire les paroles avec l’IA ». Touche une phrase du passage pour la passer à la voix suivante.": "Voice 1 keeps the text color. The AI recognizes the voices on its own after “Write the lyrics with AI”. Tap a sentence of the section to move it to the next voice.",
+ "Dernier mot de chaque phrase en couleur (la rime)": "Last word of each sentence in color (the rhyme)",
+ "Couleur de la rime": "Rhyme color",
+ "Le son commence sur du noir : les paroles seules, puis l’image arrive sur le temps": "The track starts on black: the lyrics alone, then the picture comes in on the beat",
+ "Noir au début du son": "Black at the start of the track",
+ "2 temps": "2 beats",
+ "2 mesures": "2 bars",
+ "Après le drop, une image plus sombre et plus froide": "After the drop, a darker and colder picture",
+ "La reconnaissance des voix ne tourne pas dans ce navigateur : touche une phrase pour changer sa voix.": "Voice recognition doesn't run in this browser: tap a sentence to change its voice.",
+ "{} voix reconnues : une couleur par personne. Touche une phrase si l’IA s’est trompée de voix.": "{} voices recognized: one color per person. Tap a sentence if the AI got the voice wrong.",
+ "Une seule voix dans cette réplique.": "Only one voice in this line.",
+ "{} voix reconnues sur le son : une couleur par artiste. Touche une phrase si l’IA s’est trompée de voix.": "{} voices recognized on the track: one color per artist. Tap a sentence if the AI got the voice wrong.",
+ "Une seule voix reconnue sur ce son.": "Only one voice recognized on this track.",
+ "Téléchargement de l'IA des voix (26 Mo, une seule fois)… {} %": "Downloading the voice AI (26 MB, only once)… {} %",
+ "L'IA reconnaît les voix… {} %": "The AI is recognizing the voices… {} %"
+}

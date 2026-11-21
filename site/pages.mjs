@@ -25,7 +25,7 @@ const NAV = [
 const page = ({ file, title, description, intro, body }) => `<!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=14a5749f"></script>
+<script src="assets/i18n.js?v=9887cfcb"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=5"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">

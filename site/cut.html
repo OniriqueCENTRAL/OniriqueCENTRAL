@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=14a5749f"></script>
+<script src="assets/i18n.js?v=9887cfcb"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -640,6 +640,16 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <button class="mini" type="button" id="lyrics-pull">Reprendre celles de CLOUD</button>
               <button class="mini" type="button" id="lyrics-push">Enregistrer dans CLOUD</button>
             </div>
+            <label class="check"><input type="checkbox" id="songVoices"> Plusieurs voix sur le son (feat) : une couleur par voix</label>
+            <div class="stack" id="song-voices-box" style="padding:0" hidden>
+              <div class="row"><label>Voix 2<input type="color" id="songVoice2"></label><label>Voix 3<input type="color" id="songVoice3"></label><button class="mini" type="button" id="song-voices-ai">Reconnaître les voix (IA)</button></div>
+              <p class="muted" id="song-voices-status">La voix 1 garde la couleur du texte. L’IA reconnaît les voix toute seule après « Écrire les paroles avec l’IA ». Touche une phrase du passage pour la passer à la voix suivante.</p>
+              <div class="strong-words" id="song-voice-lines"></div>
+            </div>
+            <div class="row">
+              <label class="check"><input type="checkbox" id="rhyme"> Dernier mot de chaque phrase en couleur (la rime)</label>
+              <label>Couleur de la rime<input type="color" id="rhymeColor"></label>
+            </div>
         </div>
         <div class="stack">
           <h3 class="sub-title">Style du texte</h3>
@@ -781,10 +791,10 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <button class="mini" type="button" id="isync-clear">Retirer les repères de temps</button>
             </div>
             <p class="muted" id="isync-ai-status" hidden></p>
-            <label class="check"><input type="checkbox" id="introVoices"> Deux personnes parlent : une couleur de texte par voix</label>
+            <label class="check"><input type="checkbox" id="introVoices"> Plusieurs personnes parlent : une couleur de texte par voix</label>
             <div class="stack" id="voices-box" style="padding:0" hidden>
-              <div class="row"><label>Voix 1<input type="color" id="voice1"></label><label>Voix 2<input type="color" id="voice2"></label></div>
-              <p class="muted">Touche une phrase pour la passer à l’autre voix.</p>
+              <div class="row"><label>Voix 1<input type="color" id="voice1"></label><label>Voix 2<input type="color" id="voice2"></label><label>Voix 3<input type="color" id="voice3"></label><button class="mini" type="button" id="voices-ai">Reconnaître les voix (IA)</button></div>
+              <p class="muted">L’IA reconnaît les voix toute seule après la transcription. Touche une phrase pour la passer à la voix suivante. IA des voix : WeSpeaker ResNet34 (licence CC BY 4.0), dans ton navigateur : rien n’est envoyé.</p>
               <div class="strong-words" id="voice-lines"></div>
             </div>
             <label class="check"><input type="checkbox" id="introGaps"> Effacer le texte pendant les blancs entre deux phrases</label>
@@ -855,6 +865,10 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <label class="check"><input type="checkbox" id="introFade"> Fondu du son entre le film et la musique</label>
               <label class="check"><input type="checkbox" id="dropGap"> Silence juste avant le drop</label>
             </div>
+            <label>Le son commence sur du noir : les paroles seules, puis l’image arrive sur le temps
+              <div class="chips wrap-in" id="blackStart" role="group" aria-label="Noir au début du son"><button type="button" data-v="0">Non</button><button type="button" data-v="2">2 temps</button><button type="button" data-v="4">1 mesure</button><button type="button" data-v="8">2 mesures</button></div>
+            </label>
+            <label class="check"><input type="checkbox" id="coldDrop"> Après le drop, une image plus sombre et plus froide</label>
 
             <p class="sub-title">Sous la réplique</p>
             <label>La musique qui mène au drop, jouée sous la réplique
@@ -1131,7 +1145,7 @@ const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 10
 // Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62, iMark: false, iMarkColor: "#ffe600",
-  introVoices: false, voice1: "#ffffff", voice2: "#ffd23f", stackMax: "0" };
+  introVoices: false, voice1: "#ffffff", voice2: "#ffd23f", voice3: "#7fd1ff", stackMax: "0" };
 const I_PLAIN = { iOwn: true, iColor: "#ffffff", iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iMark: false, iBox: false };
 const I_FX = {
   cinema: { ...I_PLAIN, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 },
@@ -1143,21 +1157,24 @@ const I_FX = {
   drop: { ...I_PLAIN, iShadowOffset: 8 },
 };
 const FILM = { ...ILOOK, iFx: "", trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, filmDialog: false, dialogVol: 100, introLyrics: "", introSubMode: "sub", introType: false, stackX: .5, stackY: .4, stackSize: 70, introGaps: true, introFade: false, transition: "flash", transAmt: 100,
-  dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
+  dropGap: false, blackStart: "0", coldDrop: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", igAuto: false, igTime: "18:30", igTrial: "", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, hookSize: 100, hiddenWords: {}, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
-  strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "", strongFx: "none" };
+  strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "", strongFx: "none",
+  songVoices: false, songVoice2: "#7fd1ff", songVoice3: "#ffd23f", songVoiceMap: {}, rhyme: false, rhymeColor: "#ff2525" };
 // Les styles rapides : des montages de TikTok de rap qui marchent, réglés d’un clic. Le titre et l’accroche y partent masqués.
 const PRESETS = {
   classic: { frame: "full", retro: false, lyricsMode: "line", lyricsPlace: "bottom", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "classic" },
   pixel: { frame: "43", retro: true, lyricsMode: "word", lyricsPlace: "middle", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "pixel" },
   red: { frame: "169", retro: false, lyricsMode: "word", lyricsPlace: "middle", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "red" },
   film: { frame: "169", retro: false, lyricsMode: "line", lyricsPlace: "bottom", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "white", introOn: true },
-  // La réplique en gros mots rouges, une coupure noire, puis le couplet en mots pixel sur la suite du film (bande 4:3).
+  // Comme @cmoipriilick : la réplique en mots rouges de taille moyenne (une voix en rouge, l’autre en blanc), une coupe franche sur
+  // le temps, puis le couplet en mots pixel blancs, la rime en rouge, sur la suite du film plus sombre et plus froide (bande 4:3).
   drop: { frame: "43", retro: false, lyricsMode: "word", lyricsPlace: "middle", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "pixel", introOn: true,
-    introSubMode: "word", iOwn: true, iFont: "Anton", iColor: "#ff2525", iStroke: 7, iStrokeColor: "#3a0000", iShadowColor: "#000000", iShadowBlur: 24, iShadowOffset: 0,
-    iGlow: 0, iMark: false, iBox: false, iCaps: true, iPlace: "middle", transition: "black", dropGap: true, filmContinue: true },
+    introSubMode: "word", iOwn: true, iFont: "Anton", iColor: "#ff2525", iSize: 80, iStroke: 7, iStrokeColor: "#3a0000", iShadowColor: "#000000", iShadowBlur: 24, iShadowOffset: 0,
+    iGlow: 0, iMark: false, iBox: false, iCaps: true, iPlace: "middle", voice1: "#ff2525", voice2: "#ffffff", voice3: "#ffd23f",
+    transition: "cut", dropGap: false, coldDrop: true, rhyme: true, rhymeColor: "#ff2525", filmContinue: true },
   card: { frame: "43", retro: false, lyricsMode: "card", lyricsPlace: "bottom", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "classic" },
 };
 const FRAMES = { full: 0, 169: 9 / 16, 43: 3 / 4, 11: 1 };
@@ -2464,6 +2481,7 @@ async function autoLyrics() {
     readLyrics(); showCloudLyrics(); keepSet();
     if (!playing) draw(position, false);
     status(out.words + (out.aligned ? " mots de tes paroles calés par l’IA, ton texte est gardé" : " mots écrits et calés par l’IA") + (out.device === "gpu" ? "" : " (sur le processeur)") + (out.aligned ? "." : ". Relis-les : corrige un mot directement dans le texte") + (cloud ? " Enregistre-les dans CLOUD pour les garder." : ""));
+    await songVoicesAI(); // un feat : une couleur par artiste
   } catch (error) {
     status("Les paroles automatiques n’ont pas marché : " + error.message);
   } finally { $("lyrics-auto").disabled = false; }
@@ -2611,10 +2629,12 @@ function build() {
   }
 }
 
-// « {2} » en tête de phrase (après son repère de temps) : la phrase est dite par la deuxième voix.
-const VOICE2 = /^\s*\{2\}\s*/;
-const isVoice2 = (l) => VOICE2.test(l.replace(/^\s*\[[^\]]*\]\s*/, ""));
-const voiceTag = (l) => (isVoice2(l) ? "{2} " : "");
+// « {2} » ou « {3} » en tête de phrase (après son repère de temps) : la phrase est dite par la deuxième ou la troisième voix.
+const VOICE_TAG = /^\s*\{([23])\}\s*/;
+const voiceOf = (l) => { const m = VOICE_TAG.exec(l.replace(/^\s*\[[^\]]*\]\s*/, "")); return m ? Number(m[1]) : 1; };
+const voiceTag = (l) => (voiceOf(l) > 1 ? "{" + voiceOf(l) + "} " : "");
+/** La ligne l (LRC) dite par la voix v (1, 2 ou 3). */
+const withVoice = (l, v) => { const m = /^(\s*\[[^\]]*\]\s*)?(.*)$/.exec(l); return (m[1] || "") + (v > 1 ? "{" + v + "} " : "") + m[2].replace(VOICE_TAG, ""); };
 // La ponctuation reste avec son mot : « ? », « , », « . », « ! », « » » vont avec le mot d’avant ; « « », « ( », « ¿ » avec le mot d’après.
 // ti : le mot principal du groupe (celui qu’on marque FORT), parts : tous les morceaux d’origine.
 const PUNCT_ONLY = /^[\p{P}\p{S}]+$/u, OPENS = /^[«“‘(\[{¿¡]+$/u;
@@ -2640,8 +2660,8 @@ function parseLrc(text) {
   String(text || "").split("\n").forEach((raw, row) => {
     const m = /^\s*\[(\d+):(\d+(?:[.,]\d+)?)\]\s*(.*)$/.exec(raw);
     if (!m) return;
-    const voice = VOICE2.test(m[3]) ? 2 : 1;
-    m[3] = m[3].replace(VOICE2, "");
+    const voice = voiceOf(m[3]);
+    m[3] = m[3].replace(VOICE_TAG, "");
     if (!m[3].trim()) { blanks.push(Number(m[1]) * 60 + Number(m[2].replace(",", "."))); return; }
     // Synchronisées mot par mot dans CLOUD : « <mm:ss.cc>mot » devant chaque mot.
     const words = gluePunct([...m[3].matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>\s*([^<]*)/g)].map((w) => ({ at: Number(w[1]) * 60 + Number(w[2].replace(",", ".")), text: w[3].trim() }))
@@ -2676,7 +2696,7 @@ function readLyrics() { lyricsAll = parseLrc($("lyrics").value); lyrics = withou
 // Les paroles de la réplique, lues une fois par texte.
 let introParsed = { text: null, lines: [] };
 const introLines = () => (introParsed.text === prefs.introLyrics ? introParsed.lines : (introParsed = { text: prefs.introLyrics, lines: parseLrc(prefs.introLyrics) }).lines);
-const bareLine = (l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(VOICE2, "").replace(/<[^>]*>\s*/g, "").trim();
+const bareLine = (l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(VOICE_TAG, "").replace(/<[^>]*>\s*/g, "").trim();
 /** Les mots du passage, à toucher pour les mettre en FORT (ou les remettre normaux), et pour les retirer de la vidéo. */
 function renderStrong() {
   const box = $("strong-words");
@@ -2706,6 +2726,52 @@ function renderStrong() {
       } });
   }));
   if (!seen.length) $("cut-words").append(Object.assign(document.createElement("p"), { className: "muted", style: "margin:0", textContent: "Pas de paroles synchronisées dans ce passage." }));
+  renderSongVoices();
+}
+// ——— Les voix du son (un feat) : la voix de chaque phrase, par son et par moment de phrase (les paroles de CLOUD restent telles quelles) ———
+const songVoiceKey = (l) => l.at.toFixed(2);
+const songVoice = (l) => ((prefs.songVoiceMap || {})[sound.name] || {})[songVoiceKey(l)] || 1;
+/** La couleur d’un mot chanté : la rime (dernier mot de la phrase), sinon la voix 2 ou 3 ; null : la couleur du texte. */
+function sungColor(word, line) {
+  if (!line) return null;
+  if (prefs.rhyme && word && word.ti === (line.words || line.plain).at(-1)?.ti) return prefs.rhymeColor;
+  return prefs.songVoices && songVoice(line) > 1 ? prefs["songVoice" + songVoice(line)] : null;
+}
+/** Les phrases du passage, à toucher pour les passer à la voix suivante. */
+function renderSongVoices() {
+  $("song-voices-box").hidden = !prefs.songVoices;
+  if (!prefs.songVoices) return;
+  const from = sound.start, to = sound.start + span();
+  $("song-voice-lines").replaceChildren(...lyricsAll.filter((l) => sound.buffer && l.at < to && lineEnd(l, lyricsAll) > from).map((l) => {
+    const v = songVoice(l), b = Object.assign(document.createElement("button"), { type: "button", textContent: v + " · " + l.text.replace(/\*\*/g, ""), title: "Voix " + v });
+    b.style.color = v > 1 ? prefs["songVoice" + v] : prefs.textColor;
+    b.onclick = () => {
+      const map = { ...((prefs.songVoiceMap || {})[sound.name] || {}) }, next = v % 3 + 1;
+      if (next > 1) map[songVoiceKey(l)] = next; else delete map[songVoiceKey(l)];
+      prefs.songVoiceMap = { ...prefs.songVoiceMap, [sound.name]: map }; savePrefs(); restyle(); renderSongVoices();
+    };
+    return b;
+  }));
+}
+/** Les voix du son reconnues par l’IA (assets/voices.js), sur la voix isolée de tout le morceau : une couleur par artiste. */
+async function songVoicesAI() {
+  const say = (text) => { $("song-voices-status").textContent = text; }, lines = lyricsAll;
+  if (!sound.buffer || lines.length < 2) return;
+  $("song-voices-ai").disabled = true;
+  try {
+    say("Séparation de la voix…");
+    let voice = null;
+    try { const all = await separateAll(); if (!/rapide/.test(all.note)) voice = all.parts.vocals; } catch { /* le son tel quel */ }
+    const { voicesOf } = await import("./assets/voices.js?v=1");
+    const voices = await voicesOf(voice || sound.buffer, lines.map((l) => [l.at, lineEnd(l, lines)]), say, { song: true });
+    if (!voices) return say("La reconnaissance des voix ne tourne pas dans ce navigateur : touche une phrase pour changer sa voix.");
+    const map = {};
+    lines.forEach((l, i) => { if (voices[i] > 1) map[songVoiceKey(l)] = voices[i]; });
+    const n = Math.max(...voices);
+    prefs.songVoiceMap = { ...prefs.songVoiceMap, [sound.name]: map }; prefs.songVoices = $("songVoices").checked = n > 1;
+    savePrefs(); restyle(); renderSongVoices();
+    say(n > 1 ? n + " voix reconnues sur le son : une couleur par artiste. Touche une phrase si l’IA s’est trompée de voix." : "Une seule voix reconnue sur ce son.");
+  } finally { $("song-voices-ai").disabled = false; }
 }
 /** Met le mot w de la ligne row en FORT (ou l’enlève), directement dans les paroles : « Enregistrer dans CLOUD » le garde sur le titre.
  *  Les étoiles entourent le mot lui-même, sa ponctuation reste à côté. */
@@ -3094,7 +3160,7 @@ function drawIntro(t, playing) {
   const hook = prefs.hookOn && $("hook").value.trim();
   if (hook) text([hook], r.y ? Math.max(70, r.y - 60) : H * .1, 44 * prefs.hookSize / 100, "600", "Hanken Grotesk");
   const lines = introLines(), now = lines.filter((l) => l.at <= t).at(-1);
-  const tint = now && prefs.introVoices ? prefs[now.voice === 2 ? "voice2" : "voice1"] : null;
+  const tint = now && prefs.introVoices ? prefs["voice" + now.voice] : null;
   if (lines.length && prefs.introSubMode === "word") {
     const look = introLook(), place = look ? prefs.iPlace : prefs.lyricsPlace;
     const word = wordAt(t, lines), y = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[place] ?? r.y + r.h / 2;
@@ -3244,15 +3310,19 @@ function drawMusic(t, playing) {
   // Les temps du morceau : le zoom, la secousse et le décalage RVB partent de chaque temps.
   const song = t + sound.start - sound.phase, sinceBeat = ((song % beatLength()) + beatLength()) % beatLength();
   const beatEnv = Math.exp(-sinceBeat * 9), beatIndex = Math.floor(song / beatLength());
+  // « Le son commence sur du noir » : les paroles seules, puis l’image arrive sur un temps, comme les montages de films qui marchent.
+  const dark = introLen() > 0 && t < Number(prefs.blackStart || 0) * beatLength();
   {
     const pulse = prefs.zoom ? 0.075 * prefs.zoomAmt / 100 * beatEnv : 0;
     // Une photo reste fixe ; elle n’avance doucement que si on le demande.
     const drift = clip.kind === "image" && prefs.photoMove ? 1.04 + 0.08 * (t - s.t0) / (s.t1 - s.t0) : 1.0;
     const shake = prefs.shake ? 26 * prefs.shakeAmt / 100 * beatEnv : 0, dx = shake * Math.sin(beatIndex * 91.7), dy = shake * Math.cos(beatIndex * 47.3);
     g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
-    drawPicture(src, frameRect(), drift * (1 + pulse) * (1 + shake / 300), dx, dy);
+    if (!dark) drawPicture(src, frameRect(), drift * (1 + pulse) * (1 + shake / 300), dx, dy);
   }
   const r = frameRect();
+  // Après le drop, une image plus sombre et plus froide que celle de la réplique : le passage au son se voit.
+  if (prefs.coldDrop && introLen() > 0) { g.save(); g.globalCompositeOperation = "multiply"; g.fillStyle = "#8fa8cc"; g.fillRect(r.x, r.y, r.w, r.h); g.restore(); }
   drawEffects(r, beatEnv);
   // Un léger voile en haut et en bas (plein écran) : le texte reste lisible sur n’importe quelle image.
   if (!r.y) {
@@ -3260,7 +3330,7 @@ function drawMusic(t, playing) {
     shade.addColorStop(0, "rgba(0,0,0,.35)"); shade.addColorStop(.25, "rgba(0,0,0,0)"); shade.addColorStop(.7, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,.45)");
     g.fillStyle = shade; g.fillRect(0, 0, W, H);
   }
-  if (prefs.flash) { const a = Math.min(1, .6 * prefs.flashAmt / 100 * Math.exp(-(t - s.t0) * 11)); if (a > .01) { g.fillStyle = `rgba(255,255,255,${a})`; g.fillRect(r.x, r.y, r.w, r.h); } }
+  if (prefs.flash && !dark) { const a = Math.min(1, .6 * prefs.flashAmt / 100 * Math.exp(-(t - s.t0) * 11)); if (a > .01) { g.fillStyle = `rgba(255,255,255,${a})`; g.fillRect(r.x, r.y, r.w, r.h); } }
   const hook = prefs.hookOn && $("hook").value.trim();
   if (hook) text([hook], r.y ? Math.max(70, r.y - 60) : H * .1, 44 * prefs.hookSize / 100, "600", "Hanken Grotesk");
 
@@ -3276,9 +3346,9 @@ function drawMusic(t, playing) {
   // La place des paroles : en haut, au milieu ou en bas (de l’image pour le mot par mot, de l’écran pour la ligne).
   const wordY = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[prefs.lyricsPlace] ?? r.y + r.h / 2;
   const lineY = { top: prefs.place === "top" ? H * .3 : H * .18, middle: H * .5, bottom: prefs.place === "bottom" ? H * .62 : H * .8 }[prefs.lyricsPlace] ?? H * .8;
-  if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, wordY, Math.min(r.w * .86, SAFE_W), now); }
+  if (prefs.lyricsMode === "word") { const word = wordAt(now), color = word && sungColor(word, line); if (word) bigWord(color ? { ...word, color } : word, wordY, Math.min(r.w * .86, SAFE_W), now); }
   else if (prefs.lyricsMode === "card") lyricCard(line && now - line.at < 8 ? line.text : "", r, prefs.place === "none" ? "" : title, prefs.place === "none" ? "" : artist);
-  else if (line && now - line.at < 8) paint([line.text], lineY, textLook({ size: 62 * ts }));
+  else if (line && now - line.at < 8) { const color = sungColor(null, line); paint([line.text], lineY, textLook({ size: 62 * ts, ...(color ? { color } : {}) })); }
 }
 /** Fondu au noir au début et à la fin de toute la vidéo (pas en BOUCLE : la vidéo doit s’enchaîner). */
 function fadeEnds(t) {
@@ -4581,7 +4651,9 @@ async function aiIsync(write = false) {
     const out = await aiWork(() => ai.transcribe(part, status, { written, ends: true, film: true }));
     if (!out.words) return status(written ? "L’IA n’a pas réussi à caler ce texte sur la réplique." : "L’IA n’a pas entendu de paroles dans la réplique.");
     prefs.introLyrics = $("introLyrics").value = out.lrc; savePrefs(); restyle(); renderVoices();
-    status(out.words + (out.aligned ? " mots calés par l’IA, ton texte est gardé." : " mots écrits et calés par l’IA : relis-les, corrige un mot directement dans le texte."));
+    const done = out.words + (out.aligned ? " mots calés par l’IA, ton texte est gardé." : " mots écrits et calés par l’IA : relis-les, corrige un mot directement dans le texte.");
+    status(done);
+    await introVoicesAI((text) => status(done + " " + text));
   } catch (error) { status("L’IA n’a pas marché : " + error.message); } finally { $("isync-ai").disabled = $("isync-write").disabled = false; }
 }
 
@@ -4681,6 +4753,7 @@ function pickReplica(k) {
   savePrefs(); position = 0; refresh(); restyle(); renderVoices();
   $("find-list").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === String(k))));
   $("intro-hear").click();
+  introVoicesAI(findStatus).catch(() => {});
 }
 /** Terminer : les paroles de la réplique s’écrivent en LRC (temps depuis le début de la réplique), mot par mot si on l’a fait. */
 function finishIsync() {
@@ -4698,20 +4771,35 @@ function finishIsync() {
   restyle();
 }
 
-/** Deux voix : chaque phrase de la réplique, à toucher pour la passer d’une voix à l’autre (« {2} » dans le texte). */
+/** Plusieurs voix : chaque phrase de la réplique, à toucher pour la passer à la voix suivante (« {2} », « {3} » dans le texte). */
 function renderVoices() {
   $("voices-box").hidden = !prefs.introVoices;
   const rows = prefs.introLyrics.split("\n");
   $("voice-lines").replaceChildren(...rows.map((l, k) => [l, k]).filter(([l]) => bareLine(l)).map(([l, k]) => {
-    const two = isVoice2(l), b = Object.assign(document.createElement("button"), { type: "button", textContent: (two ? "2 · " : "1 · ") + bareLine(l).replace(/\*\*/g, ""), title: "Voix " + (two ? 2 : 1) });
-    b.style.color = prefs[two ? "voice2" : "voice1"];
-    b.onclick = () => {
-      const m = /^(\s*\[[^\]]*\]\s*)?(.*)$/.exec(l);
-      rows[k] = (m[1] || "") + (two ? m[2].replace(VOICE2, "") : "{2} " + m[2]);
-      prefs.introLyrics = $("introLyrics").value = rows.join("\n"); savePrefs(); restyle(); renderVoices();
-    };
+    const v = voiceOf(l), b = Object.assign(document.createElement("button"), { type: "button", textContent: v + " · " + bareLine(l).replace(/\*\*/g, ""), title: "Voix " + v });
+    b.style.color = prefs["voice" + v];
+    b.onclick = () => { rows[k] = withVoice(l, v % 3 + 1); prefs.introLyrics = $("introLyrics").value = rows.join("\n"); savePrefs(); restyle(); renderVoices(); };
     return b;
   }));
+}
+/** Les voix de la réplique reconnues par l’IA (assets/voices.js) : une couleur par personne, dès qu’il y en a plusieurs. */
+async function introVoicesAI(say = (text) => { $("isync-ai-status").hidden = false; $("isync-ai-status").textContent = text; }) {
+  const c = introClip(), lines = introLines().filter((l) => l.at < introLen());
+  if (!c || lines.length < 2) return;
+  const a = await clipAudio(c);
+  if (!a) return;
+  const from = Math.floor(prefs.introIn * a.sampleRate), len = Math.max(1, Math.min(a.length - from, Math.ceil((introLen() + .5) * a.sampleRate)));
+  const part = new AudioBuffer({ length: len, numberOfChannels: a.numberOfChannels, sampleRate: a.sampleRate });
+  for (let ch = 0; ch < a.numberOfChannels; ch++) part.copyToChannel(a.getChannelData(ch).subarray(from, from + len), ch);
+  const { voicesOf } = await import("./assets/voices.js?v=1");
+  const voices = await voicesOf(part, lines.map((l) => [l.at, Math.min(introLen(), lineEnd(l, lines))]), say);
+  if (!voices) return say("La reconnaissance des voix ne tourne pas dans ce navigateur : touche une phrase pour changer sa voix.");
+  const rows = prefs.introLyrics.split("\n");
+  lines.forEach((l, i) => { rows[l.row] = withVoice(rows[l.row], voices[i]); });
+  const n = Math.max(...voices);
+  prefs.introLyrics = $("introLyrics").value = rows.join("\n"); prefs.introVoices = $("introVoices").checked = n > 1;
+  savePrefs(); restyle(); renderVoices();
+  say(n > 1 ? n + " voix reconnues : une couleur par personne. Touche une phrase si l’IA s’est trompée de voix." : "Une seule voix dans cette réplique.");
 }
 /** Le menu OPTIONS DE FILMS à jour : la liste des clips vidéo, les champs, la forme d’onde. */
 function filmUi() {
@@ -4729,7 +4817,7 @@ function filmUi() {
   drawAfterWave();
   $("introOn").checked = !!prefs.introOn; $("intro-box").hidden = !prefs.introOn;
   for (const id of ["filmVol", "dialogVol", "musicVol", "clipVol", "stackSize"]) $(id).value = prefs[id];
-  for (const id of ["introFade", "introGaps", "introType", "dropGap", "filmContinue", "filmDialog"]) $(id).checked = !!prefs[id];
+  for (const id of ["introFade", "introGaps", "introType", "dropGap", "coldDrop", "filmContinue", "filmDialog"]) $(id).checked = !!prefs[id];
   $("underVol").value = prefs.underVol;
   if (document.activeElement !== $("introLyrics")) $("introLyrics").value = prefs.introLyrics;
   renderVoices();
@@ -4846,7 +4934,7 @@ function start() {
     if (playing && source && source.monitor) source.monitor.gain.setTargetAtTime(prefs.previewVol / 100, ctx.currentTime, .02);
   };
   // Options de films : la réplique change la durée de la vidéo (tout se recalcule) ; les volumes ne changent que le mixage.
-  for (const id of ["introOn", "introClip", "afterClip", "filmVol", "filmDialog", "dialogVol", "introFade", "introGaps", "introType", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
+  for (const id of ["introOn", "introClip", "afterClip", "filmVol", "filmDialog", "dialogVol", "introFade", "introGaps", "introType", "dropGap", "coldDrop", "musicVol", "clipVol", "underVol", "filmContinue"]) {
     $(id).addEventListener("change", () => {
       const el = $(id);
       prefs[id] = el.type === "checkbox" ? el.checked : el.type === "range" || el.tagName === "SELECT" ? Number(el.value) : el.value;
@@ -4868,6 +4956,7 @@ function start() {
   }
   chips("slowmo", "slowmo", () => restyle(true));
   chips("transition", "transition", () => restyle());
+  chips("blackStart", "blackStart", () => restyle());
   chips("introSubMode", "introSubMode", () => restyle());
   // Le bloc de la réplique empilée se déplace en le faisant glisser sur l’aperçu (pour ne pas cacher le sujet).
   {
@@ -5066,7 +5155,8 @@ function start() {
   chips("frame", "frame", redraw); chips("lyricsMode", "lyricsMode", redraw);
   // Le style du texte : polices, couleurs, contour, lueur, ombre, mots forts.
   const STYLE_INPUTS = ["lyricFont", "titleFont", "strongFont", "textColor", "textSize", "strokeColor", "stroke", "glowColor", "glow", "shadowColor", "shadowBlur", "shadowOffset",
-    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", "strongFx", "zoomAmt", "flashAmt", "transAmt", "hookSize", ...Object.keys(FX), ...Object.keys(ILOOK).filter((k) => k !== "iPlace")];
+    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", "strongFx", "zoomAmt", "flashAmt", "transAmt", "hookSize",
+    "songVoices", "songVoice2", "songVoice3", "rhyme", "rhymeColor", ...Object.keys(FX), ...Object.keys(ILOOK).filter((k) => k !== "iPlace")];
   chips("iPlace", "iPlace", () => restyle());
   chips("iFx", "iFx", () => { Object.assign(prefs, I_FX[prefs.iFx]); savePrefs(); syncControls(); $("ilook").hidden = false; restyle(); });
   $("iOwn").addEventListener("input", () => { $("ilook").hidden = !$("iOwn").checked; });
@@ -5089,7 +5179,10 @@ function start() {
       savePrefs(); restyle();
     });
   }
-  for (const id of ["introVoices", "voice1", "voice2"]) $(id).addEventListener("input", renderVoices); // après les STYLE_INPUTS : prefs est déjà à jour
+  for (const id of ["introVoices", "voice1", "voice2", "voice3"]) $(id).addEventListener("input", renderVoices); // après les STYLE_INPUTS : prefs est déjà à jour
+  for (const id of ["songVoices", "songVoice2", "songVoice3"]) $(id).addEventListener("input", renderSongVoices);
+  $("voices-ai").onclick = () => introVoicesAI();
+  $("song-voices-ai").onclick = () => songVoicesAI();
   chips("textStyle", "textStyle", () => { Object.assign(prefs, TEXT_STYLES[prefs.textStyle]); savePrefs(); loadFont(prefs.lyricFont); syncControls(); restyle(); });
   chips("preset", "preset", () => {
     Object.assign(prefs, PRESETS[prefs.preset], TEXT_STYLES[PRESETS[prefs.preset].textStyle]); savePrefs();

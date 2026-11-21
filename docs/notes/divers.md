@@ -32,6 +32,11 @@
 - Pièges : les modèles MMS de Meta (forced-aligner) sont sous licence CC-BY-NC, interdite ici ; vérifier la licence de
   tout modèle avant de l'essayer. Deux titres du CLOUD ont des temps faits sur une autre version du son (décalage
   constant d'une minute) : les écarter d'une mesure.
+- Voix (CUT, `voices.js` + `voices-worker.js`) : une empreinte WeSpeaker ResNet34 (26 Mo, CC BY 4.0 : le crédit reste
+  dans l'aide de CUT) par phrase, puis regroupement. Seuils mesurés : dialogue de film ~0,5 même voix, ~0,3 entre deux
+  (seuil 0,4) ; voix d'un son plus proches (seuil 0,36, et lissage par parties). Isoler la voix d'un film n'aide pas.
+  Limites : une phrase de moins d'une seconde (« Quoi ? ») et deux rappeurs au timbre proche peuvent tomber dans la
+  mauvaise voix : un clic sur la phrase corrige. WavLM-sv écarté (pas de licence indiquée).
 
 ## BPM et tonalité (`site/assets/bpm-key-worker.js`), blanc du Downloader
 - Le même worker sert à BPM et tonalité, PROD du Downloader, CUT, Mes sons, Stems et Transposition : après une
