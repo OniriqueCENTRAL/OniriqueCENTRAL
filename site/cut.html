@@ -1658,7 +1658,7 @@ function renderPassages() {
     const b = Object.assign(document.createElement("button"), { type: "button", className: "mini" });
     b.textContent = (i ? "Passage " + (i + 1) : "Le meilleur") + " · " + OniriqueAudio.clock(p.start) + (p.drop ? " · drop" : "");
     b.setAttribute("aria-pressed", String(Math.abs(p.start - sound.start) < .05));
-    b.onclick = async () => { sound.start = clampStart(p.start); position = 0; refresh(); await ensureMix(); play(0); };
+    b.onclick = async () => { sound.start = clampStart(p.start); position = 0; refresh(); await ensureMix(false); play(0); };
     return b;
   }));
 }
@@ -2104,12 +2104,20 @@ function clipAudio(c) {
 const trackFade = (track, which, def) => { const f = (prefs.trackFades || {})[track]; return f && f[which] != null ? Math.max(.004, f[which]) : def; };
 const filmActive = () => Object.keys(prefs.trackFades || {}).length > 0 || introLen() > 0 || prefs.musicVol !== 100 || (prefs.clipVol > 0 && clips.some((c) => c.kind === "video")) || extras.length > 0 || mutedTracks.size > 0;
 let mix = null, mixing = null, mixTimer = 0;
+// Où en est ce que l’IA (et le décodage des clips) prépare pour le mixage : un mixage provisoire, fait sans, est refait dès
+// que ça change.
+const readiness = () => [dialogWanted() ? (dialog && dialog.key === dialogKey() ? 1 : dialogFail === dialogKey() ? 2 : 0) : -1,
+  STEMS.includes(prefs.underPart) && introLen() ? (stems && stems.key === stemKey() ? 1 : stemFail === stemKey() ? 2 : 0) : -1,
+  clips.filter((c) => c.kind === "video" && c.audio !== undefined).length];
 const mixKey = () => JSON.stringify([sound.start, span(), prefs.musicVol, prefs.clipVol, prefs.introOn, prefs.introClip, prefs.introIn, introLen(), prefs.filmVol, prefs.filmDialog, prefs.dialogVol, prefs.introFade,
   prefs.dropGap, prefs.underPart, prefs.underVol, prefs.trackFades,
   prefs.slowmo, clips.map((c) => c.url), segments.map((x) => [x.t0, x.t1, x.clip, x.from, !!x.hold]),
-  extras.map((e) => [e.id, e.at, e.offset, e.length, e.vol, e.fadeIn, e.fadeOut, e.track]), [...mutedTracks]]);
-/** Le mixage du son de toute la vidéo, fait hors temps réel : la réplique (son du film), puis la musique, et le son des clips dessous. */
-async function buildMix(key) {
+  extras.map((e) => [e.id, e.at, e.offset, e.length, e.vol, e.fadeIn, e.fadeOut, e.track]), [...mutedTracks], readiness()]);
+/** Le mixage du son de toute la vidéo, fait hors temps réel : la réplique (son du film), puis la musique, et le son des clips dessous.
+ *  full : tout est attendu (export) ; sinon (lecture), ce que l’IA ou le décodage n’ont pas encore fini est laissé de côté et
+ *  préparé en fond, et le mixage se refait dès que c’est prêt. */
+async function buildMix(key, full) {
+  const audioOf = (c) => (full || c.audio !== undefined ? clipAudio(c) : (clipAudio(c).then(() => scheduleMix()), null));
   const rate = sound.buffer.sampleRate, intro = introLen(), T = intro + span();
   const off = new OfflineAudioContext(2, Math.ceil(T * rate), rate);
   const add = (buffer, at, from, length, volume, fadeIn, fadeOut, loop) => {
@@ -2121,21 +2129,18 @@ async function buildMix(key) {
     src.start(at, from % buffer.duration, loop ? undefined : length); src.stop(at + length);
   };
   const vol = (track, value) => (mutedTracks.has(track) ? 0 : value / 100); // une piste coupée (M) dans la timeline ne s’entend plus
-  let missing = false; // la piste séparée pas encore là : ce mixage sera refait à la prochaine lecture
   const crossfade = prefs.introFade ? .35 : .04;
   const gap = prefs.dropGap ? .22 : 0; // « Silence juste avant le drop »
   if (intro) {
-    const a = await clipAudio(introClip());
+    const a = await audioOf(introClip());
     const filmLen = intro - gap + (prefs.introFade && !gap ? .2 : 0), filmIn = trackFade("film", "in", .01), filmOut = trackFade("film", "out", gap ? .03 : crossfade);
-    // Dialogues seuls, ou plus forts : la réplique séparée par l’IA (voix d’un côté, musique et bruits de l’autre).
-    const voice = a && (prefs.filmDialog || prefs.dialogVol !== 100) ? await ensureDialog(a) : null;
+    // Dialogues seuls, ou plus forts : la réplique séparée par l’IA (voix d’un côté, musique et bruits de l’autre). Pas encore
+    // séparée : le son d’origine en attendant (ou pour de bon si l’IA n’a pas pu tourner).
+    const voice = a && dialogWanted() ? (full ? await ensureDialog(a) : readyDialog(a)) : null;
     if (voice) {
       add(voice.vocals, 0, 0, filmLen, vol("film", prefs.filmVol) * prefs.dialogVol / 100, filmIn, filmOut, false);
       if (!prefs.filmDialog) add(voice.rest, 0, 0, filmLen, vol("film", prefs.filmVol), filmIn, filmOut, false);
-    } else if (a) {
-      if (prefs.filmDialog || prefs.dialogVol !== 100) missing = true; // l’IA a échoué : le son d’origine, retenté à la prochaine lecture
-      add(a, 0, prefs.introIn, filmLen, vol("film", prefs.filmVol), filmIn, filmOut, false);
-    }
+    } else if (a) add(a, 0, prefs.introIn, filmLen, vol("film", prefs.filmVol), filmIn, filmOut, false);
     const tailCut = prefs.loop && segments.find((x) => x.tail && x.clip === prefs.introClip);
     if (a && tailCut) add(a, intro + tailCut.t0, tailCut.from, tailCut.t1 - tailCut.t0, vol("film", prefs.filmVol), .15, .004, false);
     // Sous la réplique : la musique qui mène au drop (le son entier, ou une seule piste séparée).
@@ -2143,10 +2148,9 @@ async function buildMix(key) {
     if (prefs.underPart !== "none" && prefs.underVol > 0 && len - gap > .05) {
       if (prefs.underPart === "full") add(sound.buffer, at, sound.start - len, len - gap, vol("under", prefs.underVol), trackFade("under", "in", .3), trackFade("under", "out", gap ? .03 : .004), false);
       else {
-        const st = await ensureStems(), part = st && st.parts[prefs.underPart];
+        const st = full ? await ensureStems() : readyStems(), part = st && st.parts[prefs.underPart];
         // La piste séparée finit au drop (30 s au plus) : on la cale sur sa fin.
         if (part) { const pl = Math.min(len, part.duration); add(part, intro - pl, 0, pl - gap, vol("under", prefs.underVol), trackFade("under", "in", .3), trackFade("under", "out", .03), false); }
-        else missing = true;
       }
     }
   }
@@ -2155,22 +2159,29 @@ async function buildMix(key) {
   if (prefs.clipVol > 0 && slow() === 1) for (const x of segments) {
     const c = clips[x.clip];
     if (c.kind !== "video") continue;
-    const a = await clipAudio(c);
+    const a = await audioOf(c);
     if (a) add(a, intro + x.t0, x.hold ? 0 : x.from, x.t1 - x.t0, vol("clips", prefs.clipVol), trackFade("clips", "in", .008), trackFade("clips", "out", .008), !!x.hold);
   }
   // Les sons ajoutés dans la timeline, superposés au reste.
   for (const e of extras) if (e.at < T && !mutedTracks.has("extra" + e.track)) add(e.buffer, e.at, e.offset, Math.min(e.length, T - e.at), e.vol / 100, Math.max(.005, e.fadeIn), Math.max(.005, e.fadeOut), false);
   const buffer = await off.startRendering();
-  if (key === mixKey()) mix = { key: missing ? null : key, buffer };
+  if (key === mixKey()) mix = { key, buffer };
 }
-/** Le mixage à jour (attendu avant de jouer ou d’exporter). */
-async function ensureMix() {
+/** Le mixage à jour. full (export) : avec tout ce que l’IA doit séparer et le son de chaque clip, attendus ; sinon (lecture)
+ *  un mixage prêt tout de suite, refait en fond quand l’IA a fini. */
+async function ensureMix(full = true) {
   if (!sound.buffer || !filmActive()) { mix = null; return; }
+  if (full) {
+    const c = introLen() && introClip(), a = c ? await clipAudio(c) : null;
+    if (a && dialogWanted()) await ensureDialog(a);
+    await ensureStems();
+    if (prefs.clipVol > 0) await Promise.all(segments.map((x) => clips[x.clip]).filter((c) => c && c.kind === "video").map(clipAudio));
+  }
   const key = mixKey();
   if (mix && mix.key === key) return;
   if (!mixing || mixing.key !== key || !mixing.pending) {
     const job = mixing = { key, pending: true };
-    job.done = buildMix(key).catch(() => {}).finally(() => { job.pending = false; });
+    job.done = buildMix(key, full).catch(() => {}).finally(() => { job.pending = false; });
   }
   await mixing.done;
 }
@@ -2213,7 +2224,8 @@ function aiStems(a, n, what, b = sound.buffer, status = "stem-status") {
   }));
   demucsQueue = job.catch(() => {}).then(() => {
     clearTimeout(demucsIdle);
-    demucsIdle = setTimeout(() => { if (demucs) { demucs.terminate(); demucs = null; } }, 60_000);
+    // L’IA reste chargée en fond tant qu’on travaille : la relancer coûte plusieurs secondes à chaque réglage.
+    demucsIdle = setTimeout(() => { if (demucs) { demucs.terminate(); demucs = null; } }, 15 * 60_000);
   });
   return job;
 }
@@ -2226,9 +2238,18 @@ const FAST_NOTE = " L’IA n’a pas pu tourner dans ce navigateur : séparation
 
 // Les dialogues de la réplique (option « Retirer la musique de l’extrait » et « Volume des dialogues ») : le passage du clip
 // séparé une fois par l’IA, { vocals, rest } calés sur le début de la réplique ; null si l’IA n’a pas pu tourner.
-let dialog = null, dialogJob = null;
+let dialog = null, dialogJob = null, dialogFail = null; // dialogFail : le passage où l’IA a échoué (pas retenté à chaque lecture)
+const dialogKey = () => JSON.stringify([introClip()?.url, prefs.introIn, introLen()]);
+const dialogWanted = () => introLen() > 0 && (prefs.filmDialog || prefs.dialogVol !== 100);
+/** Les dialogues s’ils sont déjà séparés ; sinon la séparation part en fond (le mixage se refait à la fin) et c’est null. */
+function readyDialog(a) {
+  const key = dialogKey();
+  if (dialog && dialog.key === key) return dialog;
+  if (dialogFail !== key) ensureDialog(a).then((d) => { if (d) scheduleMix(); });
+  return null;
+}
 function ensureDialog(a) {
-  const key = JSON.stringify([introClip().url, prefs.introIn, introLen()]);
+  const key = dialogKey();
   if (dialog && dialog.key === key) return Promise.resolve(dialog);
   if (!dialogJob || dialogJob.key !== key) {
     const job = dialogJob = { key };
@@ -2240,7 +2261,7 @@ function ensureDialog(a) {
       return dialog;
     }).catch(() => {
       $("dialog-status").textContent = "L’IA n’a pas pu séparer les dialogues dans ce navigateur (essaie Chrome ou Edge à jour) : le son du film reste d’origine.";
-      if (dialogJob === job) dialogJob = null; // retenté à la prochaine lecture
+      if (dialogJob === job) { dialogJob = null; dialogFail = key; scheduleMix(); } // retenté à l’export, ou sur un autre passage
       return null;
     });
   }
@@ -2248,7 +2269,7 @@ function ensureDialog(a) {
 }
 
 // Les pistes séparées de la musique qui mène au drop, calculées une fois par passage.
-let stems = null, stemJob = null;
+let stems = null, stemJob = null, stemFail = null;
 const STEMS = ["prod", "melo", "drums", "bass", "vocals"];
 const stemKey = () => JSON.stringify([sound.name, sound.start, introLen()]);
 async function ensureStems() {
@@ -2258,9 +2279,15 @@ async function ensureStems() {
   if (!stemJob || stemJob.key !== key) {
     const job = stemJob = { key };
     job.done = separate(key).catch(() => { $("stem-status").textContent = "La séparation des pistes n’a pas marché sur ce passage."; return null; })
-      .then((r) => { if (!r && stemJob === job) stemJob = null; return r; }); // un échec se retente à la prochaine lecture
+      .then((r) => { if (!r && stemJob === job) { stemJob = null; stemFail = key; } scheduleMix(); return r; }); // un échec se retente à l’export
   }
   return stemJob.done;
+}
+/** Les pistes séparées si elles sont prêtes ; sinon la séparation part en fond (le mixage se refait à la fin) et c’est null. */
+function readyStems() {
+  if (stems && stems.key === stemKey()) return stems;
+  if (stemFail !== stemKey()) ensureStems();
+  return null;
 }
 async function separate(key) {
   const len = Math.min(sound.start, introLen(), 30), rate = sound.buffer.sampleRate;
@@ -2389,7 +2416,8 @@ async function hearStem(from = 0) {
   $("stem-player").hidden = false; stemIcon();
   $("stem-status").textContent = "Tu écoutes " + PART_NAMES[part] + ", sur tout le morceau. Touche une autre piste pour comparer au même moment." + note;
 }
-const scheduleMix = () => { clearTimeout(mixTimer); mixTimer = setTimeout(() => ensureMix(), 250); };
+// Un réglage du son : le mixage se refait en fond et, pendant la lecture, s’entend aussitôt (swapAudio).
+const scheduleMix = () => { clearTimeout(mixTimer); mixTimer = setTimeout(() => ensureMix(false).then(swapAudio), 120); };
 
 // ——— Le montage : une coupe par groupe de temps, un clip par coupe ———
 function random() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
@@ -3120,7 +3148,7 @@ function fadeEnds(t) {
 
 // ——— Lecture : le son mène, l’image suit ———
 const FADE = 0.012; // 12 ms de fondu : inaudible, mais évite le clic d’un son coupé net
-let ctx = null, source = null, startedAt = 0, position = 0, playing = false, frame = 0, recording = null, resumeTimer = 0;
+let ctx = null, source = null, startedAt = 0, position = 0, playing = false, frame = 0, recording = null, resumeTimer = 0, resumeJob = 0;
 // Tout le son de la page sort par ici : coupé pendant l’export et pendant que l’IA travaille, si la case est cochée
 // (l’enregistrement de l’export, lui, se branche avant : la vidéo garde son son).
 let master = null;
@@ -3141,42 +3169,69 @@ async function aiWork(fn) {
   try { return await fn(); } finally { busy.ai--; applyMute(); }
 }
 const now = () => (playing ? Math.min(total(), ctx.currentTime - startedAt) : position);
+/** Le son de la vidéo à partir de from (s), lancé à when (horloge du son), avec un fondu d’entrée de fadeIn s. */
+function startSource(from, when, extraOut, fadeIn = FADE) {
+  const me = ctx.createBufferSource();
+  // Avec une option de film, le son mixé (réplique + musique + clips) ; sinon la musique seule.
+  const mixed = filmActive() && mix ? mix.buffer : null;
+  me.buffer = mixed || sound.buffer;
+  const level = ctx.createGain();
+  level.gain.setValueAtTime(0, when);
+  level.gain.linearRampToValueAtTime(1, when + fadeIn);
+  me.connect(level);
+  const monitor = ctx.createGain(); // ce qu’on entend (coupé par « MUTE » pendant un export) ; l’enregistrement, lui, garde le son
+  monitor.gain.value = prefs.previewVol / 100;
+  level.connect(monitor);
+  monitor.connect(pageOut());
+  if (extraOut) level.connect(extraOut);
+  me.monitor = monitor;
+  me.level = level;
+  me.extraOut = extraOut;
+  const length = Math.min(total(), mixed ? mixed.duration : Infinity);
+  if (mixed) me.start(when, from, Math.max(0, length - from));
+  else me.start(when, sound.start + from, Math.max(0, span() - from));
+  // Fondu de sortie à la fin : en BOUCLE, la fin rejoint le début sans clic.
+  const end = when + (mixed ? length : span()) - from, out = prefs.loop ? .03 : FADE;
+  if (end - out > when + fadeIn) { level.gain.setValueAtTime(1, end - out); level.gain.linearRampToValueAtTime(0, end); }
+  // Seule la fin du son en cours arrive ici : un son arrêté (stop, seek, ou remplacé par swapAudio) finit après, quand un autre joue déjà.
+  me.onended = () => { if (playing && source === me) { position = 0; finish(); } };
+  return me;
+}
 function play(from = position, extraOut = null) {
   if (playing) stop(); // une seule lecture à la fois : l’ancienne s’arrête (sinon elle continuait en fond, hors de portée)
   clearTimeout(resumeTimer); resumeTimer = 0;
   stopStemHear();
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
   ctx.resume();
-  const me = source = ctx.createBufferSource();
-  // Avec une option de film, le son mixé (réplique + musique + clips) ; sinon la musique seule.
-  const mixed = filmActive() && mix ? mix.buffer : null;
-  source.buffer = mixed || sound.buffer;
-  const level = ctx.createGain();
-  level.gain.setValueAtTime(0, ctx.currentTime);
-  level.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE);
-  source.connect(level);
-  const monitor = ctx.createGain(); // ce qu’on entend (coupé par « MUTE » pendant un export) ; l’enregistrement, lui, garde le son
-  monitor.gain.value = prefs.previewVol / 100;
-  level.connect(monitor);
-  monitor.connect(pageOut());
-  if (extraOut) level.connect(extraOut);
-  source.monitor = monitor;
-  source.level = level;
   shown = -1;
   startedAt = ctx.currentTime - from;
-  const length = Math.min(total(), mixed ? mixed.duration : Infinity);
-  if (mixed) source.start(0, from, Math.max(0, length - from));
-  else source.start(0, sound.start + from, span() - from);
-  // Fondu de sortie à la fin : en BOUCLE, la fin rejoint le début sans clic.
-  const end = ctx.currentTime + (mixed ? length : span()) - from, out = prefs.loop ? .03 : FADE;
-  if (end - out > ctx.currentTime + FADE) { level.gain.setValueAtTime(1, end - out); level.gain.linearRampToValueAtTime(0, end); }
+  source = startSource(from, ctx.currentTime, extraOut);
   playing = true;
-  // Seule la fin du son en cours arrive ici : un son arrêté (stop, ou seek qui relance) finit après, quand un autre joue déjà.
-  source.onended = () => { if (playing && source === me) { position = 0; finish(); } };
   loop();
   setPlayIcon();
 }
+/** Pendant la lecture, le son refait (volume, fondu, piste coupée, dialogues séparés…) prend le relais au même endroit, en
+ *  fondu croisé de 30 ms, sans toucher à l’image : plus besoin de mettre en pause pour entendre un réglage. */
+function swapAudio() {
+  if (!playing || recording || !source) return;
+  const want = !filmActive() ? sound.buffer : mix && mix.key === mixKey() ? mix.buffer : null;
+  if (!want || want === source.buffer) return;
+  const when = ctx.currentTime + .04, from = when - startedAt;
+  if (from >= total() - .1) return; // la fin : le tour suivant prendra le nouveau son
+  const old = source, g = old.level.gain;
+  source = startSource(from, when, old.extraOut, .03);
+  g.cancelScheduledValues(when); g.setValueAtTime(g.value, when); g.linearRampToValueAtTime(0, when + .03);
+  try { old.stop(when + .05); } catch { /* déjà arrêté */ }
+}
+let mixCheck = 0;
+/** Pendant la lecture, quelques fois par seconde : un réglage qui change le son (même sans passer par scheduleMix) est repris. */
+function followMix() {
+  if (recording || performance.now() - mixCheck < 250) return;
+  mixCheck = performance.now();
+  if (filmActive() ? !(mix && mix.key === mixKey() && source.buffer === mix.buffer) : source.buffer !== sound.buffer) scheduleMix();
+}
 function stop() {
+  resumeJob++;
   clearTimeout(resumeTimer); resumeTimer = 0;
   if (playing) {
     position = now(); playing = false;
@@ -3202,7 +3257,7 @@ let hearing = 0; // « Écouter le début » en cours (un minuteur)
 // est arrivé au bout (il boucle). Sinon l’aperçu laisse la vidéo jouer, sans sauts.
 let resync = false;
 const drift = (v, want, tolerance) => (recording || resync || v.ended) && Math.abs(v.currentTime - want) > tolerance;
-function loop() { const t = now(); draw(t, playing); resync = false; drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) frame = recording ? setTimeout(loop, 1000 / exportFps()) : requestAnimationFrame(loop); }
+function loop() { const t = now(); draw(t, playing); resync = false; drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) { followMix(); frame = recording ? setTimeout(loop, 1000 / exportFps()) : requestAnimationFrame(loop); } }
 /** Après une option qui ne change que l’image (ou l’ordre des coupes) : on redessine sans couper le son. */
 function restyle(rebuild) {
   if (rebuild) { build(); shown = -1; renderClips(); $("reshuffle").hidden = prefs.order !== "mix"; }
@@ -3312,6 +3367,7 @@ function paintRanges() {
 }
 document.addEventListener("input", (event) => { if (event.target.type === "range") paintRanges(); });
 function refresh() {
+  const was = (playing || resumeTimer) && !recording;
   stop();
   if (sound.buffer) sound.start = clampStart(sound.start);
   remember();
@@ -3337,6 +3393,8 @@ function refresh() {
   if (adv.open) renderAdv();
   keepSet();
   syncCaption();
+  // Un réglage qui refait la vidéo (réplique, passage, clips…) pendant la lecture : elle repart d’elle-même.
+  if (was && ready) { const me = resumeJob; ensureMix(false).then(() => { if (me === resumeJob && !playing && !recording) play(position); }); }
 }
 
 // ——— Export : la vidéo image par image (ou, faute de mieux, l’enregistrement en temps réel), puis MP4 propre par le serveur ———
@@ -4524,7 +4582,7 @@ function start() {
   $("play").onclick = async () => {
     if (playing || starting) { starting = 0; return stop(); }
     const me = starting = performance.now();
-    await ensureMix();
+    await ensureMix(false);
     if (starting !== me) return;
     starting = 0; play(position >= total() - .1 ? 0 : position);
   };
@@ -4545,6 +4603,8 @@ function start() {
       if (id === "introClip") drawIntroWave();
       if (id === "afterClip" || id === "filmContinue" || id === "introOn") drawAfterWave();
     });
+    // Un volume s’entend pendant qu’on fait glisser le curseur, sans attendre de le lâcher.
+    if ($(id).type === "range") $(id).addEventListener("input", () => { prefs[id] = Number($(id).value); scheduleMix(); });
   }
   for (const id of ["introIn", "introLen"]) {
     $(id).onchange = () => {
@@ -4630,7 +4690,7 @@ function start() {
   });
   $("intro-hear").onclick = async () => {
     if (!introLen()) return;
-    await ensureMix(); clearTimeout(hearing); hearing = 0;
+    await ensureMix(false); clearTimeout(hearing); hearing = 0;
     if (playing) stop();
     play(0);
     hearing = setTimeout(() => { hearing = 0; if (playing) { stop(); position = 0; seek(0); } }, (introLen() + 1.5) * 1000);
