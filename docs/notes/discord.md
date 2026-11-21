@@ -4,7 +4,7 @@
   `onirique-discord-bot` (jeton dans `/etc/onirique/discord-bot.env`, posé par `onirique-discord`).
 - Votes de modération (`votes.js`) : `/mute @membre 10m` (muet en vocal) et `/ban @membre 2h` (« Exclure
   temporairement » de Discord, pas un vrai ban), vote de 60 s, au moins 3 « Pour » (`VOTE_MIN`) et plus de « Pour »
-  que de « Contre ». Le rôle du bot doit avoir « Rendre les membres muets » et « Exclure temporairement des membres »,
+  que de « Contre ». Le rôle du bot doit avoir « Rendre les membres muets », « Déplacer des membres » (pour sortir du vocal un membre exclu) et « Exclure temporairement des membres »,
   et être placé au-dessus des rôles visés. Mutes en cours : `/var/lib/onirique-discord-bot/mutes.json`.
 - Musique : `/play` (yt-dlp dans `/opt/yt-dlp`, mis à jour chaque nuit par `/etc/cron.daily/onirique-yt-dlp`),
   avec les cookies du compte YouTube de secours du Downloader (`onirique-youtube-cookies`).

@@ -88,7 +88,16 @@ export async function startVote(i) {
 
 async function exclude(target, ms, reason) {
   await target.timeout(ms, reason);
-  return `⛔ Vote adopté : ${target} est exclu pendant ${formatDuration(ms)}.`;
+  const done = `⛔ Vote adopté : ${target} est exclu pendant ${formatDuration(ms)}.`;
+  // L'exclusion interdit de rejoindre un vocal mais ne sort pas qui y est déjà : on le déconnecte.
+  try {
+    await target.guild.members.edit(target.id, { channel: null, reason });
+  } catch (e) {
+    if (e.code === 40032) return done; // pas en vocal
+    console.error('Exclusion, déconnexion du vocal :', e.message);
+    return `${done}\n⚠️ Discord a refusé de le sortir du vocal (permission « Déplacer des membres » du bot ?).`;
+  }
+  return done;
 }
 
 async function voiceMute(target, ms, reason) {
