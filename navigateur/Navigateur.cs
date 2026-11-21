@@ -114,6 +114,8 @@ sealed partial class Navigateur : Form
     const string PageParametres = "https://" + Hote + "/parametres.html";
     const string PageHistorique = "https://" + Hote + "/historique.html";
     const string PageTelechargements = "https://" + Hote + "/telechargements.html";
+    const string HoteVideo = "video.onirique";
+    static readonly string[] Videos = { ".mp4", ".m4v", ".mkv", ".mov", ".webm", ".ogv" };
 
     internal readonly List<Onglet> Onglets = new();
     internal Onglet? Actif;
@@ -450,7 +452,14 @@ sealed partial class Navigateur : Form
         c.DocumentTitleChanged += (_, _) => { o.Titre = c.DocumentTitle; Redessiner(); if (o == Actif) Afficher(); };
         c.SourceChanged += (_, _) => { o.Url = c.Source; if (o == Actif) Afficher(); };
         c.HistoryChanged += (_, _) => { if (o == Actif) Afficher(); };
-        c.NavigationStarting += (_, _) => { o.Charge = true; Animer(); if (o == Actif) Afficher(); };
+        c.NavigationStarting += (_, e) =>
+        {
+            // Une vidéo du disque (lâchée sur la page ou tapée) passe par notre lecteur : le moteur télécharge les .mov au lieu de les lire.
+            if (EstVideo(e.Uri, out var video)) { e.Cancel = true; BeginInvoke(() => LireVideo(c, video)); return; }
+            if (!e.Uri.StartsWith("https://" + Hote + "/video.html", StringComparison.OrdinalIgnoreCase))
+                try { c.ClearVirtualHostNameToFolderMapping(HoteVideo); } catch { }
+            o.Charge = true; Animer(); if (o == Actif) Afficher();
+        };
         c.NavigationCompleted += async (_, e) =>
         {
             o.Charge = false;
@@ -492,6 +501,12 @@ sealed partial class Navigateur : Form
             var report = e.GetDeferral();
             try
             {
+                if (EstVideo(e.Uri, out var video))
+                {
+                    e.Handled = true;
+                    if ((await Ouvrir(null, Onglets.IndexOf(o) + 1)).Vue?.CoreWebView2 is { } vc) LireVideo(vc, video);
+                    return;
+                }
                 if (await OuvrirSurgissante(o, e)) return;
                 var n = await Ouvrir(null, Onglets.IndexOf(o) + 1);
                 if (o.Groupe != null) { n.Groupe = o.Groupe; Animer(); }
@@ -512,6 +527,19 @@ sealed partial class Navigateur : Form
             }
             catch { }
         };
+    }
+
+    static bool EstVideo(string url, out string chemin)
+    {
+        chemin = Uri.TryCreate(url, UriKind.Absolute, out var u) && u.IsFile ? u.LocalPath : "";
+        return chemin.Length > 0 && Videos.Contains(Path.GetExtension(chemin).ToLowerInvariant()) && File.Exists(chemin);
+    }
+
+    // Le dossier de la vidéo n'est servi qu'à cet onglet, et seulement pour être affiché (pas lu par les scripts d'un site).
+    static void LireVideo(CoreWebView2 c, string chemin)
+    {
+        c.SetVirtualHostNameToFolderMapping(HoteVideo, Path.GetDirectoryName(chemin)!, CoreWebView2HostResourceAccessKind.DenyCors);
+        c.Navigate("https://" + Hote + "/video.html?" + Uri.EscapeDataString(Path.GetFileName(chemin)));
     }
 
     internal async void Activer(Onglet o)

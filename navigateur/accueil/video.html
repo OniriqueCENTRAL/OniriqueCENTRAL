@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vidéo</title>
+<script src="commun.js"></script>
+<style>
+@font-face { font-family: "Hanken Grotesk"; font-weight: 100 900; src: url(fonts/HankenGrotesk-latin.woff2) format("woff2"); }
+:root { --night: #09080A; --bone: #F4ECEC; --haze: #A8939A; --acc: 229, 56, 74; }
+html, body { margin: 0; height: 100%; background: var(--night); color: var(--bone); font: 15px/1.5 "Hanken Grotesk", "Segoe UI", system-ui, sans-serif; }
+body { display: grid; place-items: center; }
+video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
+#erreur { display: none; max-width: 520px; padding: 24px; text-align: center; color: var(--haze); }
+#erreur b { display: block; margin-bottom: 6px; color: var(--bone); font-size: 18px; }
+body.erreur video { display: none; }
+body.erreur #erreur { display: block; }
+</style>
+</head>
+<body>
+<video id="v" controls autoplay></video>
+<p id="erreur"><b></b>Le moteur du navigateur ne sait pas lire le format de cette vidéo (souvent un codec comme le HEVC ou le ProRes). Ouvre-la dans un lecteur comme VLC.</p>
+<script>
+// Le navigateur sert le dossier de la vidéo sur video.onirique, le temps de cet onglet.
+const nom = decodeURIComponent(location.search.slice(1));
+document.title = nom || "Vidéo";
+document.querySelector("#erreur b").textContent = nom;
+const v = document.getElementById("v");
+v.addEventListener("error", () => document.body.classList.add("erreur"));
+v.src = "https://video.onirique/" + encodeURIComponent(nom);
+</script>
+</body>
+</html>
