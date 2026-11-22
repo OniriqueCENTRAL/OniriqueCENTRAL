@@ -107,6 +107,17 @@ header nav { display: flex; align-items: center; gap: 10px; }
 .founder { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
 .founder a { color: var(--mist); font-weight: 600; text-decoration: none; }
 .founder a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.features { margin-top: 64px; }
+.features .feature { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 44px; align-items: center; padding: 40px 0; border-top: 1px solid var(--line); }
+.features .feature.flip { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+.features .feature.flip .media { order: 2; }
+.features .media { border-radius: 18px; overflow: hidden; background: #120c0e; border: 1px solid rgba(var(--acc),.35); box-shadow: 0 30px 80px rgba(0,0,0,.55); }
+.features video { display: block; width: 100%; height: auto; }
+.features .kicker { font: 500 12px/1.4 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.features h2 { margin: 10px 0 14px; font: 800 26px/1.2 var(--f-display); color: rgb(var(--acc)); }
+.features p { margin: 0 0 12px; color: var(--label); }
+#detail.doc-open .features { display: none; }
+@media (max-width: 860px) { .features .feature, .features .feature.flip { grid-template-columns: 1fr; gap: 20px; } .features .feature.flip .media { order: 0; } .features h2 { font-size: 22px; } }
 .block-title { margin: 32px 0 12px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 
 /* Abonnement à la carte */
@@ -278,6 +289,8 @@ header nav { display: flex; align-items: center; gap: 10px; }
         <p class="note"><a href="cgv">Conditions de vente</a> · <a href="remboursement">Rétractation</a></p>
       </aside>
     </div>
+    <!-- Le plugin en vidéo (assets/videos/videos.json) : une vidéo par fonction, en alternance -->
+    <div class="features" id="features" data-no-translate hidden></div>
   </section>
 
   <p class="lede" id="state">Chargement…</p>
@@ -394,6 +407,29 @@ const DOCS = { "tuner": 1, "onirique-verb": 1, "onirique-enhancer": 1, "onirique
   "onirique-resobox": 2, "onirique-doublebox": 2, "onirique-modbox": 2, "based": 2, "onirique-pitchbox": 2, "onirique-echobox": 2,
   "onirique-meterbox": 2, "onirique-broadcast": 2, "brumebox": 2, "onirique-punch": 2, "onirique-vision": 1,
   "onirique-de-esser": 2, "onirique-f76": 1, "onirique-l2a": 1 };
+// Le plugin en vidéo : une petite vidéo par fonction (la souris qui l'utilise), texte à côté, en alternance ; chaque vidéo
+// ne tourne que quand elle est à l'écran.
+async function setupVideos(product) {
+  let all = null;
+  try { all = await fetch("/assets/videos/videos.json?v=1").then((r) => r.ok ? r.json() : null); } catch { return; }
+  const list = all?.[product.slug];
+  if (!list?.length) return;
+  const en = window.OniriqueI18n?.lang === "en";
+  const watch = "IntersectionObserver" in window
+    ? new IntersectionObserver((seen) => seen.forEach((s) => s.isIntersecting ? s.target.play().catch(() => {}) : s.target.pause()), { threshold: 0.25 })
+    : null;
+  $("features").replaceChildren(...list.map((f, i) => {
+    const t = (en && f.en) || f.fr;
+    const video = el("video", { src: "/assets/videos/" + f.src, muted: true, loop: true, playsInline: true, preload: "metadata", ariaLabel: t.title });
+    video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
+    if (watch) watch.observe(video); else video.autoplay = true;
+    return el("div", { className: "feature" + (i % 2 ? " flip" : "") },
+      el("div", { className: "media" }, video),
+      el("div", { className: "text" }, el("div", { className: "kicker", textContent: t.kicker }), el("h2", { textContent: t.title }),
+        ...t.text.map((p) => el("p", { textContent: p }))));
+  }));
+  $("features").hidden = false;
+}
 function setupDoc(product) {
   const version = DOCS[product.slug];
   if (!version) return;
@@ -771,6 +807,7 @@ async function buy(product, catalog) {
   setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); setupMonthly(product, catalog); });
   $("detail").hidden = false;
   setupDoc(product);
+  setupVideos(product);
 
   // Une interface web réelle (RAW) passe avant tout ; puis l’image choisie par un admin ; puis la démo en images.
   const web = await OniriqueDemo.web(product.slug);
