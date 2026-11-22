@@ -41,7 +41,8 @@ Réponds UNIQUEMENT par un objet JSON :
  "lecons": ["leçon proposée"],
  "images": "ce que montrent les images, en une ou deux phrases"}`;
 
-const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u0009\u000b-\u001f]+/g, ' ').trim().slice(0, max) : '');
+// les petits modèles écrivent du Markdown (**gras**) sans qu'on le demande : le texte affiché reste simple
+const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u0009\u000b-\u001f]+/g, ' ').replace(/\*\*|__/g, '').trim().slice(0, max) : '');
 
 /** L'avis propre : seulement les champs attendus, bornés, et des clés qui existent dans l'arbre. */
 export function cleanOpinion(raw, keys, branchIds) {

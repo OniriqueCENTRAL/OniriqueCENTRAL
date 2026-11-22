@@ -41,7 +41,8 @@ purge();
 setInterval(purge, 864e5).unref();
 
 const LIST_MAX = 40, DEEP = 3;
-const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u0009\u000b-\u001f]+/g, ' ').trim().slice(0, max) : '');
+// les petits modèles écrivent du Markdown (**gras**) sans qu'on le demande : le texte affiché reste simple
+const str = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u0009\u000b-\u001f]+/g, ' ').replace(/\*\*|__/g, '').trim().slice(0, max) : '');
 const num = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Number(v) : null);
 const parse = (s, d) => { try { return JSON.parse(s); } catch { return d; } };
 
