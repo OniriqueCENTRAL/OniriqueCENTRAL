@@ -1479,5 +1479,212 @@
    "fr": "Pensé pour une voix seule, 28 ms de latence déclarées au DAW. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
    "en": "Built for a single vocal, 28 ms latency reported to the DAW. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
   }
+ },
+ "onirique-modbox": {
+  "replace": true,
+  "items": [
+   {
+    "src": "mod-circuit.mp4",
+    "fr": {
+     "kicker": "CIRCUIT",
+     "title": "Du numérique parfait au BBD",
+     "text": [
+      "Un effet de modulation autour d'une ligne à retard : flanger, chorus, dimension, vibrato. De l'effet à peine perceptible au mur de son.",
+      "CIRCUIT fait passer la ligne du numérique parfait à un circuit analogique BBD, avec sa saturation (DRIVE), la dérive de son horloge (DRIFT), son souffle et son nombre d'étages."
+     ]
+    },
+    "en": {
+     "kicker": "CIRCUIT",
+     "title": "From perfect digital to BBD",
+     "text": [
+      "A modulation effect built around a delay line: flanger, chorus, dimension, vibrato. From barely there to a wall of sound.",
+      "CIRCUIT takes the line from perfect digital to an analog BBD circuit, with its saturation (DRIVE), clock drift (DRIFT), hiss and number of stages."
+     ]
+    }
+   },
+   {
+    "src": "mod-mouvement.mp4",
+    "fr": {
+     "kicker": "DENSITY et MODULATION",
+     "title": "Jusqu'à huit voix",
+     "text": [
+      "VOICES empile jusqu'à huit voix, SPREAD écarte leurs retards, BASS KEEP laisse le grave intact.",
+      "RATE et DEPTH règlent le balayage, STEREO décale la droite de 0 à 180°, un second LFO casse la régularité, SHAPE choisit sinus ou triangle."
+     ]
+    },
+    "en": {
+     "kicker": "DENSITY and MODULATION",
+     "title": "Up to eight voices",
+     "text": [
+      "VOICES stacks up to eight voices, SPREAD pulls their delays apart, BASS KEEP leaves the lows untouched.",
+      "RATE and DEPTH set the sweep, STEREO offsets the right side from 0 to 180°, a second LFO breaks the regularity, SHAPE picks sine or triangle."
+     ]
+    }
+   },
+   {
+    "src": "mod-texture.mp4",
+    "fr": {
+     "kicker": "INTENSITY et TEXTURE",
+     "title": "Métallique, liquide, sale",
+     "text": [
+      "FEEDBACK positif (métallique) ou négatif (creusé, liquide), CROSS d'un côté à l'autre, MIX pour doser. AUTO GAIN ramène la sortie au niveau de l'entrée.",
+      "TEXTURE salit les voix sans toucher au son direct : CRUSH, DOWNSAMPLE et DISTORTION. L'écran montre en direct ce que l'effet fait au spectre."
+     ]
+    },
+    "en": {
+     "kicker": "INTENSITY and TEXTURE",
+     "title": "Metallic, liquid, dirty",
+     "text": [
+      "Positive FEEDBACK (metallic) or negative (hollow, liquid), CROSS from side to side, MIX to dose. AUTO GAIN brings the output back to the input level.",
+      "TEXTURE dirties the voices without touching the dry sound: CRUSH, DOWNSAMPLE and DISTORTION. The screen shows live what the effect does to the spectrum."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Presets d'usine et personnels, A/B, aucune latence. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Factory and user presets, A/B, zero latency. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
+ },
+ "onirique-resobox": {
+  "replace": true,
+  "items": [
+   {
+    "src": "reso-depth.mp4",
+    "fr": {
+     "kicker": "Les résonances",
+     "title": "Seulement quand elles sont là",
+     "text": [
+      "ResoBox repère en temps réel les résonances, sifflantes, duretés, notes qui ressortent, et les atténue fréquence par fréquence, seulement quand elles sont là. Il ne touche jamais à la phase.",
+      "DEPTH règle la quantité, DETAIL l'échelle du travail, SOFT / HARD le caractère. DELTA fait écouter seulement ce qui est retiré."
+     ]
+    },
+    "en": {
+     "kicker": "Resonances",
+     "title": "Only when they're there",
+     "text": [
+      "ResoBox finds resonances in real time, sibilance, harshness, notes that stick out, and tames them frequency by frequency, only when they're there. It never touches the phase.",
+      "DEPTH sets the amount, DETAIL the scale of the work, SOFT / HARD the character. DELTA lets you hear only what's removed."
+     ]
+    }
+   },
+   {
+    "src": "reso-courbe.mp4",
+    "fr": {
+     "kicker": "La sensibilité",
+     "title": "Où travailler, où épargner",
+     "text": [
+      "Une courbe de sensibilité dit où travailler plus fort et où épargner : low cut, high cut et jusqu'à huit bandes, chacune sur toute l'image, la gauche, la droite, le centre ou les côtés.",
+      "Le switch EQ / MULTIBAND remplace cette courbe par quatre bandes aux frontières déplaçables."
+     ]
+    },
+    "en": {
+     "kicker": "Sensitivity",
+     "title": "Where to work, where to spare",
+     "text": [
+      "A sensitivity curve tells it where to work harder and where to spare: low cut, high cut and up to eight bands, each on the whole image, left, right, mid or sides.",
+      "The EQ / MULTIBAND switch swaps the curve for four bands with movable borders."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Stéréo, mid/side ou mono, sidechain, AUTO GAIN, trois qualités et LOW LATENCY. Neuf presets d'usine, A/B. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Stereo, mid/side or mono, sidechain, AUTO GAIN, three qualities and LOW LATENCY. Nine factory presets, A/B. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
+ },
+ "onirique-meterbox": {
+  "replace": true,
+  "items": [
+   {
+    "src": "meter-mesure.mp4",
+    "fr": {
+     "kicker": "Avant d'exporter",
+     "title": "Tout, en images autant qu'en chiffres",
+     "text": [
+      "Posé en dernier sur le master, il montre tout ce qu'il faut vérifier, sans toucher au son. LOUDNESS selon ITU-R BS.1770-4 et EBU R 128, true peak, LRA, PLR et PSR.",
+      "HISTORY trace le loudness dans le temps contre la cible, WAVEFORM déroule le titre, PHASE montre le goniomètre et la corrélation fréquence par fréquence."
+     ]
+    },
+    "en": {
+     "kicker": "Before you export",
+     "title": "Everything, in pictures and numbers",
+     "text": [
+      "Last on the master, it shows everything to check, without touching the sound. LOUDNESS per ITU-R BS.1770-4 and EBU R 128, true peak, LRA, PLR and PSR.",
+      "HISTORY draws loudness over time against the target, WAVEFORM rolls out the track, PHASE shows the goniometer and per-frequency correlation."
+     ]
+    }
+   },
+   {
+    "src": "meter-spectre.mp4",
+    "fr": {
+     "kicker": "SPECTRUM",
+     "title": "La forme d'un titre fini",
+     "text": [
+      "Le spectre par tiers d'octave, avec une bande cible : la moyenne passe au rouge là où elle en sort, résumée en quatre zones.",
+      "CAPTURE fait une cible à partir de ton propre titre de référence. Une norme règle cible et plafond d'un coup : Streaming, Apple Music, EBU R 128…"
+     ]
+    },
+    "en": {
+     "kicker": "SPECTRUM",
+     "title": "The shape of a finished track",
+     "text": [
+      "Third-octave spectrum with a target band: the average turns red where it leaves it, summed up in four zones.",
+      "CAPTURE builds a target from your own reference track. One standard sets target and ceiling at once: Streaming, Apple Music, EBU R 128…"
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Sans latence, mono ou stéréo. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Zero latency, mono or stereo. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
+ },
+ "onirique-punch": {
+  "replace": true,
+  "items": [
+   {
+    "src": "punch-bandes.mp4",
+    "fr": {
+     "kicker": "Transients multibande",
+     "title": "Le début et la fin de chaque coup",
+     "text": [
+      "Un transient shaper multibande : il façonne le début et la fin de chaque coup, sans compresseur ni seuil à régler. Jusqu'à trois bandes, séparées par des fréquences que tu glisses à la souris.",
+      "Chaque bande a son Attack, qui fait claquer ou arrondit le début des coups, son Sustain, qui allonge ou raccourcit ce qui suit, et sa réaction : Sharp, Medium ou Smooth."
+     ]
+    },
+    "en": {
+     "kicker": "Multiband transients",
+     "title": "The start and the end of every hit",
+     "text": [
+      "A multiband transient shaper: it shapes the start and the end of every hit, with no compressor or threshold to set. Up to three bands, split at frequencies you drag with the mouse.",
+      "Each band has its Attack, which makes hits crack or rounds them off, its Sustain, which lengthens or shortens what follows, and its response: Sharp, Medium or Smooth."
+     ]
+    }
+   },
+   {
+    "src": "punch-sortie.mp4",
+    "fr": {
+     "kicker": "Écoute et sortie",
+     "title": "Delta, Width, Mix",
+     "text": [
+      "L'écran montre en direct le gain appliqué. Delta fait entendre uniquement ce que Punch ajoute ou retire ; le lien stéréo garde l'image intacte.",
+      "Entrée et sortie avec leurs vu-mètres, Pan, Width, Mono, Phase, Swap et Mix pour un usage en parallèle. Pour les kicks qui tapent, les caisses claires qui claquent, les pièces qu'on veut faire disparaître ou respirer."
+     ]
+    },
+    "en": {
+     "kicker": "Listening and output",
+     "title": "Delta, Width, Mix",
+     "text": [
+      "The screen shows the applied gain live. Delta lets you hear only what Punch adds or removes; stereo link keeps the image intact.",
+      "Input and output with their meters, Pan, Width, Mono, Phase, Swap and Mix for parallel use. For kicks that hit, snares that crack, rooms you want to vanish or breathe."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Windows et Mac (VST3 et AU).",
+   "en": "Windows and Mac (VST3 and AU)."
+  }
  }
 }
