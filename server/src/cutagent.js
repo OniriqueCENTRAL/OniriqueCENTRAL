@@ -7,6 +7,7 @@
 // Ollama est bridé pour laisser la place au site (3 cœurs sur 8, priorité la plus basse, 6 Go au plus, modèle déchargé
 // dès la réponse). Côté site : une seule passe à la fois, en arrière-plan ; toute panne (IA pas installée, trop lente,
 // réponse illisible) devient un état gardé avec le dernier avis, jamais une erreur levée.
+import http from 'node:http';
 import { setting, setSetting, now } from './db.js';
 
 const URL_ = (process.env.CUT_AGENT_URL || 'http://127.0.0.1:11434').replace(/\/+$/, '');
@@ -79,25 +80,36 @@ export function askLocal(system, text, images, format) {
   aiChain = job.catch(() => {});
   return job;
 }
+/** Un POST JSON vers l'IA du VPS, par node:http : le fetch de Node abandonne quand aucune réponse n'arrive en 5 minutes, et
+ *  Ollama ne répond qu'une fois tout calculé (une relecture prend 10 à 30 minutes). */
+function post(url, body, timeout) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, { method: 'POST', headers: { 'content-type': 'application/json' } }, (res) => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => { clearTimeout(timer); resolve({ status: res.statusCode, json: (() => { try { return JSON.parse(data); } catch { return null; } })() }); });
+      res.on('error', reject);
+    });
+    const timer = setTimeout(() => req.destroy(Object.assign(new Error('timeout'), { name: 'TimeoutError' })), timeout);
+    req.on('error', (error) => { clearTimeout(timer); reject(error); });
+    req.end(JSON.stringify(body));
+  });
+}
 async function ask(system, text, images, format) {
   let r;
   try {
-    r = await fetch(`${URL_}/api/chat`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(25 * 60_000), // sur 3 cœurs, une relecture prend quelques minutes
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, stream: false, format, keep_alive: 0,
-        options: { num_ctx: 16384, num_thread: 3, temperature: 0.3 },
-        messages: [{ role: 'system', content: system }, { role: 'user', content: text, images }] }),
-    });
+    // mesuré sur le VPS : ~5 jetons lus par seconde, une relecture de 5 000 jetons prend ~20 min
+    r = await post(`${URL_}/api/chat`, { model: MODEL, stream: false, format, keep_alive: 0, options: { num_ctx: 16384, num_thread: 3, temperature: 0.3 },
+      messages: [{ role: 'system', content: system }, { role: 'user', content: text, images }] }, 45 * 60_000);
   } catch (error) {
-    if (error.name === 'TimeoutError') throw new Error("l'IA a mis plus de 25 minutes");
-    throw new NoAI("l'IA du serveur ne répond pas : elle n'est sans doute pas installée");
+    if (error.name === 'TimeoutError') throw new Error("l'IA a mis plus de 45 minutes");
+    if (error.code === 'ECONNREFUSED') throw new NoAI("l'IA du serveur ne répond pas : elle n'est sans doute pas installée");
+    throw new Error("l'IA s'est coupée (" + (error.code || error.message) + ')');
   }
-  const data = await r.json().catch(() => null);
   if (r.status === 404) throw new NoAI(`le modèle ${MODEL} n'est pas encore téléchargé`);
-  if (!r.ok) throw new Error(`l'IA répond ${r.status}${data?.error ? ' (' + String(data.error).slice(0, 160) + ')' : ''}`);
-  const answer = String(data?.message?.content || '');
+  if (r.status !== 200) throw new Error(`l'IA répond ${r.status}${r.json?.error ? ' (' + String(r.json.error).slice(0, 160) + ')' : ''}`);
+  const answer = String(r.json?.message?.content || '');
   const m = answer.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('réponse illisible');
   return JSON.parse(m[0]);
@@ -115,8 +127,8 @@ export function runAgent(state) {
     try {
       const s = state();
       const keys = new Set(s.branches.flatMap((b) => b.leaves.map((l) => l.key))), branchIds = new Set(s.branches.map((b) => b.id));
-      // Peu d'images : chacune coûte du temps de calcul sur le processeur (2 couvertures de TikToks d'exemple, 1 montage).
-      const covers = s.lessons.filter((x) => x.thumbs && x.thumbs.length).slice(0, 2).map((x) => x.thumbs[0]);
+      // Peu d'images : chacune coûte du temps de calcul sur le processeur (1 couverture de TikTok d'exemple, 1 montage).
+      const covers = s.lessons.filter((x) => x.thumbs && x.thumbs.length).slice(0, 1).map((x) => x.thumbs[0]);
       const shots = s.gallery.filter((g) => g.thumbs.length).slice(0, 1).flatMap((g) => g.thumbs);
       // Seulement les réglages qui ont quelque chose à dire : changés, nourris, proposés ou visés par une leçon.
       const proposed = new Set(s.proposals.map((p) => p.key)), taught = new Set(s.lessons.map((x) => x.leaf));

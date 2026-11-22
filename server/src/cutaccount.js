@@ -178,18 +178,21 @@ async function work(id, leaves) {
       } catch { /* vidéo non téléchargeable : on garde ses chiffres */ }
     }
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
-  set('L’IA analyse le compte (quelques minutes)…', .7, { status: 'ia', data, thumbs });
+  set('L’IA analyse le compte (10 à 30 minutes, sans gêner le site)…', .7, { status: 'ia', data, thumbs });
   // 4. l'IA
   const keys = new Set(leaves.keys());
   const view = { compte: account,
-    videos: ranked.map((v) => ({ id: v.id, vues: v.views, jaime: v.likes, commentaires: v.comments, partages: v.shares, enregistrements: v.saves, duree_s: v.duration,
-      musique: v.music, date: v.date ? new Date(v.date).toISOString().slice(0, 10) : null, description: v.text.slice(0, 220), sous_titres: v.subtitles || undefined })),
-    reglages_de_cut: [...leaves.values()].map((l) => ({ key: l.key, nom: l.label, valeur: l.value, choix: l.options ? Object.keys(l.options) : l.type })) };
-  const shotIds = deep.filter((v) => thumbs.frames[v.id]).slice(0, 3);
-  const images = shotIds.flatMap((v) => thumbs.frames[v.id]).map((t) => t.replace(/^data:image\/jpeg;base64,/, ''));
-  const order = shotIds.map((v) => `${v.id} (${v.views ?? '?'} vues)`).join(', ');
+    // Une entrée courte : l'IA lit ~5 jetons par seconde sur le VPS (les 25 vidéos les plus vues, et la plus faible).
+    videos: [...ranked.slice(0, 25), ...(ranked.length > 25 ? [ranked.at(-1)] : [])].map((v) => ({ id: v.id, vues: v.views, jaime: v.likes, commentaires: v.comments,
+      partages: v.shares, enregistrements: v.saves, duree_s: v.duration, musique: v.music || undefined, date: v.date ? new Date(v.date).toISOString().slice(0, 10) : undefined,
+      description: v.text.slice(0, 120), sous_titres: v.subtitles ? v.subtitles.slice(0, 400) : undefined })),
+    reglages_de_cut: [...leaves.values()].map((l) => ({ key: l.key, nom: l.label, valeur: l.value })) };
+  // 4 images : les 3 de la vidéo la plus vue, et le début de la moins vue (chaque image coûte du calcul).
+  const best = deep.find((v) => thumbs.frames[v.id]), weak = deep.length > 1 && thumbs.frames[deep.at(-1).id] ? deep.at(-1) : null;
+  const images = [...(best ? thumbs.frames[best.id] : []), ...(weak && weak !== best ? [thumbs.frames[weak.id][0]] : [])].map((t) => t.replace(/^data:image\/jpeg;base64,/, ''));
+  const order = [best && `3 images de ${best.id} (${best.views ?? '?'} vues, la plus vue)`, weak && weak !== best && `1 image de ${weak.id} (${weak.views ?? '?'} vues, la moins vue)`].filter(Boolean).join(', ');
   try {
-    const json = await askLocal(SYSTEM, `Images jointes, 3 par vidéo dans cet ordre : ${order || 'aucune'}.\n\n${JSON.stringify(view)}`, images, schemaOf(keys));
+    const json = await askLocal(SYSTEM, `Images jointes, dans cet ordre : ${order || 'aucune'}.\n\n${JSON.stringify(view)}`, images, schemaOf(keys));
     data.opinion = cleanAnalysis(json, keys);
     set('Fini', 1, { status: 'fini', data });
   } catch (error) {
