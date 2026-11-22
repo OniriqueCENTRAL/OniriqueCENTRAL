@@ -107,17 +107,14 @@ header nav { display: flex; align-items: center; gap: 10px; }
 .founder { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
 .founder a { color: var(--mist); font-weight: 600; text-decoration: none; }
 .founder a:hover { text-decoration: underline; text-underline-offset: 3px; }
-.features { margin-top: 64px; }
-.features .feature { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 44px; align-items: center; padding: 40px 0; border-top: 1px solid var(--line); }
-.features .feature.flip { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
-.features .feature.flip .media { order: 2; }
-.features .media { border-radius: 18px; overflow: hidden; background: #120c0e; border: 1px solid rgba(var(--acc),.35); box-shadow: 0 30px 80px rgba(0,0,0,.55); }
+.features .feature + .feature { margin-top: 34px; padding-top: 30px; border-top: 1px solid var(--line); }
+.features .media { border-radius: 18px; overflow: hidden; background: #120c0e; border: 1px solid rgba(var(--acc),.35); box-shadow: 0 24px 70px rgba(0,0,0,.5); }
 .features video { display: block; width: 100%; height: auto; }
+.features .text { margin-top: 18px; }
 .features .kicker { font: 500 12px/1.4 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
-.features h2 { margin: 10px 0 14px; font: 800 26px/1.2 var(--f-display); color: rgb(var(--acc)); }
-.features p { margin: 0 0 12px; color: var(--label); }
-#detail.doc-open .features { display: none; }
-@media (max-width: 860px) { .features .feature, .features .feature.flip { grid-template-columns: 1fr; gap: 20px; } .features .feature.flip .media { order: 0; } .features h2 { font-size: 22px; } }
+.features h2 { margin: 8px 0 10px; font: 800 24px/1.2 var(--f-display); color: rgb(var(--acc)); }
+.features p { margin: 0 0 10px; color: var(--label); }
+@media (max-width: 860px) { .features h2 { font-size: 21px; } }
 .block-title { margin: 32px 0 12px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 
 /* Abonnement à la carte */
@@ -252,8 +249,9 @@ header nav { display: flex; align-items: center; gap: 10px; }
     <div class="product">
       <div>
         <div id="pane-plugin" role="tabpanel" aria-labelledby="tab-plugin">
-          <div class="demo" id="demo"><div class="demo-wait">Chargement de l’interface…</div></div>
-          <p class="note">Démonstration de l’interface réelle du plugin. Aucun son n’est traité dans le navigateur.</p>
+          <!-- Le plugin en vidéo (assets/videos/videos.json) : une vidéo par fonction, son texte dessous ; sinon son image -->
+          <div class="features" id="features" data-no-translate hidden></div>
+          <div class="demo" id="demo" hidden></div>
           <p class="block-title">Le plugin</p>
           <div class="desc" id="desc"></div>
           <p class="founder" id="founder" hidden></p>
@@ -289,8 +287,6 @@ header nav { display: flex; align-items: center; gap: 10px; }
         <p class="note"><a href="cgv">Conditions de vente</a> · <a href="remboursement">Rétractation</a></p>
       </aside>
     </div>
-    <!-- Le plugin en vidéo (assets/videos/videos.json) : une vidéo par fonction, en alternance -->
-    <div class="features" id="features" data-no-translate hidden></div>
   </section>
 
   <p class="lede" id="state">Chargement…</p>
@@ -302,7 +298,6 @@ header nav { display: flex; align-items: center; gap: 10px; }
   </nav>
 </footer>
 
-<script src="assets/demo-player.js?v=4"></script>
 <script src="assets/tools-menu.js?v=20"></script>
 <script src="assets/account.js?v=19"></script>
 <script src="assets/site-nav.js?v=25"></script>
@@ -407,13 +402,13 @@ const DOCS = { "tuner": 1, "onirique-verb": 1, "onirique-enhancer": 1, "onirique
   "onirique-resobox": 2, "onirique-doublebox": 2, "onirique-modbox": 2, "based": 2, "onirique-pitchbox": 2, "onirique-echobox": 2,
   "onirique-meterbox": 2, "onirique-broadcast": 2, "brumebox": 2, "onirique-punch": 2, "onirique-vision": 1,
   "onirique-de-esser": 2, "onirique-f76": 1, "onirique-l2a": 1 };
-// Le plugin en vidéo : une petite vidéo par fonction (la souris qui l'utilise), texte à côté, en alternance ; chaque vidéo
-// ne tourne que quand elle est à l'écran.
+// Le plugin en vidéo, en haut de la fiche : une petite vidéo par fonction (la souris qui l'utilise), son texte dessous ;
+// chaque vidéo ne tourne que quand elle est à l'écran. Renvoie false s'il n'y en a pas (la fiche montre alors l'image).
 async function setupVideos(product) {
   let all = null;
-  try { all = await fetch("/assets/videos/videos.json?v=1").then((r) => r.ok ? r.json() : null); } catch { return; }
+  try { all = await fetch("/assets/videos/videos.json?v=2").then((r) => r.ok ? r.json() : null); } catch { return false; }
   const list = all?.[product.slug];
-  if (!list?.length) return;
+  if (!list?.length) return false;
   const en = window.OniriqueI18n?.lang === "en";
   const watch = "IntersectionObserver" in window
     ? new IntersectionObserver((seen) => seen.forEach((s) => s.isIntersecting ? s.target.play().catch(() => {}) : s.target.pause()), { threshold: 0.25 })
@@ -423,12 +418,13 @@ async function setupVideos(product) {
     const video = el("video", { src: "/assets/videos/" + f.src, muted: true, loop: true, playsInline: true, preload: "metadata", ariaLabel: t.title });
     video.setAttribute("muted", ""); video.setAttribute("playsinline", "");
     if (watch) watch.observe(video); else video.autoplay = true;
-    return el("div", { className: "feature" + (i % 2 ? " flip" : "") },
+    return el("div", { className: "feature" },
       el("div", { className: "media" }, video),
       el("div", { className: "text" }, el("div", { className: "kicker", textContent: t.kicker }), el("h2", { textContent: t.title }),
         ...t.text.map((p) => el("p", { textContent: p }))));
   }));
   $("features").hidden = false;
+  return true;
 }
 function setupDoc(product) {
   const version = DOCS[product.slug];
@@ -807,22 +803,12 @@ async function buy(product, catalog) {
   setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); setupMonthly(product, catalog); });
   $("detail").hidden = false;
   setupDoc(product);
-  setupVideos(product);
 
-  // Une interface web réelle (RAW) passe avant tout ; puis l’image choisie par un admin ; puis la démo en images.
-  const web = await OniriqueDemo.web(product.slug);
-  if (web) {
-    OniriqueDemo.mountWeb($("demo"), web, product.name);
-  } else if (product.demo && !product.imageManual) {
-    OniriqueDemo.mount($("demo"), product.demo).then(fitDemo).catch(() => { $("demo").firstChild.textContent = "L’interface n’a pas pu être chargée."; });
-  } else if (product.image) {
+  // En haut de la fiche : les vidéos du plugin ; sans vidéo, son image (les anciennes démos interactives sont retirées).
+  if (!(await setupVideos(product)) && product.image) {
     $("demo").replaceChildren(el("img", { className: "whole", src: sized(product.image, 1920), srcset: srcsetOf(product.image, [960, 1280, 1920]),
-      sizes: "(max-width: 1120px) 100vw, 1100px", alt: "Interface du plugin " + product.name }));
-  } else {
-    // Tant que VocalBox n’a pas de démo fabriquée à partir de son .vst3, celle de la page d’accueil en tient lieu.
-    $("demo").firstChild.replaceChildren(...(product.slug.includes("vocalbox")
-      ? [el("a", { href: "/#vocalbox", textContent: "Essayer l’interface de VocalBox sur la page d’accueil" })]
-      : ["L’aperçu de ce plugin arrive bientôt."]));
+      sizes: "(max-width: 1120px) 100vw, 760px", alt: "Interface du plugin " + product.name }));
+    $("demo").hidden = false;
   }
 })();
 </script>
