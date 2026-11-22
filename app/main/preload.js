@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const CHANNELS = [
-  'load', 'api', 'checkout', 'media', 'demo', 'videos', 'video', 'clipboard',
+  'load', 'api', 'checkout', 'media', 'demo', 'clipboard',
   'auth:login', 'auth:register', 'auth:logout', 'auth:password', 'me:avatar', 'me:instagramAvatar',
   'plugin:install', 'plugin:uninstall', 'plugin:reveal', 'plugin:open',
   'license:activate', 'license:deactivate', 'license:redeem',

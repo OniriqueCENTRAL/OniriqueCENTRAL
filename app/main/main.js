@@ -1162,33 +1162,6 @@ app.whenReady().then(async () => {
     return demos.get(route);
   });
 
-  // Les vidéos des fiches (les mêmes que sur le site) : la liste, relue toutes les 10 minutes, puis chaque vidéo à la demande,
-  // seulement quand elle arrive à l'écran, gardée sur le disque (un petit PC ne la retélécharge pas). Remise à l'interface en
-  // octets : elle en fait une blob: (la CSP n'autorise aucune origine distante).
-  let videoList = null, videoListAt = 0;
-  handle('videos', async () => {
-    if (!videoList || Date.now() - videoListAt > 600_000) {
-      const response = await fetch(`${SITE}/assets/videos/videos.json?t=${Math.floor(Date.now() / 600_000)}`).catch(() => null);
-      if (response?.ok) { videoList = await response.json(); videoListAt = Date.now(); }
-      else if (!videoList) return {};
-    }
-    return videoList;
-  });
-  handle('video', async (name) => {
-    if (!/^[a-z0-9-]{1,80}\.mp4$/.test(String(name))) throw new Error('Vidéo invalide.');
-    const dir = path.join(app.getPath('userData'), 'videos');
-    const file = path.join(dir, name);
-    const fresh = fs.existsSync(file) && Date.now() - fs.statSync(file).mtimeMs < 7 * 86400_000;
-    if (!fresh) {
-      const response = await fetch(`${SITE}/assets/videos/${name}`).catch(() => null);
-      if (response?.ok) {
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(file, Buffer.from(await response.arrayBuffer()));
-      } else if (!fs.existsSync(file)) throw new Error('Vidéo introuvable.');
-    }
-    return new Uint8Array(fs.readFileSync(file));
-  });
-
   handle('settings:server', async (url) => {
     const parsed = new URL(String(url).trim());
     if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error("L'adresse doit commencer par http:// ou https://");
