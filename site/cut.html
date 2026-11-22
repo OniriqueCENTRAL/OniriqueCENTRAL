@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b0d1ad5c"></script>
+<script src="assets/i18n.js?v=519fc4d8"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -183,6 +183,24 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .neural-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--haze); font-size: 12px; }
 .neural-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
 .neural-legend i.ring { border: 1.5px solid rgb(var(--acc)); }
+.agent { display: grid; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(0,0,0,.25); }
+.agent p { margin: 0; }
+.agent-resume { color: #fff; font-size: 15px; line-height: 1.5; }
+.agent-alerts { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.agent-alerts li { display: flex; gap: 10px; align-items: baseline; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.04); font-size: 14px; }
+.agent-alerts b { flex: none; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.agent-alerts .attention b { color: var(--ember-text); }
+.agent-alerts .grave { background: rgba(var(--acc-lo), .45); }
+.agent-alerts .grave b { color: #fff; }
+.agent-branches { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+.agent-branches dt { color: #fff; font-weight: 600; }
+.agent-branches dd { margin: 0; color: var(--label); }
+.agent-lessons { display: grid; gap: 6px; }
+.agent-lessons small { color: var(--haze); font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
+.agent-lessons .row { justify-content: space-between; flex-wrap: nowrap; font-size: 14px; }
+.agent-says { font-size: 13px; color: var(--label); }
+.agent-says.pour { color: #fff; }
+.agent-says.contre { color: var(--ember-text); }
 .seen { display: grid; gap: 12px; }
 .seen > p { margin: 0; color: var(--label); }
 .seen-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
@@ -4769,6 +4787,52 @@ let treeTarget = ""; // la feuille ou la branche que la prochaine leçon nourrit
 // ——— Le réseau (fondateurs) : l’arborescence dessinée comme un réseau de neurones. À gauche ce qui la nourrit (TikToks faits
 // sur CUT, corrections après AUTOMATIQUE, leçons, recette de départ), puis ses branches, ses réglages et, à droite, le TikTok
 // d’AUTOMATIQUE. Chaque point lumineux est un signal : plus une branche ou une feuille est nourrie, plus elle en reçoit. ———
+// ——— Le superviseur (serveur : cutagent.js) : une IA relit ce que l’arbre apprend et dit ce qui est bien ou pas. Il ne décide
+// rien : son avis aide les fondateurs à valider ou refuser. ———
+let agentPoll = 0;
+/** Après une demande d’avis : on regarde toutes les 4 s si la relecture est finie (4 minutes au plus), puis on redessine. */
+function watchAgent(since) {
+  clearInterval(agentPoll);
+  let n = 0;
+  agentPoll = setInterval(async () => {
+    if ($("tree-page").hidden || ++n > 60) return clearInterval(agentPoll);
+    try {
+      const b = await bankFetch("/api/cut/brain");
+      if (!b.agent.running && b.agent.checkedAt !== since) { clearInterval(agentPoll); renderTree(); }
+    } catch { /* on réessaie au tour suivant */ }
+  }, 4000);
+}
+const VERDICT = { pour: "Pour", contre: "Contre", prudence: "Prudence" };
+function agentView(brain, leaves, fill) {
+  const a = brain.agent || { status: "jamais" };
+  const ask = node("button", { className: "go", type: "button", textContent: a.running ? "Il relit l’arbre…" : "Demander son avis", disabled: !!a.running });
+  ask.onclick = async () => {
+    ask.disabled = true; ask.textContent = "Il relit l’arbre…";
+    try { await bankFetch("/api/cut/brain/agent", { method: "POST" }); watchAgent(a.checkedAt); }
+    catch (error) { ask.disabled = false; ask.textContent = "Demander son avis"; alert(error.message); }
+  };
+  if (a.running) watchAgent(a.checkedAt);
+  const state = a.running ? "Il relit tout ce que l’arbre a appris, images comprises : une à trois minutes."
+    : { jamais: "Il n’a encore rien relu. Il passe tout seul une fois par jour quand l’arbre a appris du nouveau, ou quand tu le lui demandes.",
+      "sans-cle": "Il n’a pas encore de clé : sur le VPS, en root, lance « onirique-superviseur » et colle une clé API Claude (console.anthropic.com).",
+      erreur: "Sa dernière relecture n’a pas abouti (" + (a.error || "erreur inconnue") + ")." + (a.at ? " Voici son avis précédent." : ""),
+      ok: "" }[a.status] || "";
+  const label = (key) => (leaves.get(key) ? leaves.get(key).branch.label + " › " + leaves.get(key).label : "");
+  const kids = [node("div", { className: "row" }, ask, node("small", { className: "muted", textContent: a.at ? "Avis du " + dayText(a.at) + (a.model ? " · " + a.model : "") : "" }))];
+  if (state) kids.push(node("p", { className: "muted", textContent: state }));
+  if (a.at) {
+    if (a.resume) kids.push(node("p", { className: "agent-resume", textContent: a.resume }));
+    if (a.alertes && a.alertes.length) kids.push(node("ul", { className: "agent-alerts" }, ...a.alertes.map((x) => node("li", { className: x.niveau },
+      node("b", { textContent: { info: "Info", attention: "Attention", grave: "Grave" }[x.niveau] }), node("span", { textContent: x.texte + (x.feuille ? " (" + label(x.feuille) + ")" : "") })))));
+    const branches = brain.branches.filter((b) => a.branches && a.branches[b.id]);
+    if (branches.length) kids.push(node("dl", { className: "agent-branches" }, ...branches.flatMap((b) => [node("dt", { textContent: b.label }), node("dd", { textContent: a.branches[b.id] })])));
+    if (a.images) kids.push(node("p", { className: "muted", textContent: "Les images : " + a.images }));
+    if (a.lecons && a.lecons.length) kids.push(node("div", { className: "agent-lessons" }, node("small", { textContent: "Leçons qu’il te propose" }),
+      ...a.lecons.map((t) => node("div", { className: "row" }, node("span", { textContent: t }), node("button", { className: "mini", type: "button", textContent: "En faire une leçon", onclick: () => fill(t) })))));
+  }
+  return node("div", { className: "agent" }, ...kids);
+}
+
 /** Le contenu des TikToks : ce que l’arbre en retient (son, images, textes) et les derniers montages, images comprises. */
 function seenView(brain) {
   const s = brain.content || { n: 0 }, pc = (x) => Math.round(x * 100) + " %";
@@ -4827,6 +4891,7 @@ function neuralView(brain, leaves, openLeaf) {
     add({ kind: "in", label: "Images, son et textes", n: (brain.content && brain.content.n) || 0, info: "Ce que l’arbre voit, entend et lit dans les montages exportés." }),
     add({ kind: "in", label: "Recette de départ", n: brain.branches.reduce((n, b) => n + b.leaves.length + b.lessons.length, 0), info: "Au départ, " + brain.source + "." }),
   ];
+  const ag = brain.agent && brain.agent.at ? add({ kind: "agent", label: "Superviseur", info: brain.agent.resume || "" }) : null;
   const out = add({ kind: "out", label: "TikTok d’AUTOMATIQUE", info: "AUTOMATIQUE monte ses TikToks avec ces " + leaves.size + " réglages." });
   const branches = brain.branches.map((b) => {
     const keys = b.leaves.map((l) => l.key), own = lessonsOn(b.id) + b.leaves.reduce((n, l) => n + lessonsOn(l.key), 0);
@@ -4844,6 +4909,8 @@ function neuralView(brain, leaves, openLeaf) {
     if (!bn.kids.length) link(bn, out, bn.lessons); // une branche faite seulement de leçons (la publication)
     return bn;
   });
+  if (ag) for (const bn of branches) // ses avis et ses alertes vont aux branches qu’ils touchent
+    link(ag, bn, 1 + (brain.agent.branches && brain.agent.branches[bn.b.id] ? 2 : 0) + (brain.agent.alertes || []).filter((x) => bn.kids.some((l) => l.l.key === x.feuille)).length * 2);
   const most = {};
   for (const e of edges) most[e.a.kind] = Math.max(most[e.a.kind] || 0, e.w);
   for (const e of edges) e.alpha = e.w ? .05 + .3 * Math.sqrt(e.w / most[e.a.kind]) : 0;
@@ -4865,11 +4932,12 @@ function neuralView(brain, leaves, openLeaf) {
     byY.reverse().forEach((b, i) => { if (i) b.y = Math.max(b.y, byY[i - 1].y + gap); else b.y = Math.max(b.y, 52); });
     ins.forEach((n, i) => { n.x = W * .06; n.y = H / 2 + (i - (ins.length - 1) / 2) * Math.min(90, H / 6); });
     out.x = W * .93; out.y = H / 2;
+    if (ag) { ag.x = W * .93; ag.y = 50; }
   };
-  const radius = (n) => n.kind === "out" ? 15 : n.kind === "in" ? 10 : n.kind === "branch" ? 8 + Math.min(4, Math.sqrt(n.tiktoks + n.lessons) / 2)
+  const radius = (n) => n.kind === "out" ? 15 : n.kind === "agent" ? 11 : n.kind === "in" ? 10 : n.kind === "branch" ? 8 + Math.min(4, Math.sqrt(n.tiktoks + n.lessons) / 2)
     : 3.5 + Math.min(4, Math.sqrt((n.l.stats ? n.l.stats.n : 0) + n.lessons));
   const colorOf = (n) => n.kind === "leaf" ? (n.l.source ? (n.l.source.from === "note" ? `rgb(${acc})` : "#fff") : "rgba(244,236,236,.5)")
-    : n.kind === "in" ? (n.n ? `rgb(${acc})` : "rgba(244,236,236,.3)") : n.kind === "out" ? "#fff" : "rgba(255,214,218,.92)";
+    : n.kind === "in" ? (n.n ? `rgb(${acc})` : "rgba(244,236,236,.3)") : n.kind === "out" || n.kind === "agent" ? "#fff" : "rgba(255,214,218,.92)";
   const bez = ({ a, b }, t) => { const dx = (b.x - a.x) / 2, u = 1 - t;
     return [u * u * u * a.x + 3 * u * u * t * (a.x + dx) + 3 * u * t * t * (b.x - dx) + t * t * t * b.x, u * u * u * a.y + 3 * u * u * t * a.y + 3 * u * t * t * b.y + t * t * t * b.y]; };
   const cut = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
@@ -4884,6 +4952,7 @@ function neuralView(brain, leaves, openLeaf) {
   const frame = (now) => {
     if ($("tree-page").hidden || !canvas.isConnected) return neuralStop();
     if (!still) ins.forEach((n, i) => { if (Math.random() < rate[i]) spawn(pick(n)); });
+    if (!still && ag && Math.random() < .07) spawn(pick(ag));
     gx.setTransform(dpr, 0, 0, dpr, 0, 0); gx.clearRect(0, 0, W, H);
     for (const e of edges) {
       if (!e.alpha) continue;
@@ -4913,7 +4982,7 @@ function neuralView(brain, leaves, openLeaf) {
       }
       gx.shadowBlur = 6 + n.fire * 22 + (n === hover ? 14 : 0); gx.fillStyle = colorOf(n);
       gx.beginPath(); gx.arc(n.x, n.y, r + n.fire * 2.5, 0, 7); gx.fill();
-      if (n.kind === "out") { gx.shadowBlur = 0; gx.strokeStyle = `rgba(${acc}, .9)`; gx.lineWidth = 2; gx.beginPath(); gx.arc(n.x, n.y, r + 5 + n.fire * 4, 0, 7); gx.stroke(); }
+      if (n.kind === "out" || n.kind === "agent") { gx.shadowBlur = 0; gx.strokeStyle = `rgba(${acc}, .9)`; gx.lineWidth = 2; gx.beginPath(); gx.arc(n.x, n.y, r + 5 + n.fire * 4, 0, 7); gx.stroke(); }
     }
     gx.shadowBlur = 0; gx.textBaseline = "middle";
     for (const n of ins) {
@@ -4929,6 +4998,8 @@ function neuralView(brain, leaves, openLeaf) {
       gx.fillStyle = n === hover ? "#fff" : n.prop ? `rgb(${acc})` : "rgba(244,236,236,.72)";
       gx.fillText(cut(n.label, 34) + " · " + cut(valueText(n.l, n.l.value), 18), n.x + 10, n.y);
     }
+    if (ag) { gx.textAlign = "right"; gx.fillStyle = "#fff"; gx.font = "700 13px " + font; gx.fillText("Superviseur", ag.x - 22, ag.y - 6);
+      gx.fillStyle = "rgba(244,236,236,.55)"; gx.font = "500 10px " + mono; gx.fillText("avis du " + dayText(brain.agent.at), ag.x - 22, ag.y + 9); }
     gx.textAlign = "center"; gx.fillStyle = "#fff"; gx.font = "700 13px " + font; gx.fillText("TikTok", out.x, out.y + 34);
     gx.fillStyle = "rgba(244,236,236,.55)"; gx.font = "500 10px " + mono; gx.fillText("AUTOMATIQUE", out.x, out.y + 48);
     raf = still ? 0 : requestAnimationFrame(frame);
@@ -4943,6 +5014,7 @@ function neuralView(brain, leaves, openLeaf) {
         n.lessons ? plural(n.lessons, "leçon") : "", n.prop ? "À valider : " + valueText(l, n.prop.value) + " (" + Math.round(n.prop.share * 100) + " %)" : "", "Clic : ouvrir ce réglage"];
     }
     if (n.kind === "branch") return [n.label, plural(n.b.leaves.length, "réglage"), plural(n.lessons, "leçon"), n.tiktoks + " voix de TikToks"];
+    if (n.kind === "agent") return [n.label, "Avis du " + dayText(brain.agent.at), n.info, plural((brain.agent.alertes || []).length, "alerte")];
     return [n.label, n.kind === "in" && n !== ins[4] ? plural(n.n, n === ins[3] ? "montage" : "apport") : "", n.info];
   };
   const at = (event) => {
@@ -4963,7 +5035,8 @@ function neuralView(brain, leaves, openLeaf) {
     if (still) frame(performance.now());
   };
   canvas.onmouseleave = () => { hover = null; tip.hidden = true; if (still) frame(performance.now()); };
-  canvas.onclick = (event) => { const { n } = at(event); if (n && n.kind === "leaf") openLeaf(n.l.key); else if (n && n.kind === "branch" && n.kids.length) openLeaf(n.kids[0].l.key); };
+  canvas.onclick = (event) => { const { n } = at(event);
+    if (n && n.kind === "agent") { const box = document.querySelector("#tree-page .agent"); if (box) box.scrollIntoView({ behavior: "smooth", block: "center" }); return; } if (n && n.kind === "leaf") openLeaf(n.l.key); else if (n && n.kind === "branch" && n.kids.length) openLeaf(n.kids[0].l.key); };
   const legend = node("div", { className: "neural-legend" },
     ...[[`rgb(${acc})`, "ce qui nourrit l’arbre, ou réglé par une leçon"], ["#fff", "réglage validé par un fondateur"], ["rgba(244,236,236,.5)", "recette de départ"]]
       .map(([color, text]) => node("span", {}, node("i", { style: "background:" + color }), text)),
@@ -5003,6 +5076,8 @@ async function renderTree() {
       node("small", { textContent: l.branch.label + " › " + l.label }),
       node("p", {}, node("s", { textContent: valueText(l, p.from) }), " → ", node("b", { textContent: valueText(l, p.value) })),
       node("small", { textContent: "Choisi à " + Math.round(p.share * 100) + " %, sur " + plural(p.n, "TikTok") }),
+      ...((brain.agent && brain.agent.propositions || []).filter((x) => x.key === p.key && x.value === p.value)
+        .map((x) => node("p", { className: "agent-says " + x.avis, textContent: "Superviseur : " + VERDICT[x.avis] + (x.pourquoi ? " · " + x.pourquoi : "") }))),
       node("div", { className: "row" }, node("button", { className: "go", type: "button", textContent: "Valider", onclick: decide(p, "approve") }),
         node("button", { className: "mini", type: "button", textContent: "Refuser", onclick: decide(p, "refuse") })));
   });
@@ -5100,7 +5175,9 @@ async function renderTree() {
     if (row.getAttribute("aria-expanded") !== "true") row.click();
     row.scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  box.replaceChildren(kpis, week, node("h3", { textContent: "Le réseau" }), neuralView(brain, leaves, openLeaf),
+  const fill = (t) => { target.value = ""; syncValue(); text.value = t; form.open = true; form.scrollIntoView({ behavior: "smooth", block: "center" }); text.focus({ preventScroll: true }); };
+  box.replaceChildren(kpis, week, node("h3", { textContent: "L’avis du superviseur" }), agentView(brain, leaves, fill),
+    node("h3", { textContent: "Le réseau" }), neuralView(brain, leaves, openLeaf),
     node("h3", { textContent: "Ce qu’elle a vu, entendu et lu" }), seenView(brain), ...(props.length ? [node("h3", { textContent: "À valider (" + props.length + ")" }), node("div", { className: "tree-props" }, ...props)] : []),
     form, node("h3", { textContent: "L’arbre" }), tree, node("h3", { textContent: "Comment elle est nourrie" }), journal);
 }
@@ -5771,7 +5848,7 @@ function start() {
     $("tree-short").hidden = false;
     const openTree = () => { $("tree-page").hidden = false; document.body.style.overflow = "hidden"; renderTree(); };
     $("tree-short").onclick = $("tree-open").onclick = openTree;
-    $("tree-close").onclick = () => { $("tree-page").hidden = true; document.body.style.overflow = ""; neuralStop(); };
+    $("tree-close").onclick = () => { $("tree-page").hidden = true; document.body.style.overflow = ""; neuralStop(); clearInterval(agentPoll); };
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("tree-page").hidden) $("tree-close").click(); });
     $("auto-go").onclick = autoTikTok;
   }

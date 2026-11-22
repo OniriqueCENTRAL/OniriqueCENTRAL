@@ -51,6 +51,10 @@
   banque si aucun clip (3 films essayés), réplique qui reprend des mots du passage et finit sur une question, image froide
   retirée sur un film sombre, export sans Shorts ni Reels automatiques, gardé dans le cloud CUT.
 - Avant de monter un TikTok soi-même pour un fondateur : lire l'arbre (`/api/cut/brain`, session fondateur).
+- Superviseur (`server/src/cutagent.js`) : Claude relit l'arbre (images comprises) une fois par jour s'il y a du nouveau, ou
+  sur le bouton « Demander son avis » ; il ne décide rien. Clé : `onirique-superviseur` sur le VPS (Claude et pas Gemini :
+  l'offre gratuite de Gemini peut entraîner les modèles de Google sur ce qu'on lui envoie). Modèle : `CUT_AGENT_MODEL`.
+  Une panne n'est qu'un état gardé (« erreur », « sans-cle ») : le site n'en dépend pas.
 
 ## BPM et tonalité (`site/assets/bpm-key-worker.js`), blanc du Downloader
 - Le même worker sert à BPM et tonalité, PROD du Downloader, CUT, Mes sons, Stems et Transposition : après une

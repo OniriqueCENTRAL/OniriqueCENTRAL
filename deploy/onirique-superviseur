@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Donne une clé API Claude au superviseur de l'arborescence de CUT (server/src/cutagent.js). À lancer sur le VPS, en root :
+#   onirique-superviseur        demande la clé API Claude
+#   onirique-superviseur off    retire la clé (le superviseur s'arrête ; ROCKY garde Gemini s'il l'a)
+# La clé est saisie ici, sans s'afficher, et ne quitte pas le serveur.
+# La clé : sur console.anthropic.com, « API Keys », « Create Key ». Le superviseur relit l'arbre une fois par jour au plus.
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  read -rsp "Clé API Claude (rien ne s'affiche) : " KEY; echo
+  # Un collage dans le terminal ajoute parfois des caractères invisibles ou des espaces : ils sont retirés (et les guillemets).
+  KEY=$(printf '%s' "$KEY" | sed 's/\x1b\[20[01]~//g' | tr -cd '[:graph:]' | tr -d "'\"\\\\")
+  [ ${#KEY} -ge 20 ] || stop "Clé trop courte. Rien n'est changé."
+  # Anthropic dit tout de suite si la clé marche, avant de l'enregistrer.
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "x-api-key: $KEY" -H "anthropic-version: 2026-10-21" https://api.anthropic.com/v1/models || true)
+  [ "$CODE" = 200 ] || stop "Anthropic refuse cette clé (code $CODE). Recopie-la depuis console.anthropic.com, puis relance. Rien n'est changé."
+fi
+
+sed -i '/^ANTHROPIC_API_KEY=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "ANTHROPIC_API_KEY='%s'\n" "$KEY" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "Le superviseur est arrêté."; else echo "C'est bon : dans CUT, menu Arborescence, « Demander son avis »."; fi
