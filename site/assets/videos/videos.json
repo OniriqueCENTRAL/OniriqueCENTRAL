@@ -1,28 +1,208 @@
 {
-  "onirique-de-esser": [
-    { "src": "deesser-auto.mp4",
-      "fr": { "kicker": "Mode AUTO", "title": "Ce qui est retiré, son par son",
-              "text": ["Tu glisses la ligne du THRESHOLD directement dans la vue : tout ce qui siffle au-dessus est baissé, et la lettre du son retiré s'affiche au-dessus de chaque retrait.", "Tu choisis ce que tu traites, S, T, CH ou F, et tu vois tout de suite ce que ça change."] },
-      "en": { "kicker": "AUTO mode", "title": "What's removed, sound by sound",
-              "text": ["Drag the THRESHOLD line right in the view: everything hissing above it is turned down, and the letter of the removed sound shows above each removal.", "Pick what you treat, S, T, CH or F, and see right away what it changes."] } },
-    { "src": "deesser-manuel.mp4",
-      "fr": { "kicker": "Mode MANUEL", "title": "Chaque S, à la main",
-              "text": ["Tu lances ta prise, elle s'enregistre toute seule. Chaque S apparaît dans sa colonne : tu le survoles, tu l'entends, tu le tires vers le bas.", "TOUT RÉDUIRE baisse toute la famille d'un coup, les plus forts davantage. Ceux que tu as réglés à la main ne bougent plus."] },
-      "en": { "kicker": "MANUAL mode", "title": "Every S, by hand",
-              "text": ["Play your take, it records itself. Every S shows up in its own column: hover it, hear it, drag it down.", "TOUT RÉDUIRE (reduce all) lowers the whole family at once, the loudest ones more. The ones you set by hand stay put."] } }
-  ],
-  "onirique-f76": [
-    { "src": "f76.mp4",
-      "fr": { "kicker": "Pousse, il compresse", "title": "INPUT, BLACK ou BLUE",
-              "text": ["Tu pousses INPUT et le VU plonge. Tu passes en BLUE pour le grain de la première génération.", "Le MIX ramène le son direct pour une compression parallèle, parfaitement en phase."] },
-      "en": { "kicker": "Push it, it compresses", "title": "INPUT, BLACK or BLUE",
-              "text": ["Push INPUT and the VU dives. Switch to BLUE for the grit of the first generation.", "MIX brings the dry sound back for parallel compression, perfectly in phase."] } }
-  ],
-  "onirique-l2a": [
-    { "src": "l2a.mp4",
-      "fr": { "kicker": "Deux boutons suffisent", "title": "PEAK REDUCTION, GAIN",
-              "text": ["Tu montes PEAK REDUCTION : la cellule optique nivelle la voix sans qu'on l'entende travailler. GAIN rattrape le niveau.", "LIMIT tient davantage les crêtes."] },
-      "en": { "kicker": "Two knobs are enough", "title": "PEAK REDUCTION, GAIN",
-              "text": ["Turn up PEAK REDUCTION: the optical cell levels the vocal without you hearing it work. GAIN makes up the level.", "LIMIT holds the peaks more."] } }
-  ]
+ "onirique-de-esser": [
+  {
+   "src": "deesser-auto.mp4",
+   "fr": {
+    "kicker": "Mode AUTO",
+    "title": "Ce qui est retiré, son par son",
+    "text": [
+     "Tu glisses la ligne du THRESHOLD directement dans la vue : tout ce qui siffle au-dessus est baissé, et la lettre du son retiré s'affiche au-dessus de chaque retrait.",
+     "Tu choisis ce que tu traites, S, T, CH ou F, et tu vois tout de suite ce que ça change."
+    ]
+   },
+   "en": {
+    "kicker": "AUTO mode",
+    "title": "What's removed, sound by sound",
+    "text": [
+     "Drag the THRESHOLD line right in the view: everything hissing above it is turned down, and the letter of the removed sound shows above each removal.",
+     "Pick what you treat, S, T, CH or F, and see right away what it changes."
+    ]
+   }
+  },
+  {
+   "src": "deesser-manuel.mp4",
+   "fr": {
+    "kicker": "Mode MANUEL",
+    "title": "Chaque S, à la main",
+    "text": [
+     "Tu lances ta prise, elle s'enregistre toute seule. Chaque S apparaît dans sa colonne : tu le survoles, tu l'entends, tu le tires vers le bas.",
+     "TOUT RÉDUIRE baisse toute la famille d'un coup, les plus forts davantage. Ceux que tu as réglés à la main ne bougent plus."
+    ]
+   },
+   "en": {
+    "kicker": "MANUAL mode",
+    "title": "Every S, by hand",
+    "text": [
+     "Play your take, it records itself. Every S shows up in its own column: hover it, hear it, drag it down.",
+     "TOUT RÉDUIRE (reduce all) lowers the whole family at once, the loudest ones more. The ones you set by hand stay put."
+    ]
+   }
+  }
+ ],
+ "onirique-f76": [
+  {
+   "src": "f76.mp4",
+   "fr": {
+    "kicker": "Pousse, il compresse",
+    "title": "INPUT, BLACK ou BLUE",
+    "text": [
+     "Tu pousses INPUT et le VU plonge. Tu passes en BLUE pour le grain de la première génération.",
+     "Le MIX ramène le son direct pour une compression parallèle, parfaitement en phase."
+    ]
+   },
+   "en": {
+    "kicker": "Push it, it compresses",
+    "title": "INPUT, BLACK or BLUE",
+    "text": [
+     "Push INPUT and the VU dives. Switch to BLUE for the grit of the first generation.",
+     "MIX brings the dry sound back for parallel compression, perfectly in phase."
+    ]
+   }
+  }
+ ],
+ "onirique-l2a": [
+  {
+   "src": "l2a.mp4",
+   "fr": {
+    "kicker": "Deux boutons suffisent",
+    "title": "PEAK REDUCTION, GAIN",
+    "text": [
+     "Tu montes PEAK REDUCTION : la cellule optique nivelle la voix sans qu'on l'entende travailler. GAIN rattrape le niveau.",
+     "LIMIT tient davantage les crêtes."
+    ]
+   },
+   "en": {
+    "kicker": "Two knobs are enough",
+    "title": "PEAK REDUCTION, GAIN",
+    "text": [
+     "Turn up PEAK REDUCTION: the optical cell levels the vocal without you hearing it work. GAIN makes up the level.",
+     "LIMIT holds the peaks more."
+    ]
+   }
+  }
+ ],
+ "vocalbox": [
+  {
+   "src": "vocalbox-chaine.mp4",
+   "fr": {
+    "kicker": "Toute la chaîne",
+    "title": "Module par module, à l'oreille",
+    "text": [
+     "Un clic sur un module de la chaîne et sa façade s'ouvre : tu pousses l'INPUT du F76, le VU plonge et la réduction s'affiche sous ta voix.",
+     "Tu passes au DE-ESS, tu montes AMOUNT : ce qui est retiré apparaît en braise, en direct."
+    ]
+   },
+   "en": {
+    "kicker": "The whole chain",
+    "title": "Module by module, by ear",
+    "text": [
+     "Click a module in the chain and its front opens: push the F76 INPUT, the VU dives and the reduction shows under your vocal.",
+     "Move to DE-ESS, turn AMOUNT up: what's removed shows up in ember, live."
+    ]
+   }
+  }
+ ],
+ "onirique-optobox": [
+  {
+   "src": "optobox.mp4",
+   "fr": {
+    "kicker": "Optique à lampe",
+    "title": "THRESHOLD, mk I ou mk II",
+    "text": [
+     "Tu tournes THRESHOLD : la cellule optique entre en jeu et le VU montre la réduction.",
+     "Tu passes de la génération vintage à la moderne, puis tu ramènes le son direct avec PARALLEL."
+    ]
+   },
+   "en": {
+    "kicker": "Optical tube",
+    "title": "THRESHOLD, mk I or mk II",
+    "text": [
+     "Turn THRESHOLD: the optical cell kicks in and the VU shows the reduction.",
+     "Switch from the vintage to the modern generation, then bring the dry sound back with PARALLEL."
+    ]
+   }
+  }
+ ],
+ "onirique-vision": [
+  {
+   "src": "vision.mp4",
+   "fr": {
+    "kicker": "Quatre bandes",
+    "title": "SATURATION, CURRENT, TUBE",
+    "text": [
+     "Tu montes la SATURATION d'une bande, puis CURRENT sur la suivante : les bandes s'animent dans la fenêtre.",
+     "Un clic sur TUBE change la couleur de toute la saturation."
+    ]
+   },
+   "en": {
+    "kicker": "Four bands",
+    "title": "SATURATION, CURRENT, TUBE",
+    "text": [
+     "Turn up a band's SATURATION, then CURRENT on the next one: the bands come alive in the window.",
+     "One click on TUBE changes the colour of the whole saturation."
+    ]
+   }
+  }
+ ],
+ "onirique-eclipse": [
+  {
+   "src": "eclipse.mp4",
+   "fr": {
+    "kicker": "Égaliseur M/S parallèle",
+    "title": "BOOST en bas, BOOST en haut",
+    "text": [
+     "Tu pousses le BOOST du LOW puis du HIGH : la courbe se dessine en bas et le VU suit.",
+     "WIDTH ouvre l'image stéréo."
+    ]
+   },
+   "en": {
+    "kicker": "Parallel M/S EQ",
+    "title": "BOOST low, BOOST high",
+    "text": [
+     "Push the LOW BOOST then the HIGH BOOST: the curve draws itself below and the VU follows.",
+     "WIDTH opens up the stereo image."
+    ]
+   }
+  }
+ ],
+ "onirique-halo": [
+  {
+   "src": "halo.mp4",
+   "fr": {
+    "kicker": "Limiteur des aigus",
+    "title": "PARALIMIT, ATTACK, CH LINK",
+    "text": [
+     "Tu règles PARALIMIT et le spectre montre ce qui est tenu.",
+     "ATTACK passe en FAST, CH LINK règle le lien entre les canaux."
+    ]
+   },
+   "en": {
+    "kicker": "High-frequency limiter",
+    "title": "PARALIMIT, ATTACK, CH LINK",
+    "text": [
+     "Set PARALIMIT and the spectrum shows what is held.",
+     "ATTACK goes FAST, CH LINK sets how the channels are linked."
+    ]
+   }
+  }
+ ],
+ "onirique-n73": [
+  {
+   "src": "n73.mp4",
+   "fr": {
+    "kicker": "Préampli et égaliseur",
+    "title": "Le gain, l'aigu, le grave",
+    "text": [
+     "Tu tournes le gain du préampli, puis l'aigu et le grave de l'égaliseur, comme sur le module d'origine."
+    ]
+   },
+   "en": {
+    "kicker": "Preamp and EQ",
+    "title": "Gain, high, low",
+    "text": [
+     "Turn the preamp gain, then the EQ's high and low, just like on the original module."
+    ]
+   }
+  }
+ ]
 }
