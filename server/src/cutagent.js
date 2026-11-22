@@ -73,6 +73,27 @@ export const opinionSchema = (keys, branchIds) => ({ type: 'object', required: [
     images: { type: 'string' },
   } });
 
+/** Le JSON d'une réponse, même coupée net (plafond de longueur atteint au milieu d'une liste) : on garde tout ce qui est
+ *  complet et on referme ce qui reste ouvert. null si rien n'est récupérable. */
+export function repairJson(text) {
+  const start = String(text || '').indexOf('{');
+  if (start < 0) return null;
+  const s = text.slice(start);
+  try { return JSON.parse(s); } catch { /* coupée : on répare */ }
+  const stack = [];
+  let inString = false, escaped = false, cut = -1, open = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inString) { if (escaped) escaped = false; else if (c === '\\') escaped = true; else if (c === '"') inString = false; continue; }
+    if (c === '"') inString = true;
+    else if (c === '{' || c === '[') stack.push(c === '{' ? '}' : ']');
+    else if (c === '}' || c === ']') { stack.pop(); cut = i + 1; open = [...stack]; if (!stack.length) break; }
+    else if (c === ',') { cut = i; open = [...stack]; } // tout ce qui précède la virgule est complet
+  }
+  if (cut < 0) return null;
+  try { return JSON.parse(s.slice(0, cut) + open.reverse().join('')); } catch { return null; }
+}
+
 export class NoAI extends Error {}
 let aiChain = Promise.resolve();
 /** Une question à l'IA du VPS (une à la fois : le superviseur et l'analyse des comptes TikTok attendent leur tour), avec des
@@ -102,7 +123,7 @@ async function ask(system, text, images, format) {
   let r;
   try {
     // mesuré sur le VPS (3 cœurs) : ~12 jetons de texte lus par seconde, ~2 min par image, ~2 jetons écrits par seconde
-    r = await post(`${URL_}/api/chat`, { model: MODEL, stream: false, format, keep_alive: 0, options: { num_ctx: 16384, num_thread: 3, temperature: 0.3, num_predict: 1400 },
+    r = await post(`${URL_}/api/chat`, { model: MODEL, stream: false, format, keep_alive: 0, options: { num_ctx: 16384, num_thread: 3, temperature: 0.3, num_predict: 2200 },
       messages: [{ role: 'system', content: system }, { role: 'user', content: text, images }] }, 45 * 60_000);
   } catch (error) {
     if (error.name === 'TimeoutError') throw new Error("l'IA a mis plus de 45 minutes");
@@ -111,10 +132,9 @@ async function ask(system, text, images, format) {
   }
   if (r.status === 404) throw new NoAI(`le modèle ${MODEL} n'est pas encore téléchargé`);
   if (r.status !== 200) throw new Error(`l'IA répond ${r.status}${r.json?.error ? ' (' + String(r.json.error).slice(0, 160) + ')' : ''}`);
-  const answer = String(r.json?.message?.content || '');
-  const m = answer.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error('réponse illisible');
-  return JSON.parse(m[0]);
+  const json = repairJson(String(r.json?.message?.content || ''));
+  if (!json) throw new Error(r.json?.done_reason === 'length' ? 'réponse trop longue, coupée avant la fin' : 'réponse illisible');
+  return json;
 }
 
 export const agentState = () => setting('cut_agent', null) || { status: 'jamais' };

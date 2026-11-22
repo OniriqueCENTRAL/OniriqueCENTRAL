@@ -75,6 +75,13 @@ assert.equal(vttText('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\n<c>Tu crois</c
 assert.deepEqual(cleanAnalysis({ resume: 'r', ce_qui_marche: ['a', 3, ''], lecons: [{ texte: 'Plus court.', feuille: 'duration', valeur: 15 }, { texte: 'x', feuille: 'inventée', valeur: 'y' }] },
   new Set(['duration'])).lessons, [{ text: 'Plus court.', leaf: 'duration', value: '15' }, { text: 'x', leaf: '', value: '' }]);
 
+// ——— Une réponse de l'IA coupée net est réparée ———
+const { repairJson } = await import('../src/cutagent.js');
+assert.deepEqual(repairJson('{"resume": "ok", "lecons": ["a", "b"]}'), { resume: 'ok', lecons: ['a', 'b'] });
+assert.deepEqual(repairJson('Voici : {"resume": "ok, \\"bien\\" [1]", "lecons": ["a", "b c'), { resume: 'ok, "bien" [1]', lecons: ['a'] }, 'coupée dans une liste');
+assert.deepEqual(repairJson('{"resume": "ok", "lecons": [{"texte": "x", "feuille": ""}, {"texte": "y'), { resume: 'ok', lecons: [{ texte: 'x', feuille: '' }] });
+assert.equal(repairJson('rien'), null);
+
 // ——— Les routes ———
 const server = createApp().listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
