@@ -26,6 +26,74 @@ function cover(product, badge) {
   return el;
 }
 
+//------------------------------------------------------------------------------
+// Les vidéos de la fiche (les mêmes que sur le site, site/assets/videos/videos.json) : une par fonction, la souris qui utilise
+// le plugin pour de vrai, avec son texte. Entrée « replace » : elles remplacent la description (une ligne « foot » garde les
+// caractéristiques). Léger pour les petits PC : chaque vidéo n'est téléchargée qu'en arrivant à l'écran (puis gardée sur le
+// disque), ne joue que visible, en pause sinon ; sur une petite machine ou avec « réduire les animations », rien ne démarre
+// seul : un bouton LIRE.
+let videoList = null;
+const videoBlobs = new Map(), watched = new Set();
+const lowEnd = () => (navigator.hardwareConcurrency || 4) <= 2 || (navigator.deviceMemory || 4) <= 2
+  || matchMedia('(prefers-reduced-motion: reduce)').matches;
+const videoObserver = new IntersectionObserver((entries) => {
+  for (const { target, isIntersecting, intersectionRatio } of entries) {
+    if (isIntersecting && intersectionRatio > 0.35) startVideo(target, !!target.dataset.manual);
+    else if (!target.paused) target.pause();
+  }
+}, { threshold: [0, 0.35, 0.6] });
+
+// stillOnly : seulement la première image (petite machine, animations coupées), la lecture attend le bouton LIRE
+async function startVideo(video, stillOnly = false) {
+  if (!video.src) {
+    const name = video.dataset.src;
+    if (!videoBlobs.has(name)) videoBlobs.set(name, call('video', name).then((bytes) => URL.createObjectURL(new Blob([bytes], { type: 'video/mp4' }))));
+    try { video.src = await videoBlobs.get(name); } catch { videoBlobs.delete(name); return; }
+    if (stillOnly) { video.preload = 'auto'; video.currentTime = 0.05; }
+  }
+  if (!stillOnly) video.play().catch(() => {});
+}
+
+function videoItem(item, lang) {
+  const t = item[lang] || item.fr || {};
+  const video = h('video', { muted: true, loop: true, playsinline: true, preload: 'none', 'data-src': item.src });
+  video.muted = true;
+  const frame = h('div', { class: 'vid-frame' }, video);
+  if (lowEnd()) {
+    video.dataset.manual = '1';
+    const play = h('button', { type: 'button', class: 'vid-play', onclick: () => { play.remove(); delete video.dataset.manual; startVideo(video); } }, lang === 'en' ? 'PLAY' : 'LIRE');
+    frame.append(play);
+  }
+  videoObserver.observe(video); watched.add(video);
+  return h('div', { class: 'vid-item' }, frame,
+    h('div', { class: 'vid-text' },
+      t.kicker ? h('div', { class: 'vid-kicker' }, t.kicker) : null,
+      t.title ? h('h3', null, t.title) : null,
+      (t.text || []).map((p) => h('p', null, p))));
+}
+
+/** Remplit la fiche avec ses vidéos, s'il y en a : à la place de l'image ou de la démo, et de la description si « replace ». */
+function fillVideos(product, slot, desc) {
+  const apply = (list) => {
+    const entry = list?.[product.slug];
+    if (!entry) return;
+    // les vidéos des fiches quittées ne sont plus suivies (et cessent de jouer)
+    for (const v of watched) if (!v.isConnected) { videoObserver.unobserve(v); v.pause(); watched.delete(v); }
+    const items = Array.isArray(entry) ? entry : entry.items || [];
+    if (!items.length) return;
+    const lang = window.OniriqueI18n?.lang === 'en' ? 'en' : 'fr';
+    slot.replaceChildren(h('div', { class: 'vids' }, items.map((item) => videoItem(item, lang))));
+    if (!Array.isArray(entry) && entry.replace) {
+      const foot = entry.foot?.[lang] || entry.foot?.fr;
+      desc.replaceChildren(...(foot ? [h('p', { class: 'muted' }, foot)] : []));
+      const label = desc.closest('.panel')?.querySelector('.eyebrow')?.lastChild;
+      if (label) label.textContent = lang === 'en' ? 'Specs' : 'Caractéristiques';
+    }
+  };
+  if (videoList) apply(videoList);
+  else call('videos').then((list) => { videoList = list || {}; apply(videoList); }).catch(() => {});
+}
+
 /** Nombre de jours entiers restants avant l'expiration d'un droit (essai, licence à durée). */
 const daysLeft = (right) => Math.max(0, Math.ceil((right.expiresAt - Date.now()) / 86400_000));
 const trialAvailable = (product) => product.priceCents > 0 && !state.data.me.entitlements[product.id] && !state.data.me.trialsUsed.includes(product.id);
@@ -360,14 +428,20 @@ export function detailView(id) {
       inst.present ? button('Ouvrir le dossier', () => call('plugin:reveal', product.id), 'small') : null,
       inst.version && inst.removable ? button('Désinstaller', () => removePlugin(product), 'small quiet danger') : null) : null);
 
+  // Les vidéos de la fiche, si elle en a, prennent la place de l'image ou de la démo (et de la description, en « replace »).
+  const slot = h('div', null,
+    // Une image choisie par un admin passe avant la démo fabriquée automatiquement.
+    product.image && product.imageManual ? wholeImage(product) : product.demo ? demoView(product) : cover(product, null));
+  const desc = h('div', { class: 'desc' }, (product.description || product.tagline).split(/\n{2,}/).map((text) => h('p', null, text)));
+  fillVideos(product, slot, desc);
+
   return [
     button('← Tous les plugins', () => go('plugins'), 'small quiet'),
     h('div', { class: 'detail', style: { 'margin-top': '14px', '--accent': product.accent } },
       h('div', null,
-        // Une image choisie par un admin passe avant la démo fabriquée automatiquement.
-        product.image && product.imageManual ? wholeImage(product) : product.demo ? demoView(product) : cover(product, null),
+        slot,
         h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Le plugin'),
-          h('div', { class: 'desc' }, (product.description || product.tagline).split(/\n{2,}/).map((text) => h('p', null, text))),
+          desc,
           // Le fondateur à l'origine du plugin ; son nom mène à son Instagram, comme dans les crédits.
           product.founder ? h('p', { class: 'muted', style: { 'margin-top': '12px', 'font-size': '12px' } }, 'Créé par ',
             product.founder.instagram ? h('a', { href: product.founder.instagram, target: '_blank' }, product.founder.name) : h('b', null, product.founder.name)) : null),
