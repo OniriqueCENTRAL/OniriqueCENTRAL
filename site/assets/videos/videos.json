@@ -216,128 +216,590 @@
    "en": "9 factory presets, A / B / C, Windows and Mac (VST3 and AU)."
   }
  },
- "vocalbox": [
-  {
-   "src": "vocalbox-chaine.mp4",
-   "fr": {
-    "kicker": "Toute la chaîne",
-    "title": "Module par module, à l'oreille",
-    "text": [
-     "Un clic sur un module de la chaîne et sa façade s'ouvre : tu pousses l'INPUT du F76, le VU plonge et la réduction s'affiche sous ta voix.",
-     "Tu passes au DE-ESS, tu montes AMOUNT : ce qui est retiré apparaît en braise, en direct."
-    ]
+ "vocalbox": {
+  "replace": true,
+  "items": [
+   {
+    "src": "vb-automix.mp4",
+    "fr": {
+     "kicker": "AUTO MIX",
+     "title": "Dis-lui ce que tu veux entendre",
+     "text": [
+      "Tu poses ta voix, VOCALBOX s'occupe du reste. Dis-lui simplement ce que tu veux : « voix de SCH », « R&B doux façon SZA », « aérée et sombre », ou glisse sur la sphère un morceau dont tu aimes la voix.",
+      "Il écoute ta prise pendant dix secondes, puis il monte toute la chaîne pour toi : le nettoyage, l'autotune, l'EQ, la compression, l'espace. Et il t'explique chacun de ses choix, comme un ingé à côté de toi."
+     ]
+    },
+    "en": {
+     "kicker": "AUTO MIX",
+     "title": "Tell it what you want to hear",
+     "text": [
+      "Drop your vocal, VOCALBOX takes care of the rest. Just say what you want: “SCH vocal”, “smooth R&B like SZA”, “airy and dark”, or drop a song whose vocal you love onto the sphere.",
+      "It listens to your take for ten seconds, then builds the whole chain for you: clean-up, autotune, EQ, compression, space. And it explains every choice, like an engineer sitting next to you."
+     ]
+    }
    },
-   "en": {
-    "kicker": "The whole chain",
-    "title": "Module by module, by ear",
-    "text": [
-     "Click a module in the chain and its front opens: push the F76 INPUT, the VU dives and the reduction shows under your vocal.",
-     "Move to DE-ESS, turn AMOUNT up: what's removed shows up in ember, live."
-    ]
-   }
-  }
- ],
- "onirique-optobox": [
-  {
-   "src": "optobox.mp4",
-   "fr": {
-    "kicker": "Optique à lampe",
-    "title": "THRESHOLD, mk I ou mk II",
-    "text": [
-     "Tu tournes THRESHOLD : la cellule optique entre en jeu et le VU montre la réduction.",
-     "Tu passes de la génération vintage à la moderne, puis tu ramènes le son direct avec PARALLEL."
-    ]
+   {
+    "src": "vb-roles.mp4",
+    "fr": {
+     "kicker": "Chaque voix à sa place",
+     "title": "LEAD, BACKS, ADLIBS, DOUBLES",
+     "text": [
+      "Dis-lui quelle voix tu mixes et il lui trouve sa place. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.",
+      "Tes VOCALBOX d'un même projet se reconnaissent entre elles et restent dans la tonalité du lead."
+     ]
+    },
+    "en": {
+     "kicker": "Every vocal in its place",
+     "title": "LEAD, BACKS, ADLIBS, DOUBLES",
+     "text": [
+      "Tell it which vocal you're mixing and it finds its place. It knows how more than 50 artists' vocals are mixed, from US rap to the new French scene.",
+      "Your VOCALBOX instances in one project recognise each other and stay in the lead's key."
+     ]
+    }
    },
-   "en": {
-    "kicker": "Optical tube",
-    "title": "THRESHOLD, mk I or mk II",
-    "text": [
-     "Turn THRESHOLD: the optical cell kicks in and the VU shows the reduction.",
-     "Switch from the vintage to the modern generation, then bring the dry sound back with PARALLEL."
-    ]
-   }
-  }
- ],
- "onirique-vision": [
-  {
-   "src": "vision.mp4",
-   "fr": {
-    "kicker": "Quatre bandes",
-    "title": "SATURATION, CURRENT, TUBE",
-    "text": [
-     "Tu montes la SATURATION d'une bande, puis CURRENT sur la suivante : les bandes s'animent dans la fenêtre.",
-     "Un clic sur TUBE change la couleur de toute la saturation."
-    ]
+   {
+    "src": "vb-simple.mp4",
+    "fr": {
+     "kicker": "Affiner",
+     "title": "Comme tu parlerais à ton ingé",
+     "text": [
+      "Ensuite, tu affines comme tu parlerais à ton ingé : « un peu moins de réverbe », « plus en avant », « plus sombre ».",
+      "Ou tu prends les quatre gros potards : PRÉSENCE, CHALEUR, TENUE, ESPACE."
+     ]
+    },
+    "en": {
+     "kicker": "Fine-tune",
+     "title": "Like talking to your engineer",
+     "text": [
+      "Then fine-tune it the way you'd talk to your engineer: “a bit less reverb”, “more up front”, “darker”.",
+      "Or grab the four big knobs: PRÉSENCE, CHALEUR, TENUE, ESPACE (presence, warmth, hold, space)."
+     ]
+    }
    },
-   "en": {
-    "kicker": "Four bands",
-    "title": "SATURATION, CURRENT, TUBE",
-    "text": [
-     "Turn up a band's SATURATION, then CURRENT on the next one: the bands come alive in the window.",
-     "One click on TUBE changes the colour of the whole saturation."
-    ]
-   }
-  }
- ],
- "onirique-eclipse": [
-  {
-   "src": "eclipse.mp4",
-   "fr": {
-    "kicker": "Égaliseur M/S parallèle",
-    "title": "BOOST en bas, BOOST en haut",
-    "text": [
-     "Tu pousses le BOOST du LOW puis du HIGH : la courbe se dessine en bas et le VU suit.",
-     "WIDTH ouvre l'image stéréo."
-    ]
+   {
+    "src": "vocalbox-chaine.mp4",
+    "fr": {
+     "kicker": "Toute la chaîne",
+     "title": "Module par module, à l'oreille",
+     "text": [
+      "Et si tu veux mettre les mains dedans, tout est là, dans l'ordre que tu veux. Un clic sur un module et sa façade s'ouvre : tu pousses l'INPUT du F76, le VU plonge.",
+      "Tu passes au DE-ESS, tu montes AMOUNT : ce qui est retiré apparaît en braise. Un clic de bouche, une respiration trop forte, une chambre qui résonne ? Il l'entend et le corrige, sans toucher au reste."
+     ]
+    },
+    "en": {
+     "kicker": "The whole chain",
+     "title": "Module by module, by ear",
+     "text": [
+      "And if you want to get your hands in, everything is there, in any order you like. Click a module and its front opens: push the F76 INPUT, the VU dives.",
+      "Move to DE-ESS, turn AMOUNT up: what's removed shows in ember. A mouth click, a loud breath, a ringing room? It hears it and fixes it, without touching the rest."
+     ]
+    }
    },
-   "en": {
-    "kicker": "Parallel M/S EQ",
-    "title": "BOOST low, BOOST high",
-    "text": [
-     "Push the LOW BOOST then the HIGH BOOST: the curve draws itself below and the VU follows.",
-     "WIDTH opens up the stereo image."
-    ]
+   {
+    "src": "vb-modules.mp4",
+    "fr": {
+     "kicker": "Les modules",
+     "title": "Tout ce qu'il faut pour une voix",
+     "text": [
+      "Nettoyage : de-click, de-breath, de-reverb, noise gate, débruiteur, plosives, résonances, de-esser. Ton : ONIRIQUE TUNER, préampli N73, EQ paramétrique 8 bandes, EQ analog, Saturation Lab.",
+      "Dynamique : F76, CL1B à lampe, L2A, multiband, compression parallèle. Effets : réverbe, delay au tempo, doubleur, chorus, flanger, téléphone, pitcher."
+     ]
+    },
+    "en": {
+     "kicker": "The modules",
+     "title": "Everything a vocal needs",
+     "text": [
+      "Clean-up: de-click, de-breath, de-reverb, noise gate, denoiser, plosives, resonances, de-esser. Tone: ONIRIQUE TUNER, N73 preamp, 8-band parametric EQ, analog EQ, Saturation Lab.",
+      "Dynamics: F76, CL1B tube, L2A, multiband, parallel compression. Effects: reverb, tempo-synced delay, doubler, chorus, flanger, telephone, pitcher."
+     ]
+    }
    }
+  ],
+  "foot": {
+   "fr": "VOCALBOX progresse à chaque mise à jour grâce à ONR Neural Learning : facultatif et anonyme, aucun son n'est jamais envoyé. VST3 pour Windows, VST3 et Audio Unit pour Mac.",
+   "en": "VOCALBOX gets better with every update thanks to ONR Neural Learning: optional and anonymous, no audio is ever sent. VST3 on Windows, VST3 and Audio Unit on Mac."
   }
- ],
- "onirique-halo": [
-  {
-   "src": "halo.mp4",
-   "fr": {
-    "kicker": "Limiteur des aigus",
-    "title": "PARALIMIT, ATTACK, CH LINK",
-    "text": [
-     "Tu règles PARALIMIT et le spectre montre ce qui est tenu.",
-     "ATTACK passe en FAST, CH LINK règle le lien entre les canaux."
-    ]
+ },
+ "onirique-optobox": {
+  "replace": true,
+  "items": [
+   {
+    "src": "opto-son.mp4",
+    "fr": {
+     "kicker": "Optique à lampe",
+     "title": "Une compression qui a de la mémoire",
+     "text": [
+      "La façade et les réglages du compresseur optique à lampe danois des années 80, avec son unité de mix en dessous, peint du rouge de la gamme.",
+      "Une cellule optique, éclairée par le détecteur, baisse le niveau et revient en deux temps : vite, puis lentement. Derrière, l'étage à lampe et ses transformateurs, propre au niveau normal, de plus en plus chaud quand tu pousses OUTPUT VOLUME, le grave d'abord."
+     ]
+    },
+    "en": {
+     "kicker": "Optical tube",
+     "title": "Compression with a memory",
+     "text": [
+      "The front panel and controls of the Danish optical tube compressor from the 80s, with its mix unit below, painted in the range's red.",
+      "An optical cell, lit by the detector, pulls the level down and comes back in two stages: fast, then slow. Behind it, the tube stage and its transformers, clean at normal level, warmer and warmer as you push OUTPUT VOLUME, low end first."
+     ]
+    }
    },
-   "en": {
-    "kicker": "High-frequency limiter",
-    "title": "PARALIMIT, ATTACK, CH LINK",
-    "text": [
-     "Set PARALIMIT and the spectrum shows what is held.",
-     "ATTACK goes FAST, CH LINK sets how the channels are linked."
-    ]
-   }
-  }
- ],
- "onirique-n73": [
-  {
-   "src": "n73.mp4",
-   "fr": {
-    "kicker": "Préampli et égaliseur",
-    "title": "Le gain, l'aigu, le grave",
-    "text": [
-     "Tu tournes le gain du préampli, puis l'aigu et le grave de l'égaliseur, comme sur le module d'origine."
-    ]
+   {
+    "src": "opto-generation.mp4",
+    "fr": {
+     "kicker": "GENERATION",
+     "title": "mk I ou mk II",
+     "text": [
+      "vintage mk I, la cellule d'origine : plus lente, elle garde davantage la mémoire des passages forts, avec plus de lampe et de transfo et un haut plus doux.",
+      "modern mk II : plus vive, plus propre, plus ouverte."
+     ]
+    },
+    "en": {
+     "kicker": "GENERATION",
+     "title": "mk I or mk II",
+     "text": [
+      "vintage mk I, the original cell: slower, it remembers loud passages longer, with more tube and transformer and a softer top.",
+      "modern mk II: faster, cleaner, more open."
+     ]
+    }
    },
-   "en": {
-    "kicker": "Preamp and EQ",
-    "title": "Gain, high, low",
-    "text": [
-     "Turn the preamp gain, then the EQ's high and low, just like on the original module."
-    ]
+   {
+    "src": "opto-reglages.mp4",
+    "fr": {
+     "kicker": "Les réglages",
+     "title": "RATIO, ATTACK, RELEASE",
+     "text": [
+      "THRESHOLD de off à -40 dB, RATIO de 2:1 à 10:1 au genou très doux, ATTACK de 0,5 à 300 ms, RELEASE de 0,05 à 10 s.",
+      "ATTACK/RELEASE SELECT : fixed, la cellule fait le reste selon la musique ; fix./man. ; manual. METER : l'entrée, la réduction ou la sortie, avec la balistique d'un vrai VU."
+     ]
+    },
+    "en": {
+     "kicker": "The controls",
+     "title": "RATIO, ATTACK, RELEASE",
+     "text": [
+      "THRESHOLD from off to -40 dB, RATIO from 2:1 to 10:1 with a very soft knee, ATTACK from 0.5 to 300 ms, RELEASE from 0.05 to 10 s.",
+      "ATTACK/RELEASE SELECT: fixed, the cell does the rest with the music; fix./man.; manual. METER: input, gain reduction or output, with real VU ballistics."
+     ]
+    }
+   },
+   {
+    "src": "opto-mix.mp4",
+    "fr": {
+     "kicker": "L'unité de mix",
+     "title": "LOW CUT et PARALLEL COMP.",
+     "text": [
+      "SIDECHAIN LOW CUT à 80 ou 220 Hz pour que la basse ne fasse plus pomper, et SIDECHAIN BUS SELECT pour un side-chain externe.",
+      "PARALLEL COMP. mêle le son d'origine au son compressé."
+     ]
+    },
+    "en": {
+     "kicker": "The mix unit",
+     "title": "LOW CUT and PARALLEL COMP.",
+     "text": [
+      "SIDECHAIN LOW CUT at 80 or 220 Hz so the bass stops pumping, and SIDECHAIN BUS SELECT for an external side-chain.",
+      "PARALLEL COMP. blends the dry sound with the compressed one."
+     ]
+    }
+   },
+   {
+    "src": "opto-barre.mp4",
+    "fr": {
+     "kicker": "La barre ONIRIQUE",
+     "title": "Presets, A/B, copier-coller",
+     "text": [
+      "15 presets d'usine rangés par usage (voix, batterie, basse, instruments, mix, mastering), un navigateur avec recherche, tags et favoris, et tes propres presets.",
+      "IN, la comparaison A/B, copier/coller les réglages d'une instance à l'autre, et la taille de la fenêtre de 75 à 200 %."
+     ]
+    },
+    "en": {
+     "kicker": "The ONIRIQUE bar",
+     "title": "Presets, A/B, copy-paste",
+     "text": [
+      "15 factory presets sorted by use (vocals, drums, bass, instruments, mix, mastering), a browser with search, tags and favourites, and your own presets.",
+      "IN, A/B comparison, copy/paste settings from one instance to another, and window size from 75 to 200%."
+     ]
+    }
+   },
+   {
+    "src": "opto-ergonomie.mp4",
+    "fr": {
+     "kicker": "Sous la main",
+     "title": "Tout se règle vite",
+     "text": [
+      "Survoler ou tourner un bouton affiche sa valeur juste au-dessus, et un clic sur un mot imprimé de la façade y met le réglage.",
+      "Un double-clic remet un bouton à sa valeur de départ ; Maj pour un réglage fin."
+     ]
+    },
+    "en": {
+     "kicker": "At your fingertips",
+     "title": "Everything sets fast",
+     "text": [
+      "Hover or turn a knob and its value shows right above it; click a word printed on the panel to jump there.",
+      "Double-click resets a knob to its default; Shift for fine control."
+     ]
+    }
    }
+  ],
+  "foot": {
+   "fr": "Mono ou stéréo, avec une entrée side-chain, aucune latence. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Mono or stereo, with a side-chain input, zero latency. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
   }
- ]
+ },
+ "onirique-vision": {
+  "replace": true,
+  "items": [
+   {
+    "src": "vision-bandes.mp4",
+    "fr": {
+     "kicker": "Quatre bandes",
+     "title": "Comme un EQ, dans la fenêtre",
+     "text": [
+      "VISION donne de la profondeur, de la largeur et de la vie à ton son. Il le sépare en quatre bandes, FIRST, SECOND, THIRD et FOURTH.",
+      "Tu les règles comme un EQ à quatre bandes, directement dans la fenêtre animée : tu tires les séparations, tu montes ou baisses chaque bande."
+     ]
+    },
+    "en": {
+     "kicker": "Four bands",
+     "title": "Like an EQ, right in the window",
+     "text": [
+      "VISION gives your sound depth, width and life. It splits it into four bands, FIRST, SECOND, THIRD and FOURTH.",
+      "You set them like a four-band EQ, right in the animated window: drag the splits, raise or lower each band."
+     ]
+    }
+   },
+   {
+    "src": "vision-current.mp4",
+    "fr": {
+     "kicker": "Le mouvement",
+     "title": "CURRENT, DRIFT, LEAN",
+     "text": [
+      "CURRENT fait évoluer la réponse de chaque bande sans arrêt, différemment à gauche et à droite : le son prend de la largeur et du mouvement, sans effet de chorus et sans rien perdre en mono.",
+      "DRIFT écarte le centre de la bande entre la gauche et la droite, et LEAN la fait pencher d'un côté sans qu'elle sonne panoramiquée."
+     ]
+    },
+    "en": {
+     "kicker": "Movement",
+     "title": "CURRENT, DRIFT, LEAN",
+     "text": [
+      "CURRENT keeps each band's response moving, differently left and right: the sound gains width and motion, with no chorus effect and nothing lost in mono.",
+      "DRIFT pulls the band's centre apart between left and right, and LEAN tilts it to one side without sounding panned."
+     ]
+    }
+   },
+   {
+    "src": "vision-saturation.mp4",
+    "fr": {
+     "kicker": "La couleur",
+     "title": "TAPE, TUBE, TRANS",
+     "text": [
+      "Trois saturations au caractère bien à elles, avec une profondeur réglable sur chaque bande. HYPER MODE double le drive.",
+      "INFRA, TERRA et SUPRA ajoutent une couleur de boîtier : du poids et de la chaleur, une courbe hype équilibrée, ou de l'air sans harshness."
+     ]
+    },
+    "en": {
+     "kicker": "Colour",
+     "title": "TAPE, TUBE, TRANS",
+     "text": [
+      "Three saturations with a character of their own, with adjustable depth on each band. HYPER MODE doubles the drive.",
+      "INFRA, TERRA and SUPRA add a box colour: weight and warmth, a balanced hype curve, or air without harshness."
+     ]
+    }
+   },
+   {
+    "src": "vision-nettoyage.mp4",
+    "fr": {
+     "kicker": "Le nettoyage",
+     "title": "BOXY, HARSH, filtres",
+     "text": [
+      "BOXY et HARSH retirent ce qui sonne boxy et la harshness, avant ou après la saturation.",
+      "Filtres HP et LP en entrée et en sortie, GAIN LINK pour comparer à volume égal, et LINEAR PHASE."
+     ]
+    },
+    "en": {
+     "kicker": "Clean-up",
+     "title": "BOXY, HARSH, filters",
+     "text": [
+      "BOXY and HARSH remove boxiness and harshness, before or after the saturation.",
+      "HP and LP filters at input and output, GAIN LINK to compare at equal volume, and LINEAR PHASE."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Comparaison A / B / C et 18 presets pour les voix, les drums, les instruments et le mix bus. Windows et Mac (VST3 et AU).",
+   "en": "A / B / C comparison and 18 presets for vocals, drums, instruments and the mix bus. Windows and Mac (VST3 and AU)."
+  }
+ },
+ "onirique-eclipse": {
+  "replace": true,
+  "items": [
+   {
+    "src": "eclipse-boost.mp4",
+    "fr": {
+     "kicker": "EQ parallèle",
+     "title": "Pousse franchement, ça reste ouvert",
+     "text": [
+      "L'EQ que tu poses sur ton mix bus, ton bus voix ou ton instru quand tu veux que tout sonne plus grand.",
+      "Ses bandes LOW, MID et HIGH travaillent en parallèle, comme sur les égaliseurs passifs de mastering : quand tu pousses, elles se mélangent au lieu de s'empiler. Tu montes le grave et l'air franchement, ton mix reste ouvert."
+     ]
+    },
+    "en": {
+     "kicker": "Parallel EQ",
+     "title": "Push hard, it stays open",
+     "text": [
+      "The EQ you put on your mix bus, your vocal bus or your beat when you want everything to sound bigger.",
+      "Its LOW, MID and HIGH bands work in parallel, like passive mastering EQs: when you push, they blend instead of stacking. Boost the low end and the air boldly, your mix stays open."
+     ]
+    }
+   },
+   {
+    "src": "eclipse-contour.mp4",
+    "fr": {
+     "kicker": "MID CONTOUR",
+     "title": "Les médiums d'un seul geste",
+     "text": [
+      "Le MID CONTOUR redessine tes médiums d'un seul geste : il creuse le centre et relève les côtés, ou l'inverse.",
+      "Parfait pour enlever le côté carton d'un mix sans le vider."
+     ]
+    },
+    "en": {
+     "kicker": "MID CONTOUR",
+     "title": "The mids in one move",
+     "text": [
+      "MID CONTOUR reshapes your mids in a single move: it scoops the centre and lifts the sides, or the other way round.",
+      "Perfect to remove the boxy side of a mix without hollowing it out."
+     ]
+    }
+   },
+   {
+    "src": "eclipse-ms.mp4",
+    "fr": {
+     "kicker": "Centre et côtés",
+     "title": "M/S et OFFSET",
+     "text": [
+      "Une seule série de réglages pour le centre et les côtés.",
+      "Avec l'OFFSET, tu ajoutes de l'air sur les côtés ou tu gardes ton 808 bien au centre, sans toucher au reste."
+     ]
+    },
+    "en": {
+     "kicker": "Mid and sides",
+     "title": "M/S and OFFSET",
+     "text": [
+      "One set of controls for the mid and the sides.",
+      "With OFFSET, add air on the sides or keep your 808 dead centre, without touching the rest."
+     ]
+    }
+   },
+   {
+    "src": "eclipse-couleur.mp4",
+    "fr": {
+     "kicker": "La couleur",
+     "title": "XFORMER, DRIVE, ANALOG",
+     "text": [
+      "Plus tu pousses une bande, plus elle colore : discret pour polir, généreux quand tu veux du caractère.",
+      "XFORMER ajoute le grain d'un transformateur, surtout dans le grave."
+     ]
+    },
+    "en": {
+     "kicker": "Colour",
+     "title": "XFORMER, DRIVE, ANALOG",
+     "text": [
+      "The more you push a band, the more it colours: subtle to polish, generous when you want character.",
+      "XFORMER adds a transformer's grit, mostly in the low end."
+     ]
+    }
+   },
+   {
+    "src": "eclipse-ecoute.mp4",
+    "fr": {
+     "kicker": "Contrôler ton travail",
+     "title": "DELTA, MONO, WIDTH",
+     "text": [
+      "SOLO MID et SIDE, DELTA pour n'entendre que ce que tu changes, MONO et WIDTH pour l'image stéréo.",
+      "Un VU-mètre, et AUTO GAIN pour comparer à volume égal."
+     ]
+    },
+    "en": {
+     "kicker": "Check your work",
+     "title": "DELTA, MONO, WIDTH",
+     "text": [
+      "SOLO MID and SIDE, DELTA to hear only what you change, MONO and WIDTH for the stereo image.",
+      "A VU meter, and AUTO GAIN to compare at equal volume."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Presets d'usine, A / B, Windows et Mac (VST3 et AU).",
+   "en": "Factory presets, A / B, Windows and Mac (VST3 and AU)."
+  }
+ },
+ "onirique-halo": {
+  "replace": true,
+  "items": [
+   {
+    "src": "halo-seuil.mp4",
+    "fr": {
+     "kicker": "Limiteur des aigus",
+     "title": "Une seule bande, limitée",
+     "text": [
+      "HALO est un limiteur qui ne travaille que sur la bande de fréquences que tu choisis. Ce qui dépasse le seuil dans cette bande est limité échantillon par échantillon ; tout le reste passe sans être touché.",
+      "Le seuil va de 0 à −40 dB. TRIM (±6 dB) ajuste le niveau de la bande sans changer la quantité de limitation. L'outil pour les sifflantes, les charleys et cymbales trop présents, les synthés qui piquent."
+     ]
+    },
+    "en": {
+     "kicker": "High-frequency limiter",
+     "title": "One band, limited",
+     "text": [
+      "HALO is a limiter that only works on the frequency band you choose. Whatever goes over the threshold in that band is limited sample by sample; everything else passes untouched.",
+      "The threshold goes from 0 to −40 dB. TRIM (±6 dB) sets the band level without changing how much it limits. The tool for sibilance, harsh hats and cymbals, piercing synths."
+     ]
+    }
+   },
+   {
+    "src": "halo-bande.mp4",
+    "fr": {
+     "kicker": "La bande",
+     "title": "Deux drapeaux sur l'analyseur",
+     "text": [
+      "Tu poses deux drapeaux n'importe où entre 50 Hz et 20 kHz ; la zone traitée s'allume en rouge, exactement entre eux. SPLIT prend tout ce qui est au-dessus du drapeau bas, DEFINED ce qui est entre les deux, FULL HF descend en pente douce.",
+      "Un clic sur S fait passer la bande en solo ; un clic droit ne l'écoute que tant que tu maintiens le bouton."
+     ]
+    },
+    "en": {
+     "kicker": "The band",
+     "title": "Two flags on the analyser",
+     "text": [
+      "Drop two flags anywhere between 50 Hz and 20 kHz; the treated zone lights up red, exactly between them. SPLIT takes everything above the low flag, DEFINED what sits between them, FULL HF slopes down gently.",
+      "Click S to solo the band; a right-click only listens while you hold it."
+     ]
+    }
+   },
+   {
+    "src": "halo-attaque.mp4",
+    "fr": {
+     "kicker": "Le temps de réaction",
+     "title": "Pas de millisecondes",
+     "text": [
+      "Plus la bande dépasse le seuil, plus HALO réagit vite : un léger excès est traité en douceur, une sifflante violente est rattrapée tout de suite.",
+      "ATTACK et RELEASE, en FAST ou SLOW, règlent le caractère : SLOW pour un traitement transparent, FAST pour tenir fermement. CH LINK règle le lien entre les canaux, de 0 à 100 %."
+     ]
+    },
+    "en": {
+     "kicker": "Reaction time",
+     "title": "No milliseconds",
+     "text": [
+      "The more the band goes over the threshold, the faster HALO reacts: a slight excess is handled gently, a violent sibilant is caught at once.",
+      "ATTACK and RELEASE, FAST or SLOW, set the character: SLOW for transparent work, FAST to hold firmly. CH LINK sets how the channels are linked, from 0 to 100%."
+     ]
+    }
+   },
+   {
+    "src": "halo-stereo.mp4",
+    "fr": {
+     "kicker": "La stéréo",
+     "title": "L/R ou M/S",
+     "text": [
+      "En L/R ou en M/S, avec un seuil séparé pour chaque canal : tu calmes les sifflantes au centre sans éteindre l'air sur les côtés.",
+      "Un MIX dosé ramène une partie du signal non traité, et une sidechain externe laisse la voix creuser les aigus de l'instru seulement quand elle chante."
+     ]
+    },
+    "en": {
+     "kicker": "Stereo",
+     "title": "L/R or M/S",
+     "text": [
+      "L/R or M/S, with a separate threshold per channel: tame the sibilance in the centre without killing the air on the sides.",
+      "A MIX brings back part of the untreated signal, and an external sidechain lets the vocal carve the beat's highs only when it sings."
+     ]
+    }
+   },
+   {
+    "src": "halo-paralimit.mp4",
+    "fr": {
+     "kicker": "PARALIMIT",
+     "title": "De l'air, sans la harshness",
+     "text": [
+      "Une deuxième bande, en parallèle, avec ses propres drapeaux : elle limite fortement le haut du spectre puis le remélange au son d'origine.",
+      "Son niveau est rattrapé automatiquement, AMOUNT (de −∞ à +12 dB) dose ce que tu en ajoutes, sur le centre, les côtés ou les deux canaux."
+     ]
+    },
+    "en": {
+     "kicker": "PARALIMIT",
+     "title": "Air, without the harshness",
+     "text": [
+      "A second, parallel band with its own flags: it limits the top of the spectrum hard, then blends it back with the original.",
+      "Its level is made up automatically, and AMOUNT (from −∞ to +12 dB) sets how much you add, on the mid, the sides or both channels."
+     ]
+    }
+   },
+   {
+    "src": "halo-ecoute.mp4",
+    "fr": {
+     "kicker": "L'écoute",
+     "title": "DELTA et MATCH",
+     "text": [
+      "DELTA te fait entendre exactement ce que HALO retire, rien d'autre. MATCH compense le volume, pour comparer à niveau égal.",
+      "Trois modes : LINEAR en phase linéaire pour le mastering, DYNAMIC avec moins de 3 ms de latence, LIVE quasiment sans latence. HALO mesure lui-même la latence de chaque mode et la donne à ton DAW."
+     ]
+    },
+    "en": {
+     "kicker": "Listening",
+     "title": "DELTA and MATCH",
+     "text": [
+      "DELTA lets you hear exactly what HALO removes, nothing else. MATCH compensates the volume, to compare at equal level.",
+      "Three modes: LINEAR, linear phase for mastering, DYNAMIC under 3 ms of latency, LIVE with next to none. HALO measures each mode's latency itself and reports it to your DAW."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "22 presets d'usine (voix, instruments, bus, mastering), suréchantillonnage jusqu'à 8x, interface de 75 à 200 %. VST3 pour Windows, VST3 et Audio Unit pour Mac.",
+   "en": "22 factory presets (vocals, instruments, bus, mastering), oversampling up to 8x, interface from 75 to 200%. VST3 on Windows, VST3 and Audio Unit on Mac."
+  }
+ },
+ "onirique-n73": {
+  "replace": true,
+  "items": [
+   {
+    "src": "n73-grain.mp4",
+    "fr": {
+     "kicker": "Préampli",
+     "title": "Le grain du 1073",
+     "text": [
+      "Le préampli micro et l'égaliseur du célèbre module 1073, recréés d'après ses schémas d'origine : transformateurs, cartes classe A, réseau d'égalisation simulé comme le vrai circuit.",
+      "Plus tu pousses le gain, plus l'étage de sortie et son transformateur s'expriment, d'abord dans le grave. Le fader de console et l'OUTPUT reprennent le niveau."
+     ]
+    },
+    "en": {
+     "kicker": "Preamp",
+     "title": "The grit of the 1073",
+     "text": [
+      "The mic preamp and EQ of the famous 1073 module, rebuilt from its original schematics: transformers, class A cards, an EQ network simulated like the real circuit.",
+      "The more you push the gain, the more the output stage and its transformer speak up, low end first. The console fader and OUTPUT bring the level back."
+     ]
+    }
+   },
+   {
+    "src": "n73-eq.mp4",
+    "fr": {
+     "kicker": "Égaliseur",
+     "title": "La façade d'origine",
+     "text": [
+      "HIGH à 12 kHz, MID de 0,36 à 7,2 kHz, LOW de 35 à 220 Hz, passe-haut 18 dB/oct, et PHASE, comme sur le module.",
+      "En plus : gain micro de 20 à 80 dB ou ligne, impédance 300 / 1200 Ω, PAD, LEVEL MATCH pour comparer à niveau égal, A / B et presets."
+     ]
+    },
+    "en": {
+     "kicker": "EQ",
+     "title": "The original front panel",
+     "text": [
+      "HIGH at 12 kHz, MID from 0.36 to 7.2 kHz, LOW from 35 to 220 Hz, an 18 dB/oct high-pass, and PHASE, just like the module.",
+      "On top: mic gain from 20 to 80 dB or line, 300 / 1200 Ω impedance, PAD, LEVEL MATCH to compare at equal level, A / B and presets."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "4 échantillons de latence seulement (aucune à 96 kHz), léger sur le processeur, Windows et Mac (VST3 et AU).",
+   "en": "Only 4 samples of latency (none at 96 kHz), light on the CPU, Windows and Mac (VST3 and AU)."
+  }
+ }
 }
