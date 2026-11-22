@@ -10,7 +10,7 @@
 
 <h2 id="de-vue">Overview</h2>
 <p>ONIRIQUE DE-ESSER handles what hisses, pops or breathes in a vocal, in two ways. In <b>AUTO</b>, it’s a classic de-esser set with a THRESHOLD, working on its own during playback. In <b>MANUAL</b> (MANUEL on the plugin), it captures your take, cuts it into events (every S, every CH, every P, every breath) and you set each one by hand.</p>
-<p>3 ms of latency, the same in both modes: switching never shifts anything. Mono or stereo.</p>
+<p>In AUTO, nothing is recorded. 3 ms of latency, the same in both modes: switching never shifts anything. Mono or stereo.</p>
 
 <h2 id="de-auto">1. AUTO mode</h2>
 <p>One detector per sound, each on its own band: <b>S</b> (at the FREQ frequency), <b>T</b> (around 4.2 kHz), <b>CH</b> (around 3.2 kHz) and <b>F</b> (the high hiss, around 9 kHz). You switch on the ones you want to treat. When a band goes above the THRESHOLD, only that zone is turned down; the rest of the vocal doesn’t move.</p>
@@ -24,10 +24,11 @@
 
 <h2 id="de-manuel">2. MANUAL mode</h2>
 <ol>
-  <li>Click <b>CAPTURE</b>, then play your take in the DAW. The take is recorded at its place in the project timeline and cut into events as it goes.</li>
+  <li>Switch to <b>MANUAL</b> and play your take in the DAW: it records itself (<b>CAPTURE AUTO</b>), at its place in the project timeline, and is cut into events as it goes.</li>
   <li>Pick a family (SIBILANCES, CONSONNES for consonants, RESPIRATIONS for breaths): its events show up.</li>
-  <li>Hover an event to hear it, drag it down to lower it. Click CAPTURE again to stop.</li>
+  <li>Hover an event to hear it, drag it down to lower it.</li>
 </ol>
+<p>What is already recorded is not recorded again at every playback. As soon as it hears something new (a track added further on, another take at the same spot), it adds it and cuts it into events; the events you already set keep their settings. The CAPTURE AUTO button tells you what it’s doing (ENREGISTRE… recording, À JOUR up to date); one click turns it off or back on.</p>
 <p>During playback, every event you set is turned down <b>as a whole</b> for its duration, like clip gain drawn by hand, with a 5 ms fade (20 ms for a breath): no click, no filter, the sound stays your voice. Outside the events, nothing changes.</p>
 <p>Two views: <b>COLONNES</b> (columns), every event of the family side by side (their sizes compare at a glance, the former size stays as an outline when you lower one), and <b>TIMELINE</b>, the whole take with every sound in place and the playhead.</p>
 <p><b>TOUT RÉDUIRE</b> (reduce all) lowers a whole family at once: the most salient ones (those that stick out most from their phrase) more. An event set by hand no longer moves when you change TOUT RÉDUIRE; a double-click hands it back.</p>
@@ -71,4 +72,4 @@
 <div class="tip"><p><b>Find your S’s</b>: in AUTO, switch LISTEN on and turn FREQ until you only hear the hiss, then lower the THRESHOLD until S letters show up on the S’s, and nowhere else.</p></div>
 <div class="tip"><p><b>A lead take</b>: in MANUAL, TOUT RÉDUIRE at 40 % on sibilance, then go through the columns one by one with the arrows: fix by hand the two or three S’s that still sting.</p></div>
 <div class="tip"><p><b>Breaths</b>: TOUT RÉDUIRE at 50–70 % lowers them without cutting them; a vocal with no breath at all sounds fake.</p></div>
-<div class="tip"><p>If you change the take in your DAW, click CAPTURE again and replay the passage: the events of that passage are redone, the others keep their settings.</p></div>
+<div class="tip"><p>If you change the take in your DAW, just replay the passage: its events are redone, the others keep their settings.</p></div>

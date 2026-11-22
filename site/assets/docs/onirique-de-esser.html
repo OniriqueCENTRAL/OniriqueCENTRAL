@@ -10,7 +10,7 @@
 
 <h2 id="de-vue">Vue d’ensemble</h2>
 <p>ONIRIQUE DE-ESSER traite ce qui siffle, claque ou souffle dans une voix, de deux façons. En <b>AUTO</b>, c’est un de-esser classique réglé par un THRESHOLD, qui travaille tout seul pendant la lecture. En <b>MANUEL</b>, il capture ta prise, la découpe en événements (chaque S, chaque CH, chaque P, chaque respiration) et tu règles chacun à la main.</p>
-<p>3 ms de latence, la même dans les deux modes : passer de l’un à l’autre ne décale rien. Mono ou stéréo.</p>
+<p>En AUTO, rien n’est enregistré. 3 ms de latence, la même dans les deux modes : passer de l’un à l’autre ne décale rien. Mono ou stéréo.</p>
 
 <h2 id="de-auto">1. Le mode AUTO</h2>
 <p>Un détecteur par son, chacun sur sa bande : <b>S</b> (à la fréquence FREQ), <b>T</b> (vers 4,2 kHz), <b>CH</b> (vers 3,2 kHz) et <b>F</b> (le souffle aigu, vers 9 kHz). Tu coches ceux que tu veux traiter. Quand le niveau d’une bande dépasse le THRESHOLD, seule cette zone est baissée, le reste de la voix ne bouge pas.</p>
@@ -24,10 +24,11 @@
 
 <h2 id="de-manuel">2. Le mode MANUEL</h2>
 <ol>
-  <li>Clique sur <b>CAPTURE</b>, puis lance la lecture de ta prise dans le DAW. La prise est enregistrée à sa place dans le temps du projet, et découpée au fur et à mesure.</li>
+  <li>Passe en <b>MANUEL</b> et lance la lecture de ta prise dans le DAW : elle s’enregistre toute seule (<b>CAPTURE AUTO</b>), à sa place dans le temps du projet, et se découpe au fur et à mesure.</li>
   <li>Choisis une famille (SIBILANCES, CONSONNES, RESPIRATIONS) : ses événements s’affichent.</li>
-  <li>Survole un événement pour l’entendre, glisse-le vers le bas pour le baisser. Reclique sur CAPTURE pour arrêter.</li>
+  <li>Survole un événement pour l’entendre, glisse-le vers le bas pour le baisser.</li>
 </ol>
+<p>Ce qui est déjà enregistré n’est pas réenregistré à chaque écoute. Dès qu’il entend du nouveau (une piste ajoutée plus loin, une autre prise posée au même endroit), il l’ajoute et le découpe ; les événements que tu as déjà réglés gardent leurs réglages. Le bouton CAPTURE AUTO dit ce qu’il fait (ENREGISTRE…, À JOUR) ; un clic le coupe ou le rallume.</p>
 <p>Pendant la lecture, chaque événement réglé est baissé <b>en entier</b> pendant sa durée, comme un gain de clip posé à la main, avec un fondu de 5 ms (20 ms pour une respiration) : pas de clic, pas de filtre, le son reste celui de ta voix. Hors des événements, rien ne change.</p>
 <p>Deux vues : <b>COLONNES</b>, tous les événements de la famille côte à côte (leurs tailles sont comparables d’un coup d’œil, l’ancienne taille reste en filigrane quand tu baisses), et <b>TIMELINE</b>, toute la prise avec chaque son à sa place et la tête de lecture.</p>
 <p><b>TOUT RÉDUIRE</b> baisse une famille d’un coup : les plus saillants (ceux qui dépassent le plus de leur phrase) davantage. Un événement réglé à la main ne bouge plus quand tu changes TOUT RÉDUIRE ; un double-clic le lui rend.</p>
@@ -71,4 +72,4 @@
 <div class="tip"><p><b>Trouver ses S</b> : en AUTO, allume LISTEN et tourne FREQ jusqu’à n’entendre que le sifflement, puis descends le THRESHOLD jusqu’à ce que les lettres S apparaissent sur les S, et pas ailleurs.</p></div>
 <div class="tip"><p><b>Une prise lead</b> : en MANUEL, TOUT RÉDUIRE à 40 % sur les sibilances, puis passe les colonnes une par une avec les flèches : reprends à la main les deux ou trois S qui piquent encore.</p></div>
 <div class="tip"><p><b>Les respirations</b> : TOUT RÉDUIRE à 50–70 % les baisse sans les couper ; une voix sans aucune respiration sonne fausse.</p></div>
-<div class="tip"><p>Si tu changes la prise dans ton DAW, reclique sur CAPTURE et rejoue le passage : les événements de ce passage sont refaits, ceux d’ailleurs gardent leurs réglages.</p></div>
+<div class="tip"><p>Si tu changes la prise dans ton DAW, rejoue simplement le passage : ses événements sont refaits, ceux d’ailleurs gardent leurs réglages.</p></div>
