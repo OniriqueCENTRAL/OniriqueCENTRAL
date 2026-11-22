@@ -30,7 +30,8 @@ Ton rôle : dire aux fondateurs, en français simple et direct, ce qui est bien 
 - Un avis court par branche qui a quelque chose à dire.
 - Des leçons concrètes que les fondateurs pourraient écrire, tirées de ce que tu vois (les TikToks d'exemple qui font beaucoup de
   vues comptent plus).
-Base-toi seulement sur les données fournies, dis quand elles sont trop minces. Tutoie les fondateurs. Pas de remplissage.
+Base-toi seulement sur les données fournies, dis quand elles sont trop minces. Tutoie les fondateurs. Pas de remplissage :
+une phrase courte par point, 6 alertes et 5 leçons au plus.
 
 Réponds UNIQUEMENT par un objet JSON :
 {"resume": "3 phrases au plus",
@@ -99,8 +100,8 @@ function post(url, body, timeout) {
 async function ask(system, text, images, format) {
   let r;
   try {
-    // mesuré sur le VPS : ~5 jetons lus par seconde, une relecture de 5 000 jetons prend ~20 min
-    r = await post(`${URL_}/api/chat`, { model: MODEL, stream: false, format, keep_alive: 0, options: { num_ctx: 16384, num_thread: 3, temperature: 0.3 },
+    // mesuré sur le VPS (3 cœurs) : ~12 jetons de texte lus par seconde, ~2 min par image, ~2 jetons écrits par seconde
+    r = await post(`${URL_}/api/chat`, { model: MODEL, stream: false, format, keep_alive: 0, options: { num_ctx: 16384, num_thread: 3, temperature: 0.3, num_predict: 1400 },
       messages: [{ role: 'system', content: system }, { role: 'user', content: text, images }] }, 45 * 60_000);
   } catch (error) {
     if (error.name === 'TimeoutError') throw new Error("l'IA a mis plus de 45 minutes");
@@ -127,9 +128,9 @@ export function runAgent(state) {
     try {
       const s = state();
       const keys = new Set(s.branches.flatMap((b) => b.leaves.map((l) => l.key))), branchIds = new Set(s.branches.map((b) => b.id));
-      // Peu d'images : chacune coûte du temps de calcul sur le processeur (1 couverture de TikTok d'exemple, 1 montage).
-      const covers = s.lessons.filter((x) => x.thumbs && x.thumbs.length).slice(0, 1).map((x) => x.thumbs[0]);
-      const shots = s.gallery.filter((g) => g.thumbs.length).slice(0, 1).flatMap((g) => g.thumbs);
+      // Une seule image (~2 minutes de calcul chacune sur le VPS) : le drop du dernier montage.
+      const covers = [];
+      const shots = s.gallery.filter((g) => g.thumbs.length).slice(0, 1).map((g) => g.thumbs[1] || g.thumbs[0]);
       // Seulement les réglages qui ont quelque chose à dire : changés, nourris, proposés ou visés par une leçon.
       const proposed = new Set(s.proposals.map((p) => p.key)), taught = new Set(s.lessons.map((x) => x.leaf));
       const telling = (l) => l.source || l.stats || proposed.has(l.key) || taught.has(l.key);
@@ -148,7 +149,7 @@ export function runAgent(state) {
         derniers_montages: s.gallery.slice(0, 4).map((g) => ({ quoi: g.kind, fondateur: g.founder, texte: g.content.text, son: g.content.sound && { ...g.content.sound, envelope: undefined }, image: g.content.image })),
         avis_precedent: before.status === 'ok' ? { resume: before.resume, alertes: before.alertes } : null,
       };
-      const text = `Voici l'état de l'arborescence${images.length ? `. Images jointes, dans l'ordre : ${covers.length} couverture(s) de TikToks d'exemple, puis ${shots.length} image(s) des derniers montages (réplique, drop, suite)` : ''} :\n\n${JSON.stringify(view)}`;
+      const text = `Voici l'état de l'arborescence${images.length ? `. Image jointe : le drop du dernier montage` : ''} :\n\n${JSON.stringify(view)}`;
       const json = await askLocal(SYSTEM, text, images, opinionSchema(keys, branchIds));
       setSetting('cut_agent', { status: 'ok', at: now(), checkedAt: now(), model: MODEL, ...cleanOpinion(json, keys, branchIds) });
     } catch (error) {

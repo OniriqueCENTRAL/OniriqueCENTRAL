@@ -93,7 +93,7 @@ Dis aux fondateurs, en français simple et direct (tutoie-les), ce qui fait marc
 premières secondes, le texte à l'écran, le montage, la musique, les descriptions et hashtags, le rythme de publication. Compare les
 vidéos fortes et faibles avec les chiffres. Puis propose des leçons concrètes pour l'arborescence de CUT ; quand une leçon touche un
 réglage précis de CUT, donne sa clé (liste fournie) et la valeur conseillée, sinon laisse la feuille vide. Ne devine pas ce que les
-données ne montrent pas. Réponds seulement par l'objet JSON demandé.`;
+données ne montrent pas. Une phrase courte par point, 6 points au plus par liste, 5 leçons au plus. Réponds seulement par l'objet JSON demandé.`;
 const schemaOf = (keys) => ({ type: 'object', required: ['resume', 'ce_qui_marche', 'ce_qui_marche_moins', 'format', 'textes', 'hashtags', 'lecons', 'images'],
   properties: {
     resume: { type: 'string' }, ce_qui_marche: { type: 'array', items: { type: 'string' } }, ce_qui_marche_moins: { type: 'array', items: { type: 'string' } },
@@ -178,7 +178,7 @@ async function work(id, leaves) {
       } catch { /* vidéo non téléchargeable : on garde ses chiffres */ }
     }
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
-  set('L’IA analyse le compte (10 à 30 minutes, sans gêner le site)…', .7, { status: 'ia', data, thumbs });
+  set('L’IA analyse le compte (15 à 25 minutes, sans gêner le site)…', .7, { status: 'ia', data, thumbs });
   // 4. l'IA
   const keys = new Set(leaves.keys());
   const view = { compte: account,
@@ -187,10 +187,11 @@ async function work(id, leaves) {
       partages: v.shares, enregistrements: v.saves, duree_s: v.duration, musique: v.music || undefined, date: v.date ? new Date(v.date).toISOString().slice(0, 10) : undefined,
       description: v.text.slice(0, 120), sous_titres: v.subtitles ? v.subtitles.slice(0, 400) : undefined })),
     reglages_de_cut: [...leaves.values()].map((l) => ({ key: l.key, nom: l.label, valeur: l.value })) };
-  // 4 images : les 3 de la vidéo la plus vue, et le début de la moins vue (chaque image coûte du calcul).
+  // 2 images (~2 minutes de calcul chacune sur le VPS) : le milieu de la vidéo la plus vue et de la moins vue.
   const best = deep.find((v) => thumbs.frames[v.id]), weak = deep.length > 1 && thumbs.frames[deep.at(-1).id] ? deep.at(-1) : null;
-  const images = [...(best ? thumbs.frames[best.id] : []), ...(weak && weak !== best ? [thumbs.frames[weak.id][0]] : [])].map((t) => t.replace(/^data:image\/jpeg;base64,/, ''));
-  const order = [best && `3 images de ${best.id} (${best.views ?? '?'} vues, la plus vue)`, weak && weak !== best && `1 image de ${weak.id} (${weak.views ?? '?'} vues, la moins vue)`].filter(Boolean).join(', ');
+  const mid = (v) => thumbs.frames[v.id][1] || thumbs.frames[v.id][0];
+  const images = [...(best ? [mid(best)] : []), ...(weak && weak !== best ? [mid(weak)] : [])].map((t) => t.replace(/^data:image\/jpeg;base64,/, ''));
+  const order = [best && `le milieu de ${best.id} (${best.views ?? '?'} vues, la plus vue)`, weak && weak !== best && `le milieu de ${weak.id} (${weak.views ?? '?'} vues, la moins vue)`].filter(Boolean).join(', ');
   try {
     const json = await askLocal(SYSTEM, `Images jointes, dans cet ordre : ${order || 'aucune'}.\n\n${JSON.stringify(view)}`, images, schemaOf(keys));
     data.opinion = cleanAnalysis(json, keys);

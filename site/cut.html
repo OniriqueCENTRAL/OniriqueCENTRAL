@@ -4835,7 +4835,7 @@ function agentView(brain, leaves, fill) {
     catch (error) { ask.disabled = false; ask.textContent = "Demander son avis"; alert(error.message); }
   };
   if (a.running) watchAgent(a.checkedAt);
-  const state = a.running ? "Il relit tout ce que l’arbre a appris, images comprises, sur le serveur et sans gêner le site : compte 10 à 30 minutes (tu peux fermer ce menu et revenir plus tard)."
+  const state = a.running ? "Il relit tout ce que l’arbre a appris, images comprises, sur le serveur et sans gêner le site : compte 10 à 20 minutes (tu peux fermer ce menu et revenir plus tard)."
     : { jamais: "Il n’a encore rien relu. Il ne tourne que quand tu le lui demandes.",
       "sans-ia": "L’IA n’est pas encore installée sur le VPS (" + (a.error || "") + ") : en root, lance « onirique-superviseur », une seule fois. C’est gratuit, rien ne part à l’extérieur.",
       erreur: "Sa dernière relecture n’a pas abouti (" + (a.error || "erreur inconnue") + ")." + (a.at ? " Voici son avis précédent." : ""),
@@ -4864,7 +4864,7 @@ function accountsView(leaves, fill) {
   const box = node("div", { className: "accounts" });
   const field = node("textarea", { rows: 2, maxLength: 3000, placeholder: "https://www.tiktok.com/@compte (tout le compte), ou des liens de vidéos TikTok, un par ligne" });
   const go = node("button", { className: "go", type: "button", textContent: "Analyser" });
-  const say = node("p", { className: "muted", textContent: "Le serveur lit les 40 dernières vidéos (chiffres, descriptions, musiques), regarde les meilleures, puis l’IA du VPS en tire ce qui marche. Compte 15 à 40 minutes ; tu peux fermer le menu et revenir plus tard." });
+  const say = node("p", { className: "muted", textContent: "Le serveur lit les 40 dernières vidéos (chiffres, descriptions, musiques), regarde les meilleures, puis l’IA du VPS en tire ce qui marche. Compte 15 à 25 minutes ; tu peux fermer le menu et revenir plus tard." });
   const list = node("div", { className: "accounts-list" });
   go.onclick = async () => {
     go.disabled = true;
