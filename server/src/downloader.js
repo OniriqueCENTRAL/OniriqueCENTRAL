@@ -112,7 +112,7 @@ const YTDLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-
 // yt-dlp les rafraîchit lui-même. Sans le fichier, rien ne change.
 const YOUTUBE_COOKIES = path.join(config.dataDir, 'youtube-cookies.txt');
 let updating = null;
-async function ytdlpCommand() {
+export async function ytdlpCommand() {
   if (process.platform === 'win32') return ['yt-dlp', []]; // la version officielle se lance par python3 : serveur Linux seulement
   const age = (() => { try { return Date.now() - fs.statSync(YTDLP).mtimeMs; } catch { return Infinity; } })();
   if (age > 24 * 3600_000) {

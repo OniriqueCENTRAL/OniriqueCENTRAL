@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=519fc4d8"></script>
+<script src="assets/i18n.js?v=745b9cfc"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -183,6 +183,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .neural-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--haze); font-size: 12px; }
 .neural-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: -1px; }
 .neural-legend i.ring { border: 1.5px solid rgb(var(--acc)); }
+.tiktok-seen { display: flex; gap: 10px; align-items: center; flex: 1 1 100%; color: var(--label); font-size: 13px; }
+.tiktok-seen img { width: 40px; height: 71px; object-fit: cover; border-radius: 6px; flex: none; }
 .agent { display: grid; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(0,0,0,.25); }
 .agent p { margin: 0; }
 .agent-resume { color: #fff; font-size: 15px; line-height: 1.5; }
@@ -4787,20 +4789,20 @@ let treeTarget = ""; // la feuille ou la branche que la prochaine leçon nourrit
 // ——— Le réseau (fondateurs) : l’arborescence dessinée comme un réseau de neurones. À gauche ce qui la nourrit (TikToks faits
 // sur CUT, corrections après AUTOMATIQUE, leçons, recette de départ), puis ses branches, ses réglages et, à droite, le TikTok
 // d’AUTOMATIQUE. Chaque point lumineux est un signal : plus une branche ou une feuille est nourrie, plus elle en reçoit. ———
-// ——— Le superviseur (serveur : cutagent.js) : une IA relit ce que l’arbre apprend et dit ce qui est bien ou pas. Il ne décide
-// rien : son avis aide les fondateurs à valider ou refuser. ———
+// ——— Le superviseur (serveur : cutagent.js) : une IA gratuite, sur le VPS, relit ce que l’arbre apprend et dit ce qui est bien
+// ou pas, seulement quand un fondateur le demande. Il ne décide rien : son avis aide à valider ou refuser. ———
 let agentPoll = 0;
-/** Après une demande d’avis : on regarde toutes les 4 s si la relecture est finie (4 minutes au plus), puis on redessine. */
+/** Après une demande d’avis : on regarde toutes les 10 s si la relecture est finie (26 minutes au plus), puis on redessine. */
 function watchAgent(since) {
   clearInterval(agentPoll);
   let n = 0;
   agentPoll = setInterval(async () => {
-    if ($("tree-page").hidden || ++n > 60) return clearInterval(agentPoll);
+    if ($("tree-page").hidden || ++n > 156) return clearInterval(agentPoll);
     try {
       const b = await bankFetch("/api/cut/brain");
       if (!b.agent.running && b.agent.checkedAt !== since) { clearInterval(agentPoll); renderTree(); }
     } catch { /* on réessaie au tour suivant */ }
-  }, 4000);
+  }, 10_000);
 }
 const VERDICT = { pour: "Pour", contre: "Contre", prudence: "Prudence" };
 function agentView(brain, leaves, fill) {
@@ -4812,9 +4814,9 @@ function agentView(brain, leaves, fill) {
     catch (error) { ask.disabled = false; ask.textContent = "Demander son avis"; alert(error.message); }
   };
   if (a.running) watchAgent(a.checkedAt);
-  const state = a.running ? "Il relit tout ce que l’arbre a appris, images comprises : une à trois minutes."
-    : { jamais: "Il n’a encore rien relu. Il passe tout seul une fois par jour quand l’arbre a appris du nouveau, ou quand tu le lui demandes.",
-      "sans-cle": "Il n’a pas encore de clé : sur le VPS, en root, lance « onirique-superviseur » et colle une clé API Claude (console.anthropic.com).",
+  const state = a.running ? "Il relit tout ce que l’arbre a appris, images comprises, sur le serveur et sans gêner le site : compte quelques minutes (tu peux fermer ce menu)."
+    : { jamais: "Il n’a encore rien relu. Il ne tourne que quand tu le lui demandes.",
+      "sans-ia": "L’IA n’est pas encore installée sur le VPS (" + (a.error || "") + ") : en root, lance « onirique-superviseur », une seule fois. C’est gratuit, rien ne part à l’extérieur.",
       erreur: "Sa dernière relecture n’a pas abouti (" + (a.error || "erreur inconnue") + ")." + (a.at ? " Voici son avis précédent." : ""),
       ok: "" }[a.status] || "";
   const label = (key) => (leaves.get(key) ? leaves.get(key).branch.label + " › " + leaves.get(key).label : "");
@@ -5120,7 +5122,11 @@ async function renderTree() {
       try { await bankFetch("/api/cut/brain/notes/" + x.id, { method: "DELETE" }); } catch (error) { alert(error.message); }
       renderTree();
     };
-    return node("li", { className: "lesson" }, node("p", { textContent: (x.text || "") + (set ? (x.text ? " → " : "→ ") + valueText(l, x.settings[l.key]) : "") }),
+    const t = x.tiktok, big = (n) => (n == null ? "" : n >= 1e6 ? String(Math.round(n / 1e5) / 10).replace(".", ",") + " M" : n >= 1e4 ? Math.round(n / 1e3) + " k" : String(n));
+    const seen = t ? node("div", { className: "tiktok-seen" }, ...(x.thumbs && x.thumbs[0] ? [node("img", { src: x.thumbs[0], alt: "" })] : []),
+      node("span", { textContent: [t.author ? "@" + t.author.replace(/^@/, "") : "", t.views != null ? big(t.views) + " vues" : "", t.likes != null ? big(t.likes) + " j’aime" : "",
+        t.music || ""].filter(Boolean).join(" · ") + (t.title ? " — « " + t.title.slice(0, 160) + " »" : "") })) : x.link ? node("small", { textContent: "TikTok pas encore lu par le serveur" }) : "";
+    return node("li", { className: "lesson" }, node("p", { textContent: (x.text || "") + (set ? (x.text ? " → " : "→ ") + valueText(l, x.settings[l.key]) : "") }), seen,
       node("small", { textContent: (x.author || "Un fondateur") + " · " + dayText(x.at) }),
       ...(x.link ? [node("a", { href: x.link, target: "_blank", rel: "noopener", textContent: "TikTok d’exemple" })] : []), remove);
   };

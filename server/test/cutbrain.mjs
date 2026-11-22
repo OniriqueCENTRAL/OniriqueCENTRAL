@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-// Une fausse API Claude pour le superviseur : elle note la demande et répond ce qu'on lui dit.
+// Une fausse IA du VPS (API d'Ollama) pour le superviseur : elle note la demande et répond ce qu'on lui dit.
 import http from 'node:http';
 const fake = { calls: [], reply: null };
 const claude = http.createServer((req, res) => {
@@ -15,7 +15,7 @@ const claude = http.createServer((req, res) => {
 await new Promise((resolve) => claude.listen(0, resolve));
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-cutbrain-'));
-Object.assign(process.env, { ANTHROPIC_API: `http://127.0.0.1:${claude.address().port}`, ANTHROPIC_API_KEY: 'cle-de-test', GEMINI_API_KEY: '', DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '',
+Object.assign(process.env, { CUT_AGENT_URL: `http://127.0.0.1:${claude.address().port}`, DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '',
   SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test' });
 
 const { createApp } = await import('../src/app.js');
@@ -146,7 +146,11 @@ try {
   const opinion = { resume: 'Les membres poussent le flash.', propositions: [{ key: 'transition', value: 'flash', avis: 'prudence', pourquoi: 'Un seul compte.' },
     { key: 'inconnue', value: 1, avis: 'pour', pourquoi: 'x' }, { key: 'iSize', value: 70, avis: 'génial', pourquoi: 'x' }],
     alertes: [{ niveau: 'grave', texte: 'Réplique sensible.', feuille: 'transition' }, { niveau: 'pire', texte: 'Niveau inconnu.' }], branches: { film: 'Solide.', autre: 'x' }, lecons: ['Une scène de trahison.'] };
-  fake.reply = [200, { model: 'claude-opus-5-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Voici : ' + JSON.stringify(opinion) }] }];
+  fake.reply = [404, { error: 'model "gemma3:4b" not found, try pulling it first' }];
+  assert.equal((await call(boss.token, 'POST', '/api/cut/brain/agent')).status, 202);
+  const missing = await (async () => { for (let k = 0; k < 50; k++) { const b = await (await call(boss.token, 'GET', '/api/cut/brain')).json(); if (b.agent.status !== 'jamais') return b.agent; await new Promise((r) => setTimeout(r, 100)); } })();
+  assert.equal(missing.status, 'sans-ia', 'modèle pas téléchargé : le menu dit comment l’installer');
+  fake.reply = [200, { model: 'gemma3:4b', message: { role: 'assistant', content: JSON.stringify(opinion) }, done: true }];
   assert.equal((await call(vip.token, 'POST', '/api/cut/brain/agent')).status, 403);
   assert.equal((await call(boss.token, 'POST', '/api/cut/brain/agent')).status, 202);
   const until = async (ok) => { for (let k = 0; k < 50; k++) { const b = await (await call(boss.token, 'GET', '/api/cut/brain')).json(); if (ok(b.agent)) return b.agent; await new Promise((r) => setTimeout(r, 100)); } throw new Error('le superviseur ne répond pas'); };
@@ -156,14 +160,15 @@ try {
   assert.deepEqual(agent.alertes.map((a) => a.niveau), ['grave', 'info']);
   assert.deepEqual(agent.branches, { film: 'Solide.' });
   const sent = fake.calls.at(-1);
-  assert.equal(sent.body.model, 'claude-opus-5-5');
-  assert.equal(sent.headers['x-api-key'], 'cle-de-test');
-  assert.ok(sent.body.messages[0].content.some((b) => b.type === 'image'), 'les images des montages partent avec');
-  assert.ok(sent.body.messages[0].content.at(-1).text.includes('Encore ?'), 'et leurs textes');
-  fake.reply = [529, { error: { message: 'surchargé' } }];
+  assert.equal(sent.body.model, 'gemma3:4b');
+  assert.equal(sent.body.keep_alive, 0, 'le modèle quitte la mémoire après la réponse');
+  assert.equal(sent.body.options.num_thread, 3, 'et ne prend que 3 cœurs');
+  assert.ok(sent.body.messages[1].images.length > 0, 'les images des montages partent avec');
+  assert.ok(sent.body.messages[1].content.includes('Encore ?'), 'et leurs textes');
+  fake.reply = [500, { error: 'out of memory' }];
   assert.equal((await call(boss.token, 'POST', '/api/cut/brain/agent')).status, 202);
   agent = await until((a) => a.status === 'erreur');
-  assert.match(agent.error, /529/);
+  assert.match(agent.error, /500/);
   assert.equal(agent.resume, 'Les membres poussent le flash.', 'le dernier avis reste');
   assert.equal((await call(boss.token, 'GET', '/api/cut/brain')).status, 200, 'le menu marche toujours');
   console.log('cutbrain : ok');

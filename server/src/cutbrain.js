@@ -20,11 +20,15 @@
 //   DELETE /api/cut/brain/notes/:id     (fondateurs) retirer une leçon, et le réglage qu'elle avait posé
 //   POST   /api/cut/brain/proposals     (fondateurs) { key, value, decision: 'approve' | 'refuse' }
 //   POST   /api/cut/brain/agent         (fondateurs) demander l'avis du superviseur (cutagent.js), en arrière-plan
+// Le lien TikTok d'une leçon est lu par le serveur (description, auteur, vues, j'aime, musique, couverture), pour l'arbre et le superviseur.
 import fs from 'node:fs';
+import { execFile } from 'node:child_process';
+import sharp from 'sharp';
 import { db, get, all, run, now, setting, setSetting } from './db.js';
 import { HttpError, rateLimit, can } from './auth.js';
 import { testing } from './mail.js';
 import { runAgent, agentState, agentRunning } from './cutagent.js';
+import { tiktokUrl, ytdlpCommand } from './downloader.js';
 
 export const TREE = JSON.parse(fs.readFileSync(new URL('./cut-brain.json', import.meta.url), 'utf8'));
 for (const b of TREE.branches) for (const l of b.leaves) if (l.fonts) l.options = Object.fromEntries(TREE.fonts.map((f) => [f, f]));
@@ -185,6 +189,53 @@ const purge = () => {
 purge();
 setInterval(purge, 864e5).unref();
 
+/** Ce qu'on peut savoir d'un TikTok public : par yt-dlp (description, auteur, vues, j'aime, musique, durée), sinon par la
+ *  page d'intégration de TikTok ; et sa couverture, réduite. Rien si le lien n'est pas une vidéo TikTok. Lent et sans urgence :
+ *  yt-dlp passe en priorité basse. */
+export async function readTiktok(link) {
+  const url = tiktokUrl(link);
+  if (!url) return null;
+  const info = {};
+  try {
+    const [cmd, extra] = await ytdlpCommand();
+    const args = [...extra, '-j', '--no-download', '--no-warnings', '--socket-timeout', '20', url];
+    const out = await new Promise((resolve, reject) => execFile(process.platform === 'win32' ? cmd : 'nice', process.platform === 'win32' ? args : ['-n', '19', cmd, ...args],
+      { timeout: 90_000, maxBuffer: 30e6 }, (error, stdout) => (error ? reject(error) : resolve(stdout))));
+    const j = JSON.parse(out);
+    Object.assign(info, { title: j.description || j.title, author: j.uploader || j.creator || j.channel, views: j.view_count, likes: j.like_count,
+      comments: j.comment_count, shares: j.repost_count, duration: j.duration, music: [j.artist, j.track].filter(Boolean).join(' - '),
+      date: j.timestamp ? j.timestamp * 1000 : undefined, cover: j.thumbnail });
+  } catch { /* yt-dlp bloqué ou absent : la page d'intégration */ }
+  if (!info.title) {
+    try {
+      const r = await fetch('https://www.tiktok.com/oembed?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(20_000) });
+      const j = r.ok ? await r.json() : {};
+      Object.assign(info, { title: j.title, author: j.author_name, cover: info.cover || j.thumbnail_url });
+    } catch { /* TikTok ne répond pas */ }
+  }
+  const tiktok = JSON.parse(JSON.stringify({ url, title: str(info.title, 1000), author: str(info.author, 80), views: num(info.views, 0, 1e12),
+    likes: num(info.likes, 0, 1e12), comments: num(info.comments, 0, 1e12), shares: num(info.shares, 0, 1e12), duration: num(info.duration, 0, 3600),
+    music: str(info.music, 160), date: num(info.date, 0, 1e14), read: now() }));
+  let cover = [];
+  if (/^https:\/\/[^\s]+$/.test(info.cover || '')) {
+    try {
+      const r = await fetch(info.cover, { signal: AbortSignal.timeout(20_000) });
+      const raw = Buffer.from(await r.arrayBuffer());
+      if (r.ok && raw.length < 8e6) cover = cleanThumbs(['data:image/jpeg;base64,' + (await sharp(raw).resize(240, 426, { fit: 'cover' }).jpeg({ quality: 70 }).toBuffer()).toString('base64')]);
+    } catch { /* pas de couverture */ }
+  }
+  return { tiktok, cover };
+}
+let reading = Promise.resolve();
+/** Lit le TikTok d'une leçon en arrière-plan (un à la fois), puis le garde avec elle. */
+function readLessonTiktok(id, link) {
+  if (testing || !tiktokUrl(link)) return;
+  reading = reading.then(async () => {
+    const got = await readTiktok(link).catch(() => null);
+    if (got) run('UPDATE cut_learn SET content = ?, thumbs = ? WHERE id = ?', JSON.stringify({ tiktok: got.tiktok }), JSON.stringify(got.cover), id);
+  });
+}
+
 /** Les TikToks déjà gardés dans le cloud CUT (leur recette), repris une seule fois comme des exports. */
 export function importCloudRecipes() {
   if (setting('cut_brain_import', 0)) return 0;
@@ -248,8 +299,9 @@ export function mountCutBrain(app, { requireUser, libDir }) {
     const counts = Object.fromEntries(all('SELECT kind, COUNT(*) AS n FROM cut_learn GROUP BY kind').map((r) => [r.kind, r.n]));
     const week = Object.fromEntries(all('SELECT kind, COUNT(*) AS n FROM cut_learn WHERE created_at > ? GROUP BY kind', now() - 7 * 864e5).map((r) => [r.kind, r.n]));
     const founders = get("SELECT COUNT(*) AS n FROM cut_learn WHERE kind IN ('export', 'correction') AND role = 'founder'").n;
-    const lessons = all("SELECT id, note, leaf, link, author, settings, created_at FROM cut_learn WHERE kind = 'note' ORDER BY id DESC")
-      .map((r) => ({ id: r.id, text: r.note, leaf: r.leaf, link: r.link, author: r.author, settings: parse(r.settings, {}), at: r.created_at }));
+    const lessons = all("SELECT id, note, leaf, link, author, settings, content, thumbs, created_at FROM cut_learn WHERE kind = 'note' ORDER BY id DESC")
+      .map((r) => ({ id: r.id, text: r.note, leaf: r.leaf, link: r.link, author: r.author, settings: parse(r.settings, {}), at: r.created_at,
+        tiktok: parse(r.content, {}).tiktok || null, thumbs: parse(r.thumbs, []) }));
     const journal = list.slice(0, 80).map((r) => ({ id: r.id, kind: r.kind, founder: r.role === 'founder', at: r.created_at,
       settings: parse(r.settings, {}), changed: parse(r.changed, []), note: r.note, leaf: r.leaf, link: r.link, author: r.author }));
     const gallery = all("SELECT id, kind, role, content, thumbs, created_at FROM cut_learn WHERE thumbs != '[]' OR content != '{}' ORDER BY id DESC LIMIT 24")
@@ -262,20 +314,16 @@ export function mountCutBrain(app, { requireUser, libDir }) {
     res.json({ ...state(), agent: { ...agentState(), usage: undefined, running: agentRunning() } });
   });
 
-  // Le superviseur : sur demande (la réponse part tout de suite, l'avis arrive en arrière-plan), et une fois par jour s'il y a du
-  // nouveau. Jamais pendant les essais du serveur.
+  // Le superviseur : seulement quand un fondateur le demande (la réponse part tout de suite, l'avis arrive en arrière-plan).
   app.post('/api/cut/brain/agent', requireUser, founder, (req, res) => {
     rateLimit(`cut-agent:${req.user.id}`, 6, 3600_000);
     runAgent(state).catch(() => {});
     res.status(202).json({ ok: true });
   });
-  const daily = () => {
-    try {
-      const a = agentState(), last = get('SELECT MAX(id) AS id FROM cut_learn').id || 0;
-      if (last && last !== a.seenUntil && now() - (a.checkedAt || 0) > 20 * 3600_000) runAgent(state).catch(() => {});
-    } catch (error) { console.error('Superviseur de CUT :', error.message); }
-  };
-  if (!testing) { setTimeout(daily, 10 * 60_000).unref(); setInterval(daily, 3600_000).unref(); }
+  // Les liens TikTok des leçons pas encore lus (leçons d'avant cette lecture, ou TikTok qui ne répondait pas) : relus au démarrage.
+  if (!testing) setTimeout(() => {
+    for (const r of all("SELECT id, link FROM cut_learn WHERE kind = 'note' AND link != '' AND content = '{}'")) readLessonTiktok(r.id, r.link);
+  }, 60_000).unref();
 
   // Une leçon d'un fondateur : un texte, un TikTok d'exemple, et, pour une feuille, le réglage à prendre (posé tout de suite).
   app.post('/api/cut/brain/notes', requireUser, founder, (req, res) => {
@@ -296,6 +344,7 @@ export function mountCutBrain(app, { requireUser, libDir }) {
       ov.leaves = { ...ov.leaves, [target]: { value, from: 'note', note: Number(id), by: author, at: now(), why: text } };
       saveOverlay(ov);
     }
+    readLessonTiktok(Number(id), link);
     res.status(201).json({ ok: true, id: Number(id) });
   });
   app.delete('/api/cut/brain/notes/:id', requireUser, founder, (req, res) => {

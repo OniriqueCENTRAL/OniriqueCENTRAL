@@ -51,10 +51,12 @@
   banque si aucun clip (3 films essayés), réplique qui reprend des mots du passage et finit sur une question, image froide
   retirée sur un film sombre, export sans Shorts ni Reels automatiques, gardé dans le cloud CUT.
 - Avant de monter un TikTok soi-même pour un fondateur : lire l'arbre (`/api/cut/brain`, session fondateur).
-- Superviseur (`server/src/cutagent.js`) : Claude relit l'arbre (images comprises) une fois par jour s'il y a du nouveau, ou
-  sur le bouton « Demander son avis » ; il ne décide rien. Clé : `onirique-superviseur` sur le VPS (Claude et pas Gemini :
-  l'offre gratuite de Gemini peut entraîner les modèles de Google sur ce qu'on lui envoie). Modèle : `CUT_AGENT_MODEL`.
-  Une panne n'est qu'un état gardé (« erreur », « sans-cle ») : le site n'en dépend pas.
+- Superviseur (`server/src/cutagent.js`) : une IA gratuite sur le VPS (Ollama + `gemma3:4b`, licence Gemma ; Qwen écarté,
+  licence non indiquée), installée par `onirique-superviseur`. Seulement sur le bouton « Demander son avis » ; bridée par
+  systemd (3 cœurs, Nice 19, disque en idle, 6 Go, modèle déchargé après chaque réponse, 127.0.0.1 seulement). Une relecture
+  prend quelques minutes. Une panne n'est qu'un état gardé (« sans-ia », « erreur ») : le site n'en dépend pas.
+- Les liens TikTok des leçons sont lus par le serveur (yt-dlp en priorité basse, sinon la page d'intégration de TikTok) :
+  description, auteur, vues, j'aime, musique, couverture réduite ; montrés dans l'arbre et donnés au superviseur.
 
 ## BPM et tonalité (`site/assets/bpm-key-worker.js`), blanc du Downloader
 - Le même worker sert à BPM et tonalité, PROD du Downloader, CUT, Mes sons, Stems et Transposition : après une
