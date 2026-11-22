@@ -61,6 +61,9 @@
   (`--flat-playlist -J` donne vues, j'aime, partages, enregistrements, durée, musique, couverture), télécharge en 480p les 3
   plus vues et la moins vue pour 3 images ffmpeg et leurs sous-titres, puis l'IA du VPS compare (forme de réponse imposée).
   Une analyse à la fois, file commune avec le superviseur, tout en priorité basse ; gardée un an.
+- Pièges : le `fetch` de Node abandonne une requête sans réponse au bout de 5 minutes (délai d'en-têtes d'undici), or
+  Ollama ne répond qu'une fois tout calculé : appeler l'IA par `node:http`. Sur le VPS (3 cœurs bridés), gemma3:4b lit
+  ~12 jetons de texte par seconde, ~2 minutes par image, écrit ~2 jetons par seconde : peu d'images, réponses courtes.
 
 ## BPM et tonalité (`site/assets/bpm-key-worker.js`), blanc du Downloader
 - Le même worker sert à BPM et tonalité, PROD du Downloader, CUT, Mes sons, Stems et Transposition : après une
