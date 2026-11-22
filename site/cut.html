@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=745b9cfc"></script>
+<script src="assets/i18n.js?v=393b01e9"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -185,6 +185,27 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .neural-legend i.ring { border: 1.5px solid rgb(var(--acc)); }
 .tiktok-seen { display: flex; gap: 10px; align-items: center; flex: 1 1 100%; color: var(--label); font-size: 13px; }
 .tiktok-seen img { width: 40px; height: 71px; object-fit: cover; border-radius: 6px; flex: none; }
+.accounts { display: grid; gap: 12px; }
+.account-ask { flex-wrap: nowrap; align-items: stretch; }
+.account-ask textarea { flex: 1; min-height: 52px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.35); color: var(--mist); font: 400 15px/1.5 var(--f-body); resize: vertical; }
+.account-ask textarea:focus { outline: none; border-color: var(--ember); }
+.accounts-list { display: grid; gap: 12px; }
+.account-card { display: grid; gap: 10px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(0,0,0,.25); }
+.account-card.running { border-color: var(--ember); }
+.account-card p { margin: 0; }
+.account-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.account-head b { font: 700 16px var(--f-display); color: #fff; }
+.account-head small { color: var(--haze); font-size: 12px; }
+.account-head .row { margin-left: auto; }
+.account-error { color: var(--ember-text); font-size: 14px; }
+.account-videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.account-video { display: grid; gap: 4px; color: var(--mist); text-decoration: none; font-size: 12px; }
+.account-video small { color: #fff; font-variant-numeric: tabular-nums; }
+.account-video span { color: var(--haze); max-height: 2.8em; overflow: hidden; }
+.account-shots { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; }
+.account-shots img { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 6px; background: #000; }
+.account-list small { color: var(--haze); font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
+.account-list ul { margin: 4px 0 0; padding-left: 18px; font-size: 14px; color: var(--mist); }
 .agent { display: grid; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(0,0,0,.25); }
 .agent p { margin: 0; }
 .agent-resume { color: #fff; font-size: 15px; line-height: 1.5; }
@@ -4835,6 +4856,68 @@ function agentView(brain, leaves, fill) {
   return node("div", { className: "agent" }, ...kids);
 }
 
+// ——— Analyser un compte TikTok (serveur : cutaccount.js) : le serveur lit seul les vidéos du compte, l’IA du VPS en tire ce
+// qui marche et des leçons, ajoutées à l’arbre d’un clic. ———
+let accountsPoll = 0;
+const bigNumber = (n) => (n == null ? "?" : n >= 1e6 ? String(Math.round(n / 1e5) / 10).replace(".", ",") + " M" : n >= 1e4 ? Math.round(n / 1e3) + " k" : String(n));
+function accountsView(leaves, fill) {
+  const box = node("div", { className: "accounts" });
+  const field = node("textarea", { rows: 2, maxLength: 3000, placeholder: "https://www.tiktok.com/@compte (tout le compte), ou des liens de vidéos TikTok, un par ligne" });
+  const go = node("button", { className: "go", type: "button", textContent: "Analyser" });
+  const say = node("p", { className: "muted", textContent: "Le serveur lit les 40 dernières vidéos (chiffres, descriptions, musiques), regarde les meilleures, puis l’IA du VPS en tire ce qui marche. Compte 5 à 20 minutes ; tu peux fermer le menu." });
+  const list = node("div", { className: "accounts-list" });
+  go.onclick = async () => {
+    go.disabled = true;
+    try { await bankFetch("/api/cut/brain/accounts", jsonBody("POST", { url: field.value })); field.value = ""; await draw(); }
+    catch (error) { alert(error.message); }
+    finally { go.disabled = false; }
+  };
+  const card = (a) => {
+    const running = ["attente", "lecture", "ia"].includes(a.status), o = a.opinion, acc = a.account;
+    const title = a.handle ? "@" + a.handle : plural((a.links || []).length, "vidéo") + " collée" + ((a.links || []).length > 1 ? "s" : "");
+    const actions = node("div", { className: "row" }, ...(running ? [] : [
+      node("button", { className: "mini", type: "button", textContent: "Relancer", onclick: async () => { try { await bankFetch("/api/cut/brain/accounts/" + a.id + "/retry", { method: "POST" }); } catch (e) { alert(e.message); } draw(); } }),
+      node("button", { className: "mini", type: "button", textContent: "Retirer", onclick: async () => { if (!confirm("Retirer cette analyse ?")) return; await bankFetch("/api/cut/brain/accounts/" + a.id, { method: "DELETE" }).catch(() => {}); draw(); } })]));
+    const kids = [node("div", { className: "account-head" }, node("b", { textContent: title }),
+      node("small", { textContent: (acc && acc.name ? acc.name + " · " : "") + dayText(a.at) + " · " + a.author }), actions)];
+    if (running) kids.push(node("div", { className: "bar" }, node("i", { style: "width:" + Math.round((a.progress || 0) * 100) + "%" })), node("small", { className: "muted", textContent: a.step }));
+    if (a.status === "erreur") kids.push(node("p", { className: "account-error", textContent: a.error }));
+    if (acc && acc.videos) kids.push(node("p", { className: "muted", textContent: plural(acc.videos, "vidéo") + " lue" + (acc.videos > 1 ? "s" : "") + " · " + bigNumber(acc.totalViews) + " vues en tout · "
+      + bigNumber(acc.medianViews) + " par vidéo en médiane · la meilleure à " + bigNumber(acc.bestViews) }));
+    if (a.videos && a.videos.length) kids.push(node("div", { className: "account-videos" }, ...a.videos.slice(0, 8).map((v) => {
+      const frames = (a.thumbs.frames || {})[v.id], cover = (a.thumbs.covers || {})[v.id];
+      return node("a", { className: "account-video", href: v.url, target: "_blank", rel: "noopener", title: v.text },
+        node("div", { className: "account-shots" }, ...(frames ? frames : cover ? [cover] : []).map((src) => node("img", { src, alt: "", loading: "lazy" }))),
+        node("small", { textContent: bigNumber(v.views) + " vues · " + bigNumber(v.likes) + " j’aime" + (v.duration ? " · " + Math.round(v.duration) + " s" : "") }),
+        node("span", { textContent: (v.text || "").slice(0, 90) }));
+    })));
+    if (o) {
+      kids.push(node("p", { className: "agent-resume", textContent: o.resume }));
+      const bullets = (t, items) => (items && items.length ? node("div", { className: "account-list" }, node("small", { textContent: t }), node("ul", {}, ...items.map((x) => node("li", { textContent: x })))) : "");
+      kids.push(bullets("Ce qui marche", o.works), bullets("Ce qui marche moins", o.weaker));
+      const facts = [["Format", o.format], ["Textes", o.texts], ["Images", o.images]].filter(([, t]) => t);
+      if (facts.length) kids.push(node("dl", { className: "agent-branches" }, ...facts.flatMap(([k, t]) => [node("dt", { textContent: k }), node("dd", { textContent: t })])));
+      if (o.hashtags && o.hashtags.length) kids.push(node("div", { className: "seen-chips" }, node("small", { textContent: "Hashtags" }), ...o.hashtags.map((h) => node("span", { className: "tag", textContent: h }))));
+      if (o.lessons && o.lessons.length) kids.push(node("div", { className: "agent-lessons" }, node("small", { textContent: "Leçons proposées" }), ...o.lessons.map((l) => {
+        const leaf = leaves.get(l.leaf);
+        return node("div", { className: "row" }, node("span", { textContent: l.text + (leaf ? " → " + leaf.label + (l.value ? " : " + l.value : "") : "") }),
+          node("button", { className: "mini", type: "button", textContent: "En faire une leçon", onclick: () => fill(l.text, l.leaf, l.value, a.handle ? "https://www.tiktok.com/@" + a.handle : (a.links || [])[0] || "") }));
+      })));
+    }
+    return node("div", { className: "account-card" + (running ? " running" : "") }, ...kids);
+  };
+  const draw = async () => {
+    let data;
+    try { data = await bankFetch("/api/cut/brain/accounts"); } catch (error) { list.replaceChildren(node("p", { className: "muted", textContent: error.message })); return; }
+    list.replaceChildren(...data.accounts.map(card));
+    clearTimeout(accountsPoll);
+    if (data.accounts.some((a) => ["attente", "lecture", "ia"].includes(a.status)) && !$("tree-page").hidden) accountsPoll = setTimeout(draw, 8000);
+  };
+  draw();
+  box.append(node("div", { className: "row account-ask" }, field, go), say, list);
+  return box;
+}
+
 /** Le contenu des TikToks : ce que l’arbre en retient (son, images, textes) et les derniers montages, images comprises. */
 function seenView(brain) {
   const s = brain.content || { n: 0 }, pc = (x) => Math.round(x * 100) + " %";
@@ -5078,7 +5161,7 @@ async function renderTree() {
       node("small", { textContent: l.branch.label + " › " + l.label }),
       node("p", {}, node("s", { textContent: valueText(l, p.from) }), " → ", node("b", { textContent: valueText(l, p.value) })),
       node("small", { textContent: "Choisi à " + Math.round(p.share * 100) + " %, sur " + plural(p.n, "TikTok") }),
-      ...((brain.agent && brain.agent.propositions || []).filter((x) => x.key === p.key && x.value === p.value)
+      ...((brain.agent && brain.agent.propositions || []).filter((x) => x.key === p.key && String(x.value) === String(p.value))
         .map((x) => node("p", { className: "agent-says " + x.avis, textContent: "Superviseur : " + VERDICT[x.avis] + (x.pourquoi ? " · " + x.pourquoi : "") }))),
       node("div", { className: "row" }, node("button", { className: "go", type: "button", textContent: "Valider", onclick: decide(p, "approve") }),
         node("button", { className: "mini", type: "button", textContent: "Refuser", onclick: decide(p, "refuse") })));
@@ -5181,8 +5264,15 @@ async function renderTree() {
     if (row.getAttribute("aria-expanded") !== "true") row.click();
     row.scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  const fill = (t) => { target.value = ""; syncValue(); text.value = t; form.open = true; form.scrollIntoView({ behavior: "smooth", block: "center" }); text.focus({ preventScroll: true }); };
+  // Une leçon proposée (superviseur, analyse d’un compte) recopiée dans le formulaire : la feuille, le réglage, le lien.
+  const fill = (t, leaf = "", value = "", from = "") => {
+    target.value = leaves.has(leaf) ? leaf : ""; syncValue();
+    if (value && valueInput && [...(valueInput.options || [{ value }])].some((o) => o.value === String(value))) valueInput.value = String(value);
+    text.value = t; if (from) link.value = from;
+    form.open = true; form.scrollIntoView({ behavior: "smooth", block: "center" }); text.focus({ preventScroll: true });
+  };
   box.replaceChildren(kpis, week, node("h3", { textContent: "L’avis du superviseur" }), agentView(brain, leaves, fill),
+    node("h3", { textContent: "Analyser un compte TikTok" }), accountsView(leaves, fill),
     node("h3", { textContent: "Le réseau" }), neuralView(brain, leaves, openLeaf),
     node("h3", { textContent: "Ce qu’elle a vu, entendu et lu" }), seenView(brain), ...(props.length ? [node("h3", { textContent: "À valider (" + props.length + ")" }), node("div", { className: "tree-props" }, ...props)] : []),
     form, node("h3", { textContent: "L’arbre" }), tree, node("h3", { textContent: "Comment elle est nourrie" }), journal);
@@ -5854,7 +5944,7 @@ function start() {
     $("tree-short").hidden = false;
     const openTree = () => { $("tree-page").hidden = false; document.body.style.overflow = "hidden"; renderTree(); };
     $("tree-short").onclick = $("tree-open").onclick = openTree;
-    $("tree-close").onclick = () => { $("tree-page").hidden = true; document.body.style.overflow = ""; neuralStop(); clearInterval(agentPoll); };
+    $("tree-close").onclick = () => { $("tree-page").hidden = true; document.body.style.overflow = ""; neuralStop(); clearInterval(agentPoll); clearTimeout(accountsPoll); };
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("tree-page").hidden) $("tree-close").click(); });
     $("auto-go").onclick = autoTikTok;
   }

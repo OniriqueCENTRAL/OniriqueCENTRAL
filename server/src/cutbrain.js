@@ -29,6 +29,7 @@ import { HttpError, rateLimit, can } from './auth.js';
 import { testing } from './mail.js';
 import { runAgent, agentState, agentRunning } from './cutagent.js';
 import { tiktokUrl, ytdlpCommand } from './downloader.js';
+import { mountCutAccounts, accountsForAgent } from './cutaccount.js';
 
 export const TREE = JSON.parse(fs.readFileSync(new URL('./cut-brain.json', import.meta.url), 'utf8'));
 for (const b of TREE.branches) for (const l of b.leaves) if (l.fonts) l.options = Object.fromEntries(TREE.fonts.map((f) => [f, f]));
@@ -304,11 +305,13 @@ export function mountCutBrain(app, { requireUser, libDir }) {
         tiktok: parse(r.content, {}).tiktok || null, thumbs: parse(r.thumbs, []) }));
     const journal = list.slice(0, 80).map((r) => ({ id: r.id, kind: r.kind, founder: r.role === 'founder', at: r.created_at,
       settings: parse(r.settings, {}), changed: parse(r.changed, []), note: r.note, leaf: r.leaf, link: r.link, author: r.author }));
-    const gallery = all("SELECT id, kind, role, content, thumbs, created_at FROM cut_learn WHERE thumbs != '[]' OR content != '{}' ORDER BY id DESC LIMIT 24")
+    const gallery = all("SELECT id, kind, role, content, thumbs, created_at FROM cut_learn WHERE kind != 'note' AND (thumbs != '[]' OR content != '{}') ORDER BY id DESC LIMIT 24")
       .map((r) => ({ id: r.id, kind: r.kind, founder: r.role === 'founder', at: r.created_at, content: parse(r.content, {}), thumbs: parse(r.thumbs, []) }));
     return { ...published(overlay, stats), proposals: proposalsOf(overlay, stats), lessons, journal, counts, week, founders,
-      content: learnFromContent(list), gallery, revision: overlay.revision || 0 };
+      content: learnFromContent(list), gallery, revision: overlay.revision || 0, accounts: accountsForAgent() };
   };
+  // Analyser un compte TikTok (cutaccount.js) : les feuilles de l'arbre, avec leur réglage d'aujourd'hui.
+  mountCutAccounts(app, { requireUser, founder, leaves: () => new Map(published(overlayNow()).branches.flatMap((b) => b.leaves.map((l) => [l.key, l]))) });
   app.get('/api/cut/brain', requireUser, founder, (_req, res) => {
     res.set('Cache-Control', 'no-store');
     res.json({ ...state(), agent: { ...agentState(), usage: undefined, running: agentRunning() } });

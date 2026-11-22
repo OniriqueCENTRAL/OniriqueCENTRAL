@@ -61,6 +61,20 @@ assert.equal(seen.questions, .5);
 assert.deepEqual(seen.tags[0], { value: '#undergroundmusic', n: 2 });
 assert.deepEqual(seen.films.slice(0, 2).map((f) => f.value).sort(), ['harry', 'potter']);
 
+// ——— Analyser un compte TikTok : les liens, les sous-titres, l'avis nettoyé ———
+const { handleOf, targetOf, vttText, cleanAnalysis } = await import('../src/cutaccount.js');
+assert.equal(handleOf('https://www.tiktok.com/@cmoipriilick'), 'cmoipriilick');
+assert.equal(handleOf('https://www.tiktok.com/@cmoi.priilick/?lang=fr'), 'cmoi.priilick');
+assert.equal(handleOf('@euhz'), 'euhz');
+assert.equal(handleOf('https://www.tiktok.com/@x/video/7300000000000000000'), '', 'une vidéo n’est pas un compte');
+assert.equal(handleOf('https://evil.com/@x'), '');
+assert.deepEqual(targetOf('https://www.tiktok.com/@a/video/7300000000000000001\nhttps://www.tiktok.com/@b/video/7300000000000000002 https://evil.com/x'),
+  { handle: '', links: ['https://www.tiktok.com/@a/video/7300000000000000001', 'https://www.tiktok.com/@b/video/7300000000000000002'] });
+assert.deepEqual(targetOf('regarde https://www.tiktok.com/@ab'), { handle: 'ab', links: [] });
+assert.equal(vttText('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\n<c>Tu crois</c> que\n\n00:00:02.000 --> 00:00:03.000\nTu crois que'), 'Tu crois que');
+assert.deepEqual(cleanAnalysis({ resume: 'r', ce_qui_marche: ['a', 3, ''], lecons: [{ texte: 'Plus court.', feuille: 'duration', valeur: 15 }, { texte: 'x', feuille: 'inventée', valeur: 'y' }] },
+  new Set(['duration'])).lessons, [{ text: 'Plus court.', leaf: 'duration', value: '15' }, { text: 'x', leaf: '', value: '' }]);
+
 // ——— Les routes ———
 const server = createApp().listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -142,6 +156,13 @@ try {
   assert.equal(JSON.parse(archive.thumbs).length, 1);
   assert.equal(importCloudContent(lib), 0, 'une seule fois');
   fs.rmSync(lib, { recursive: true, force: true });
+  assert.equal((await call(boss.token, 'POST', '/api/cut/brain/accounts', { url: 'https://evil.com/@x' })).status, 400);
+  assert.equal((await call(vip.token, 'POST', '/api/cut/brain/accounts', { url: '@cmoipriilick' })).status, 403);
+  assert.equal((await call(boss.token, 'POST', '/api/cut/brain/accounts', { url: 'https://www.tiktok.com/@cmoipriilick' })).status, 202);
+  const accounts = (await (await call(boss.token, 'GET', '/api/cut/brain/accounts')).json()).accounts;
+  assert.equal(accounts[0].handle, 'cmoipriilick');
+  assert.equal(accounts[0].status, 'attente', 'pendant les essais, rien ne part sur TikTok');
+
   // ——— Le superviseur : son avis, nettoyé ; une panne ne casse rien et garde le dernier avis ———
   const opinion = { resume: 'Les membres poussent le flash.', propositions: [{ key: 'transition', value: 'flash', avis: 'prudence', pourquoi: 'Un seul compte.' },
     { key: 'inconnue', value: 1, avis: 'pour', pourquoi: 'x' }, { key: 'iSize', value: 70, avis: 'génial', pourquoi: 'x' }],
@@ -157,6 +178,7 @@ try {
   let agent = await until((a) => a.status === 'ok');
   assert.equal(agent.resume, 'Les membres poussent le flash.');
   assert.deepEqual(agent.propositions, [{ key: 'transition', value: 'flash', avis: 'prudence', pourquoi: 'Un seul compte.' }], 'clés et avis inconnus écartés');
+  assert.ok(fake.calls.at(-1).body.format.properties.propositions.items.properties.key.enum.includes('transition'), 'la forme de la réponse est imposée');
   assert.deepEqual(agent.alertes.map((a) => a.niveau), ['grave', 'info']);
   assert.deepEqual(agent.branches, { film: 'Solide.' });
   const sent = fake.calls.at(-1);

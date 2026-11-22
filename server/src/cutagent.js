@@ -47,7 +47,7 @@ export function cleanOpinion(raw, keys, branchIds) {
   return {
     resume: str(r.resume, 900),
     propositions: (Array.isArray(r.propositions) ? r.propositions : []).filter((p) => p && keys.has(p.key) && VERDICTS.includes(p.avis)).slice(0, 60)
-      .map((p) => ({ key: p.key, value: ['string', 'number', 'boolean'].includes(typeof p.value) ? p.value : null, avis: p.avis, pourquoi: str(p.pourquoi, 500) })),
+      .map((p) => ({ key: p.key, value: ['string', 'number', 'boolean'].includes(typeof p.value) ? String(p.value).slice(0, 80) : null, avis: p.avis, pourquoi: str(p.pourquoi, 500) })),
     alertes: (Array.isArray(r.alertes) ? r.alertes : []).filter((a) => a && str(a.texte, 1)).slice(0, 20)
       .map((a) => ({ niveau: LEVELS.includes(a.niveau) ? a.niveau : 'info', texte: str(a.texte, 500), feuille: keys.has(a.feuille) ? a.feuille : '' })),
     branches: Object.fromEntries(Object.entries(r.branches && typeof r.branches === 'object' ? r.branches : {})
@@ -57,18 +57,38 @@ export function cleanOpinion(raw, keys, branchIds) {
   };
 }
 
-class NoAI extends Error {}
-/** Une question à l'IA du VPS, avec des images (JPEG en base64) ; l'objet JSON répondu, ou une erreur claire. */
-async function ask(text, images) {
+/** La forme imposée à la réponse (sortie structurée d'Ollama) : un petit modèle s'écarte sinon du format, invente des clés. */
+export const opinionSchema = (keys, branchIds) => ({ type: 'object', required: ['resume', 'propositions', 'alertes', 'branches', 'lecons', 'images'],
+  properties: {
+    resume: { type: 'string' },
+    propositions: { type: 'array', items: { type: 'object', required: ['key', 'value', 'avis', 'pourquoi'],
+      properties: { key: { type: 'string', enum: [...keys] }, value: { type: 'string' }, avis: { type: 'string', enum: VERDICTS }, pourquoi: { type: 'string' } } } },
+    alertes: { type: 'array', items: { type: 'object', required: ['niveau', 'texte', 'feuille'],
+      properties: { niveau: { type: 'string', enum: LEVELS }, texte: { type: 'string' }, feuille: { type: 'string', enum: [...keys, ''] } } } },
+    branches: { type: 'object', properties: Object.fromEntries([...branchIds].map((id) => [id, { type: 'string' }])) },
+    lecons: { type: 'array', items: { type: 'string' } },
+    images: { type: 'string' },
+  } });
+
+export class NoAI extends Error {}
+let aiChain = Promise.resolve();
+/** Une question à l'IA du VPS (une à la fois : le superviseur et l'analyse des comptes TikTok attendent leur tour), avec des
+ *  images (JPEG en base64) et la forme imposée de la réponse ; l'objet JSON répondu, ou une erreur claire. */
+export function askLocal(system, text, images, format) {
+  const job = aiChain.then(() => ask(system, text, images, format));
+  aiChain = job.catch(() => {});
+  return job;
+}
+async function ask(system, text, images, format) {
   let r;
   try {
     r = await fetch(`${URL_}/api/chat`, {
       method: 'POST',
       signal: AbortSignal.timeout(25 * 60_000), // sur 3 cœurs, une relecture prend quelques minutes
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, stream: false, format: 'json', keep_alive: 0,
+      body: JSON.stringify({ model: MODEL, stream: false, format, keep_alive: 0,
         options: { num_ctx: 16384, num_thread: 3, temperature: 0.3 },
-        messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: text, images }] }),
+        messages: [{ role: 'system', content: system }, { role: 'user', content: text, images }] }),
     });
   } catch (error) {
     if (error.name === 'TimeoutError') throw new Error("l'IA a mis plus de 25 minutes");
@@ -95,24 +115,29 @@ export function runAgent(state) {
     try {
       const s = state();
       const keys = new Set(s.branches.flatMap((b) => b.leaves.map((l) => l.key))), branchIds = new Set(s.branches.map((b) => b.id));
-      // Peu d'images : chacune coûte du temps de calcul (les couvertures de 3 TikToks d'exemple, puis 2 montages).
-      const covers = s.lessons.filter((x) => x.thumbs && x.thumbs.length).slice(0, 3).map((x) => x.thumbs[0]);
-      const shots = s.gallery.filter((g) => g.thumbs.length).slice(0, 2).flatMap((g) => g.thumbs);
+      // Peu d'images : chacune coûte du temps de calcul sur le processeur (2 couvertures de TikToks d'exemple, 1 montage).
+      const covers = s.lessons.filter((x) => x.thumbs && x.thumbs.length).slice(0, 2).map((x) => x.thumbs[0]);
+      const shots = s.gallery.filter((g) => g.thumbs.length).slice(0, 1).flatMap((g) => g.thumbs);
+      // Seulement les réglages qui ont quelque chose à dire : changés, nourris, proposés ou visés par une leçon.
+      const proposed = new Set(s.proposals.map((p) => p.key)), taught = new Set(s.lessons.map((x) => x.leaf));
+      const telling = (l) => l.source || l.stats || proposed.has(l.key) || taught.has(l.key);
       const images = [...covers, ...shots].map((t) => t.replace(/^data:image\/jpeg;base64,/, ''));
       const view = {
         recette: s.source,
-        branches: s.branches.map((b) => ({ id: b.id, nom: b.label, lecons_de_depart: b.lessons, reglages: b.leaves.map((l) => ({ key: l.key, nom: l.label,
-          valeur: l.value, recette: l.base, change: l.source ? { par: l.source.by, comment: l.source.from, pourquoi: l.source.why } : null, choix_des_tiktoks: l.stats })) })),
+        branches: s.branches.map((b) => ({ id: b.id, nom: b.label, lecons_de_depart: b.lessons, reglages: b.leaves.filter(telling).map((l) => ({ key: l.key, nom: l.label,
+          valeur: l.value, recette: l.base, change: l.source ? { par: l.source.by, comment: l.source.from, pourquoi: l.source.why } : null, choix_des_tiktoks: l.stats })),
+          autres_reglages_de_la_recette: b.leaves.filter((l) => !telling(l)).map((l) => l.key) })),
         propositions: s.proposals,
-        lecons_des_fondateurs: s.lessons.slice(0, 30).map((x) => ({ feuille: x.leaf, texte: x.text, reglage: x.settings, tiktok_exemple: x.tiktok || null })),
+        lecons_des_fondateurs: s.lessons.slice(0, 20).map((x) => ({ feuille: x.leaf, texte: x.text, reglage: x.settings, tiktok_exemple: x.tiktok || null })),
         compteurs: s.counts, cette_semaine: s.week, tiktoks_des_fondateurs: s.founders,
-        journal: s.journal.slice(0, 30).map((r) => ({ quoi: r.kind, fondateur: r.founder, reglages: r.settings, corrige: r.changed, lecon: r.note })),
+        journal: s.journal.slice(0, 15).map((r) => ({ quoi: r.kind, fondateur: r.founder, reglages: r.settings, corrige: r.changed, lecon: r.note })),
         contenu_appris: s.content,
-        derniers_montages: s.gallery.slice(0, 6).map((g) => ({ quoi: g.kind, fondateur: g.founder, texte: g.content.text, son: g.content.sound && { ...g.content.sound, envelope: undefined }, image: g.content.image })),
+        comptes_tiktok_analyses: s.accounts,
+        derniers_montages: s.gallery.slice(0, 4).map((g) => ({ quoi: g.kind, fondateur: g.founder, texte: g.content.text, son: g.content.sound && { ...g.content.sound, envelope: undefined }, image: g.content.image })),
         avis_precedent: before.status === 'ok' ? { resume: before.resume, alertes: before.alertes } : null,
       };
       const text = `Voici l'état de l'arborescence${images.length ? `. Images jointes, dans l'ordre : ${covers.length} couverture(s) de TikToks d'exemple, puis ${shots.length} image(s) des derniers montages (réplique, drop, suite)` : ''} :\n\n${JSON.stringify(view)}`;
-      const json = await ask(text, images);
+      const json = await askLocal(SYSTEM, text, images, opinionSchema(keys, branchIds));
       setSetting('cut_agent', { status: 'ok', at: now(), checkedAt: now(), model: MODEL, ...cleanOpinion(json, keys, branchIds) });
     } catch (error) {
       console.error('Superviseur de CUT :', error.message);

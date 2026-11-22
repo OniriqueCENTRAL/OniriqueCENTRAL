@@ -57,6 +57,10 @@
   prend quelques minutes. Une panne n'est qu'un état gardé (« sans-ia », « erreur ») : le site n'en dépend pas.
 - Les liens TikTok des leçons sont lus par le serveur (yt-dlp en priorité basse, sinon la page d'intégration de TikTok) :
   description, auteur, vues, j'aime, musique, couverture réduite ; montrés dans l'arbre et donnés au superviseur.
+- « Analyser un compte TikTok » (`server/src/cutaccount.js`) : yt-dlp liste les 40 dernières vidéos d'un profil public
+  (`--flat-playlist -J` donne vues, j'aime, partages, enregistrements, durée, musique, couverture), télécharge en 480p les 3
+  plus vues et la moins vue pour 3 images ffmpeg et leurs sous-titres, puis l'IA du VPS compare (forme de réponse imposée).
+  Une analyse à la fois, file commune avec le superviseur, tout en priorité basse ; gardée un an.
 
 ## BPM et tonalité (`site/assets/bpm-key-worker.js`), blanc du Downloader
 - Le même worker sert à BPM et tonalité, PROD du Downloader, CUT, Mes sons, Stems et Transposition : après une
