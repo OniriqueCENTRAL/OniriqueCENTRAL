@@ -199,39 +199,6 @@ async function cropImage(p, source) {
   await changed(() => call('admin:uploadImageData', { productId: p.id, dataUrl: cut.dataUrl }), 'Image enregistrée : elle ne sera plus remplacée par l\'aperçu automatique.', true);
 }
 
-/** Refabrique la démo interactive et l'image à partir du .vst3 de la version en ligne (publiée d'ici ou depuis le site). */
-function refreshDemo(p) {
-  const phase = h('div', { class: 'muted mono', 'data-phase': `upload:${p.id}`, style: { 'font-size': '11px', 'min-height': '16px' } });
-  const bar = h('div', { class: 'progress', 'data-progress': `upload:${p.id}` }, h('i'));
-  modal(`Actualiser la démo de ${p.name}`, h('div', { class: 'stack' },
-    h('p', { class: 'muted', style: { margin: 0 } }, `Le fichier de la version ${p.latest.version} est téléchargé puis chargé sur ce PC : l'interface du plugin s'ouvre à l'écran une à trois minutes, ne la fermez pas. L'image et la démo de la boutique sont ensuite remplacées.`),
-    bar, phase), [{
-    label: 'Lancer',
-    run: async () => ((await changed(() => call('admin:refreshDemo', p.id), 'Démo interactive et image mises à jour.', true)) ? undefined : false),
-  }], 'Démo');
-}
-
-/**
- * Refait l'aperçu de chaque plugin VST3, l'un après l'autre, avec l'outil de capture de cette version : chaque
- * position montrée sur le site est vérifiée contre une vraie image du plugin. Les plugins dont la démo a été
- * retirée à la main sont laissés de côté.
- */
-function refreshAllDemos() {
-  const todo = data.products.filter((p) => p.latest && !p.demoOff && p.versions.some((v) => v.platform === 'win' && /\.vst3$/i.test(v.filename)));
-  confirm(`Refaire ${todo.length} aperçus ?`, `Chaque plugin est téléchargé puis chargé sur ce PC : son interface s'ouvre à l'écran une à trois minutes, l'un après l'autre (environ ${todo.length * 2} minutes en tout). Ne fermez pas ces fenêtres.`,
-    'Lancer', async () => {
-      let done = 0;
-      for (const p of todo) {
-        toast(`Aperçu de ${p.name} (${done + 1}/${todo.length})…`);
-        try { await call('admin:refreshDemo', p.id); done++; } catch (error) { toast(`${p.name} : ${error.message}`, true); }
-      }
-      toast(`${done} aperçu(s) refait(s) sur ${todo.length}.`);
-      data.products = null;
-      await refresh();
-      await reload();
-    });
-}
-
 /** Le plugin vérifie-t-il sa licence ? D'après le fichier de la version : oui, non, ou illisible (installateur). */
 const licensePill = (licensed, label, required = true) => (licensed === true ? pill(`Licence ${label}`.trim(), '', true)
   : licensed === false ? pill(`Sans licence ${label}`.trim(), required ? 'warn' : '')
@@ -266,7 +233,7 @@ function productsTab() {
         h('h2', null, p.name),
         pill(CREATORS[p.creator] ?? CREATORS.onirique),
         pill(p.published ? 'Publié' : 'Masqué', p.published ? '' : 'warn'),
-        pill(euros(p.priceCents)), p.demo ? pill('Démo en ligne', '', true) : pill('Pas de démo', 'warn'),
+        pill(euros(p.priceCents)), p.image ? pill('Image en ligne', '', true) : pill('Pas d\'image', 'warn'),
         ...SYSTEMS.filter(([key]) => p.licensed?.[key] !== undefined).map(([key, label]) => licensePill(p.licensed[key], label, p.priceCents > 0))),
       h('div', { class: 'row' },
         button(p.imageManual ? 'Changer l\'image' : 'Choisir une image', () => chooseImage(p), 'small'),
@@ -274,10 +241,6 @@ function productsTab() {
         p.imageManual ? button('Retirer l\'image', () => confirm(`Retirer l'image de ${p.name} ?`,
           'L\'image choisie à la main est retirée. L\'aperçu automatique pourra de nouveau en fournir une.',
           'Retirer', () => changed(() => api('DELETE', `/products/${p.id}/image`), 'Image retirée.', true), 'danger'), 'small quiet') : null,
-        p.demo ? button('Retirer la démo', () => confirm(`Retirer la démo de ${p.name} ?`,
-          'La boutique et l\'application montreront l\'image du plugin à la place. La démo n\'est pas refabriquée toute seule : « Actualiser la démo » la remet.',
-          'Retirer', () => changed(() => api('DELETE', `/products/${p.id}/demo`), 'Démo retirée.', true), 'danger'), 'small quiet') : null,
-        p.latest && /\.vst3$/i.test(p.latest.filename) ? button('Actualiser la démo', () => refreshDemo(p), 'small') : null,
         button('Modifier', () => productForm(p), 'small'),
         button('Nouvelle version', () => versionForm(p), 'small primary'))),
     h('p', { class: 'muted', style: { margin: '8px 0 16px' } }, p.tagline || 'Pas d\'accroche.'),
@@ -292,7 +255,6 @@ function productsTab() {
           : ' · tous les plugins payants vérifient leur licence');
       })()),
       h('div', { class: 'row' },
-        window.central.platform === 'win32' && isStaff(state.data.me.user) ? button('Refaire tous les aperçus', refreshAllDemos, 'small') : null,
         button('Nouveau plugin', () => productForm(null)))),
     data.products.map(panel),
   ];
@@ -794,16 +756,16 @@ export async function fillMissingDemos() {
   try { tried = JSON.parse(localStorage.getItem('onirique.demosTried')) || []; } catch { /* rien de gardé */ }
   let made = false;
   for (const p of state.data.catalog.products) {
-    if (p.demo || p.demoOff || !p.latest || !/\.vst3$/i.test(p.latest.filename) || tried.includes(p.latest.id)) continue;
+    if (p.image || !p.latest || !/\.vst3$/i.test(p.latest.filename) || tried.includes(p.latest.id)) continue;
     tried.push(p.latest.id);
     try { localStorage.setItem('onirique.demosTried', JSON.stringify(tried)); } catch { /* réessayé au prochain lancement */ }
-    toast(`Création de l'aperçu de ${p.name} : son interface s'ouvre à l'écran une à trois minutes, ne la fermez pas.`);
+    toast(`Image de ${p.name} : son interface s'ouvre à l'écran quelques instants, ne la fermez pas.`);
     try {
       await call('admin:refreshDemo', p.id);
       made = true;
-      toast(`Aperçu de ${p.name} en ligne.`);
+      toast(`Image de ${p.name} en ligne.`);
     } catch (error) {
-      toast(`Aperçu de ${p.name} impossible : ${error.message} Réessayez depuis Panel admin, Plugins.`, true);
+      toast(`Image de ${p.name} impossible : ${error.message} Choisissez-en une dans Panel admin, Plugins.`, true);
     }
   }
   filling = false;

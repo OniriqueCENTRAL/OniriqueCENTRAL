@@ -10,12 +10,14 @@
 
 <h2 id="de-vue">Overview</h2>
 <p>ONIRIQUE DE-ESSER handles what hisses, pops or breathes in a vocal, in two ways. In <b>AUTO</b>, it’s a classic de-esser set with a THRESHOLD, working on its own during playback. In <b>MANUAL</b> (MANUEL on the plugin), it captures your take, cuts it into events (every S, every CH, every P, every breath) and you set each one by hand.</p>
-<p>In AUTO, nothing is recorded. 3 ms of latency, the same in both modes: switching never shifts anything. Mono or stereo.</p>
+<p>In AUTO, nothing is recorded. 33 ms of latency, compensated by your DAW, the same in both modes: switching never shifts anything. In AUTO, the LIVE box brings it down to 3 ms for recording through the plugin. Mono or stereo.</p>
 
 <h2 id="de-auto">1. AUTO mode</h2>
-<p>One detector per sound, each on its own band: <b>S</b> (at the FREQ frequency), <b>T</b> (around 4.2 kHz), <b>CH</b> (around 3.2 kHz) and <b>F</b> (the high hiss, around 9 kHz). You switch on the ones you want to treat. When a band goes above the THRESHOLD, only that zone is turned down; the rest of the vocal doesn’t move.</p>
+<p>One detector per sound, each on its own band: <b>S</b> (at the FREQ frequency), <b>T</b> (around 4.2 kHz), <b>CH</b> (around 3.2 kHz), <b>F</b> (the high hiss, around 9 kHz) and <b>K</b> (around 4 kHz). You switch on the ones you want to treat. When a band goes above the THRESHOLD, only that zone is turned down; the rest of the vocal doesn’t move.</p>
+<p>Each detector only touches <b>its own</b> sound. The DE-ESSER listens to the first 30 ms of each sound before treating it: an attack that drops right away is a T or a K (the K drops above 9 kHz), a hiss that holds is an S, a CH or an F depending on its shape. Only that sound’s detector acts: with F alone switched on, an S stays untouched.</p>
+<p><b>LIVE</b>: for recording while singing through the plugin. Latency drops to 3 ms; without the 30 ms of listening, sorting is done on the first milliseconds of the sound, slightly less precise. Unticked, it’s the mix mode, the most accurate.</p>
 <p>The detector also checks how much room the band takes in the sound: a bright voice has a lot of top end everywhere, and its vowels are not mistaken for S’s. A band has to weigh clearly more than usual in that voice to be turned down.</p>
-<p>The view shows what is removed, <b>sound by sound</b>: the vocal level, the removed part in colour, and the letter of the sound turned down (S, T, CH, F) above each removal, with its reduction. The dotted line is the THRESHOLD: drag it right in the view; the thin line is the detected level.</p>
+<p>The view shows what is removed, <b>sound by sound</b>: the vocal level, the removed part in colour, and the letter of the sound turned down (S, T, CH, F, K) above each removal, with its reduction. The dotted line is the THRESHOLD: drag it right in the view; the thin line is the detected level.</p>
 <ul>
   <li><b>RANGE</b>: the strongest reduction allowed.</li>
   <li><b>CLARITY</b>: gives back brightness and air (a soft shelf from 3 kHz), but fades out while a sound is being turned down: the brightness comes back, not the S’s.</li>
@@ -62,7 +64,8 @@
   <tr><td>THRESHOLD</td><td>−60 – 0 dB</td><td>Above it, the sound is turned down (AUTO).</td></tr>
   <tr><td>RANGE</td><td>0 – 24 dB</td><td>The strongest reduction (AUTO).</td></tr>
   <tr><td>FREQ</td><td>3 – 10 kHz</td><td>Where your S’s are (AUTO).</td></tr>
-  <tr><td>S · T · CH · F</td><td>on · off</td><td>The sounds treated (AUTO).</td></tr>
+  <tr><td>S · T · CH · F · K</td><td>on · off</td><td>The sounds treated, and only them (AUTO).</td></tr>
+  <tr><td>LIVE</td><td>ticked · unticked</td><td>3 ms latency for recording through, slightly less precise sorting (AUTO).</td></tr>
   <tr><td>CLARITY</td><td>0 – 100 %</td><td>Brightness given back without the S’s (AUTO).</td></tr>
   <tr><td>LISTEN</td><td>on · off</td><td>Only what is removed (AUTO).</td></tr>
   <tr><td>TOUT RÉDUIRE</td><td>0 – 100 % per family</td><td>Lowers the whole family (MANUAL).</td></tr>

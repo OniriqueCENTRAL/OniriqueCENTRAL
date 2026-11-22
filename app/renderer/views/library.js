@@ -365,7 +365,7 @@ export function detailView(id) {
     h('div', { class: 'detail', style: { 'margin-top': '14px', '--accent': product.accent } },
       h('div', null,
         // Une image choisie par un admin passe avant la démo fabriquée automatiquement.
-        product.image && product.imageManual ? wholeImage(product) : product.demo ? demoView(product) : cover(product, null),
+        product.image ? wholeImage(product) : product.demo ? demoView(product) : cover(product, null),
         h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Le plugin'),
           h('div', { class: 'desc' }, (product.description || product.tagline).split(/\n{2,}/).map((text) => h('p', null, text))),
           // Le fondateur à l'origine du plugin ; son nom mène à son Instagram, comme dans les crédits.

@@ -3,21 +3,23 @@
   "replace": true,
   "items": [
    {
-    "src": "deesser-auto.mp4",
+    "src": "deesser-auto-k.mp4",
     "fr": {
      "kicker": "Mode AUTO",
-     "title": "Ce qui est retiré, son par son",
+     "title": "Seulement ce que tu coches",
      "text": [
       "Un de-esser comme tu les connais : un THRESHOLD, et tout ce qui siffle au-dessus est baissé. Sa ligne se glisse directement dans la vue.",
-      "Tu choisis ce que tu traites, S, T, CH ou F, et tu vois en direct ce qui est retiré : la lettre du son baissé s'affiche au-dessus de chaque retrait."
+      "Tu coches ce que tu traites, S, T, CH, F ou K, et il ne touche qu'à ça : il écoute chaque son avant de le traiter pour savoir ce que c'est. La lettre du son baissé s'affiche au-dessus de chaque retrait.",
+      "Tu enregistres en chantant à travers le plugin ? Coche LIVE : presque pas de latence, avec un tri un peu moins précis."
      ]
     },
     "en": {
      "kicker": "AUTO mode",
-     "title": "What's removed, sound by sound",
+     "title": "Only what you tick",
      "text": [
       "A de-esser as you know it: a THRESHOLD, and everything hissing above it is turned down. Its line drags right in the view.",
-      "Pick what you treat, S, T, CH or F, and see live what's removed: the letter of the lowered sound shows above each removal."
+      "Tick what you treat, S, T, CH, F or K, and it touches nothing else: it listens to each sound before treating it to know what it is. The letter of the lowered sound shows above each removal.",
+      "Recording while singing through the plugin? Tick LIVE: almost no latency, with slightly less precise sorting."
      ]
     }
    },
@@ -46,16 +48,16 @@
      "kicker": "Mode MANUEL",
      "title": "Chaque S, à la main",
      "text": [
-      "Tu lances ta prise dans ton DAW : elle s'enregistre toute seule et se découpe au fur et à mesure. Chaque S, chaque CH, chaque P, chaque respiration apparaît à part.",
-      "Tu le survoles, tu l'entends. Tu le glisses vers le bas, il baisse, et rien d'autre ne bouge. TOUT RÉDUIRE baisse toute la famille d'un coup, les plus forts davantage ; ceux que tu as réglés à la main ne bougent plus."
+      "Tu lances ta prise dans ton DAW : elle s'enregistre toute seule et se découpe au fur et à mesure. Chaque S, chaque CH, chaque T, chaque K, chaque P, chaque respiration apparaît à part.",
+      "Tu le survoles, tu l'entends. Tu le glisses vers le bas, il baisse, et rien d'autre ne bouge. TOUT RÉDUIRE baisse toute la famille d'un coup, les plus forts davantage, et la réduction de chacun s'affiche sur sa ligne ; ceux que tu as réglés à la main ne bougent plus."
      ]
     },
     "en": {
      "kicker": "MANUAL mode",
      "title": "Every S, by hand",
      "text": [
-      "Play your take in your DAW: it records itself and is cut up as it goes. Every S, every CH, every P, every breath shows up on its own.",
-      "Hover it, hear it. Drag it down, it goes down, and nothing else moves. TOUT RÉDUIRE (reduce all) lowers the whole family at once, the loudest ones more; the ones you set by hand stay put."
+      "Play your take in your DAW: it records itself and is cut up as it goes. Every S, every CH, every T, every K, every P, every breath shows up on its own.",
+      "Hover it, hear it. Drag it down, it goes down, and nothing else moves. TOUT RÉDUIRE (reduce all) lowers the whole family at once, the loudest ones more, and each one's reduction shows on its line; the ones you set by hand stay put."
      ]
     }
    },
@@ -80,8 +82,8 @@
    }
   ],
   "foot": {
-   "fr": "Tes réglages restent dans ton projet. 3 ms de latence, la même dans les deux modes. 10 presets d'usine, A / B / C, Windows et Mac (VST3 et AU).",
-   "en": "Your settings stay in your project. 3 ms of latency, the same in both modes. 10 factory presets, A / B / C, Windows and Mac (VST3 and AU)."
+   "fr": "Tes réglages restent dans ton projet. 33 ms de latence, compensée par ton DAW (3 ms en LIVE). 10 presets d'usine, A / B / C, Windows et Mac (VST3 et AU).",
+   "en": "Your settings stay in your project. 33 ms of latency, compensated by your DAW (3 ms in LIVE). 10 factory presets, A / B / C, Windows and Mac (VST3 and AU)."
   }
  },
  "onirique-f76": {

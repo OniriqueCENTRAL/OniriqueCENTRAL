@@ -898,9 +898,10 @@ app.whenReady().then(async () => {
   handle('admin:pick', pickFile);
 
   /**
-   * Fabrique la démo interactive d'un plugin à partir de son .vst3 (outil onirique-probe : il charge le plugin,
-   * ouvre son interface à l'écran et photographie chaque bouton à chaque position), puis l'envoie au serveur
-   * avec l'image de l'interface. Un échec ici n'annule pas la version déjà publiée.
+   * L'image de l'interface d'un plugin qui n'en a pas encore, à partir de son .vst3 (outil onirique-probe : il charge
+   * le plugin et ouvre son interface à l'écran). Plus de démo interactive : les fiches montrent des vidéos, sinon
+   * l'image. Un plugin qui a déjà son image (les images HD des fiches) n'est pas touché. Un échec ici n'annule pas la
+   * version déjà publiée.
    */
   async function publishDemo(productId, vst3Path, report) {
     const probe = app.isPackaged
@@ -911,6 +912,7 @@ app.whenReady().then(async () => {
     // Le plugin est photographié activé : sans licence sur ce PC, sa page « Activation requise » couvre l'interface
     // et se retrouve sur l'image du produit et dans toute la démo.
     const product = await productById(productId);
+    if (product.image) return;
     if (product.priceCents > 0) {
       await activateHere(product).catch(() => {});
       if (!installer.hasLicense(product.slug)) {
@@ -938,7 +940,6 @@ app.whenReady().then(async () => {
         });
       });
       await api.upload('PUT', `/api/admin/products/${productId}/image`, path.join(out, 'base.png'), 'image/png', () => {});
-      await api.upload('PUT', `/api/admin/products/${productId}/demo`, path.join(out, 'demo.json'), 'application/octet-stream', (ratio) => report('demo-upload', ratio));
     } finally {
       fs.rmSync(out, { recursive: true, force: true });
     }

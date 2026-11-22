@@ -10,12 +10,14 @@
 
 <h2 id="de-vue">Vue d’ensemble</h2>
 <p>ONIRIQUE DE-ESSER traite ce qui siffle, claque ou souffle dans une voix, de deux façons. En <b>AUTO</b>, c’est un de-esser classique réglé par un THRESHOLD, qui travaille tout seul pendant la lecture. En <b>MANUEL</b>, il capture ta prise, la découpe en événements (chaque S, chaque CH, chaque P, chaque respiration) et tu règles chacun à la main.</p>
-<p>En AUTO, rien n’est enregistré. 3 ms de latence, la même dans les deux modes : passer de l’un à l’autre ne décale rien. Mono ou stéréo.</p>
+<p>En AUTO, rien n’est enregistré. 33 ms de latence, compensée par ton DAW, la même dans les deux modes : passer de l’un à l’autre ne décale rien. En AUTO, la case LIVE la ramène à 3 ms pour enregistrer à travers le plugin. Mono ou stéréo.</p>
 
 <h2 id="de-auto">1. Le mode AUTO</h2>
-<p>Un détecteur par son, chacun sur sa bande : <b>S</b> (à la fréquence FREQ), <b>T</b> (vers 4,2 kHz), <b>CH</b> (vers 3,2 kHz) et <b>F</b> (le souffle aigu, vers 9 kHz). Tu coches ceux que tu veux traiter. Quand le niveau d’une bande dépasse le THRESHOLD, seule cette zone est baissée, le reste de la voix ne bouge pas.</p>
+<p>Un détecteur par son, chacun sur sa bande : <b>S</b> (à la fréquence FREQ), <b>T</b> (vers 4,2 kHz), <b>CH</b> (vers 3,2 kHz), <b>F</b> (le souffle aigu, vers 9 kHz) et <b>K</b> (vers 4 kHz). Tu coches ceux que tu veux traiter. Quand le niveau d’une bande dépasse le THRESHOLD, seule cette zone est baissée, le reste de la voix ne bouge pas.</p>
+<p>Chaque détecteur ne touche qu’à <b>son</b> son. Le DE-ESSER écoute les 30 premières ms de chaque son avant de le traiter : une attaque qui retombe aussitôt est un T ou un K (le K retombe au-dessus de 9 kHz), un souffle qui tient est un S, un CH ou un F selon sa forme. Seul le détecteur de ce son agit : avec F coché seul, un S reste intact.</p>
+<p><b>LIVE</b> : pour enregistrer en chantant à travers le plugin. La latence passe à 3 ms ; sans les 30 ms d’écoute, le tri se fait sur les premières ms du son, un peu moins précis. Décoché, c’est le mode mix, le plus juste.</p>
 <p>Le détecteur regarde aussi la place que prend la bande dans le son : une voix brillante a beaucoup d’aigu partout, ses voyelles ne sont pas prises pour des S. Une bande doit peser nettement plus que d’habitude dans cette voix pour être baissée.</p>
-<p>La vue montre ce qui est retiré, <b>son par son</b> : le niveau de la voix, la part retirée en couleur, et la lettre du son baissé (S, T, CH, F) au-dessus de chaque retrait, avec sa réduction. La ligne pointillée est le THRESHOLD : tu la glisses directement dans la vue, le trait fin est le niveau détecté.</p>
+<p>La vue montre ce qui est retiré, <b>son par son</b> : le niveau de la voix, la part retirée en couleur, et la lettre du son baissé (S, T, CH, F, K) au-dessus de chaque retrait, avec sa réduction. La ligne pointillée est le THRESHOLD : tu la glisses directement dans la vue, le trait fin est le niveau détecté.</p>
 <ul>
   <li><b>RANGE</b> : la réduction la plus forte permise.</li>
   <li><b>CLARITY</b> : rend de l’éclat et de l’air (une étagère douce dès 3 kHz), mais s’efface pendant qu’un son est baissé : l’éclat revient, pas les S.</li>
@@ -62,7 +64,8 @@
   <tr><td>THRESHOLD</td><td>−60 – 0 dB</td><td>Au-dessus, le son est baissé (AUTO).</td></tr>
   <tr><td>RANGE</td><td>0 – 24 dB</td><td>La réduction la plus forte (AUTO).</td></tr>
   <tr><td>FREQ</td><td>3 – 10 kHz</td><td>Où sont tes S (AUTO).</td></tr>
-  <tr><td>S · T · CH · F</td><td>allumé · éteint</td><td>Les sons traités (AUTO).</td></tr>
+  <tr><td>S · T · CH · F · K</td><td>allumé · éteint</td><td>Les sons traités, et eux seuls (AUTO).</td></tr>
+  <tr><td>LIVE</td><td>coché · décoché</td><td>Latence de 3 ms pour enregistrer à travers, tri un peu moins précis (AUTO).</td></tr>
   <tr><td>CLARITY</td><td>0 – 100 %</td><td>L’éclat rendu sans les S (AUTO).</td></tr>
   <tr><td>LISTEN</td><td>allumé · éteint</td><td>Seulement ce qui est retiré (AUTO).</td></tr>
   <tr><td>TOUT RÉDUIRE</td><td>0 – 100 % par famille</td><td>Baisse la famille d’un coup (MANUEL).</td></tr>
