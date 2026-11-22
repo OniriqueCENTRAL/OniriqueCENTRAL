@@ -84,48 +84,138 @@
    "en": "Your settings stay in your project. 3 ms of latency, the same in both modes. 10 factory presets, A / B / C, Windows and Mac (VST3 and AU)."
   }
  },
- "onirique-f76": [
-  {
-   "src": "f76.mp4",
-   "fr": {
-    "kicker": "Pousse, il compresse",
-    "title": "INPUT, BLACK ou BLUE",
-    "text": [
-     "Tu pousses INPUT et le VU plonge. Tu passes en BLUE pour le grain de la première génération.",
-     "Le MIX ramène le son direct pour une compression parallèle, parfaitement en phase."
-    ]
+ "onirique-f76": {
+  "replace": true,
+  "items": [
+   {
+    "src": "f76-compresse.mp4",
+    "fr": {
+     "kicker": "Le compresseur FET",
+     "title": "Pousse INPUT, il compresse",
+     "text": [
+      "Le compresseur qu'on met sur une voix rap pour la tenir devant, sur une caisse claire pour qu'elle claque, sur une basse pour la serrer.",
+      "Tu pousses INPUT dans le compresseur et le VU plonge. ATTACK va de 20 à 800 µs, RELEASE de 50 ms à 1,1 s. Le RATIO se choisit en un clic : 4, 8, 12, 20, ou ALL, tous les boutons enfoncés, pour l'écrasement qui a fait sa légende."
+     ]
+    },
+    "en": {
+     "kicker": "The FET compressor",
+     "title": "Push INPUT, it compresses",
+     "text": [
+      "The compressor you put on a rap vocal to keep it up front, on a snare to make it crack, on a bass to tighten it.",
+      "Push INPUT into the compressor and the VU dives. ATTACK goes from 20 to 800 µs, RELEASE from 50 ms to 1.1 s. Pick the RATIO in one click: 4, 8, 12, 20, or ALL, every button pressed in, for the crush that made it a legend."
+     ]
+    }
    },
-   "en": {
-    "kicker": "Push it, it compresses",
-    "title": "INPUT, BLACK or BLUE",
-    "text": [
-     "Push INPUT and the VU dives. Switch to BLUE for the grit of the first generation.",
-     "MIX brings the dry sound back for parallel compression, perfectly in phase."
-    ]
-   }
-  }
- ],
- "onirique-l2a": [
-  {
-   "src": "l2a.mp4",
-   "fr": {
-    "kicker": "Deux boutons suffisent",
-    "title": "PEAK REDUCTION, GAIN",
-    "text": [
-     "Tu montes PEAK REDUCTION : la cellule optique nivelle la voix sans qu'on l'entende travailler. GAIN rattrape le niveau.",
-     "LIMIT tient davantage les crêtes."
-    ]
+   {
+    "src": "f76-versions.mp4",
+    "fr": {
+     "kicker": "Deux versions",
+     "title": "BLACK ou BLUE",
+     "text": [
+      "Juste au-dessus du VU : BLACK, propre et serré, et BLUE, la première génération, plus colorée, avec plus de grain et des médiums en avant.",
+      "Le VU montre la réduction de gain, ou ton niveau de sortie avec +8 et +4."
+     ]
+    },
+    "en": {
+     "kicker": "Two versions",
+     "title": "BLACK or BLUE",
+     "text": [
+      "Right above the VU: BLACK, clean and tight, and BLUE, the first generation, more coloured, with more grit and mids up front.",
+      "The VU shows gain reduction, or your output level with +8 and +4."
+     ]
+    }
    },
-   "en": {
-    "kicker": "Two knobs are enough",
-    "title": "PEAK REDUCTION, GAIN",
-    "text": [
-     "Turn up PEAK REDUCTION: the optical cell levels the vocal without you hearing it work. GAIN makes up the level.",
-     "LIMIT holds the peaks more."
-    ]
+   {
+    "src": "f76-mix.mp4",
+    "fr": {
+     "kicker": "En bas",
+     "title": "MIX et OVERSAMPLING",
+     "text": [
+      "Le MIX ramène le son direct sous le son compressé : de la compression parallèle, parfaitement en phase.",
+      "L'OVERSAMPLING va jusqu'à 8x, pour des aigus propres même quand ça écrase fort."
+     ]
+    },
+    "en": {
+     "kicker": "At the bottom",
+     "title": "MIX and OVERSAMPLING",
+     "text": [
+      "MIX brings the dry sound back under the compressed one: parallel compression, perfectly in phase.",
+      "OVERSAMPLING goes up to 8x, for clean highs even when it crushes hard."
+     ]
+    }
    }
+  ],
+  "foot": {
+   "fr": "9 presets d'usine, A / B / C, Windows et Mac (VST3 et AU).",
+   "en": "9 factory presets, A / B / C, Windows and Mac (VST3 and AU)."
   }
- ],
+ },
+ "onirique-l2a": {
+  "replace": true,
+  "items": [
+   {
+    "src": "l2a-niveler.mp4",
+    "fr": {
+     "kicker": "Le compresseur optique",
+     "title": "Deux boutons suffisent",
+     "text": [
+      "Celui qui nivelle une voix sans qu'on l'entende travailler. Tu montes PEAK REDUCTION pour la quantité de compression, GAIN pour rattraper le niveau.",
+      "La cellule optique réagit en douceur, se relâche lentement et garde le naturel de la voix, de la basse ou d'une guitare acoustique."
+     ]
+    },
+    "en": {
+     "kicker": "The optical compressor",
+     "title": "Two knobs are enough",
+     "text": [
+      "The one that levels a vocal without you hearing it work. Turn up PEAK REDUCTION for the amount of compression, GAIN to make up the level.",
+      "The optical cell reacts gently, lets go slowly and keeps the natural feel of a vocal, a bass or an acoustic guitar."
+     ]
+    }
+   },
+   {
+    "src": "l2a-modes.mp4",
+    "fr": {
+     "kicker": "Deux modes",
+     "title": "COMPRESS ou LIMIT",
+     "text": [
+      "COMPRESS pour une compression douce, LIMIT pour tenir davantage les crêtes.",
+      "Le VU au centre montre la réduction de gain, ou ton niveau de sortie avec +10 et +4."
+     ]
+    },
+    "en": {
+     "kicker": "Two modes",
+     "title": "COMPRESS or LIMIT",
+     "text": [
+      "COMPRESS for gentle compression, LIMIT to hold the peaks more.",
+      "The VU in the middle shows gain reduction, or your output level with +10 and +4."
+     ]
+    }
+   },
+   {
+    "src": "l2a-mix.mp4",
+    "fr": {
+     "kicker": "En bas",
+     "title": "MIX et OVERSAMPLING",
+     "text": [
+      "Le MIX ramène le son direct sous le son compressé : de la compression parallèle, parfaitement en phase.",
+      "L'OVERSAMPLING va jusqu'à 8x."
+     ]
+    },
+    "en": {
+     "kicker": "At the bottom",
+     "title": "MIX and OVERSAMPLING",
+     "text": [
+      "MIX brings the dry sound back under the compressed one: parallel compression, perfectly in phase.",
+      "OVERSAMPLING goes up to 8x."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "9 presets d'usine, A / B / C, Windows et Mac (VST3 et AU).",
+   "en": "9 factory presets, A / B / C, Windows and Mac (VST3 and AU)."
+  }
+ },
  "vocalbox": [
   {
    "src": "vocalbox-chaine.mp4",
