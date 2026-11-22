@@ -1074,5 +1074,410 @@
    "fr": "Presets d'usine, Windows et Mac (VST3 et AU).",
    "en": "Factory presets, Windows and Mac (VST3 and AU)."
   }
+ },
+ "onirique-verb": {
+  "replace": true,
+  "items": [
+   {
+    "src": "verb-espaces.mp4",
+    "fr": {
+     "kicker": "Six espaces",
+     "title": "Le portail",
+     "text": [
+      "Six espaces pour la voix : ROOM, PLATE I, PLATE II, HALL, SHIMMER et ONIRIQUE, une salle immense et sombre qui ondule et rêve.",
+      "LE PORTAIL montre la reverb de face : il suffit de glisser dedans pour régler sa taille et sa durée. Le MIX garde ta voix entière jusqu'à 50 %, et son cadenas garde ton dosage quand tu changes de preset."
+     ]
+    },
+    "en": {
+     "kicker": "Six spaces",
+     "title": "The portal",
+     "text": [
+      "Six spaces for the vocal: ROOM, PLATE I, PLATE II, HALL, SHIMMER and ONIRIQUE, a huge, dark hall that ripples and dreams.",
+      "THE PORTAL shows the reverb face on: just drag inside it to set its size and length. MIX keeps your vocal whole up to 50%, and its lock keeps your amount when you change presets."
+     ]
+    }
+   },
+   {
+    "src": "verb-faconner.mp4",
+    "fr": {
+     "kicker": "La façonner",
+     "title": "EQ, DUCKING, CLEAN, INFINITE",
+     "text": [
+      "Un EQ IN sur ce qui entre dans la reverb et un EQ OUT sur la queue, à tirer à la souris.",
+      "DUCKING efface la reverb quand tu chantes et la rouvre entre les phrases. CLEAN retire les sifflantes et les bas-médiums qui embouent. INFINITE fige la queue sans fin."
+     ]
+    },
+    "en": {
+     "kicker": "Shape it",
+     "title": "EQ, DUCKING, CLEAN, INFINITE",
+     "text": [
+      "An IN EQ on what goes into the reverb and an OUT EQ on the tail, dragged with the mouse.",
+      "DUCKING clears the reverb while you sing and opens it between phrases. CLEAN removes sibilance and muddy low mids. INFINITE freezes the tail forever."
+     ]
+    }
+   },
+   {
+    "src": "verb-rythme.mp4",
+    "fr": {
+     "kicker": "Au tempo",
+     "title": "STUTTER et PULSE",
+     "text": [
+      "Le bouton BPM cale la longueur de la reverb et le pre-delay sur des valeurs de notes, au tempo du DAW ou au tien.",
+      "STUTTER découpe la queue au tempo (CHOP, REPEAT, RAMP) et PULSE la fait respirer."
+     ]
+    },
+    "en": {
+     "kicker": "In time",
+     "title": "STUTTER and PULSE",
+     "text": [
+      "The BPM button locks the reverb length and pre-delay to note values, at the DAW's tempo or yours.",
+      "STUTTER chops the tail in time (CHOP, REPEAT, RAMP) and PULSE makes it breathe."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Aucune latence, presets d'usine et utilisateur, VST3 pour Windows, VST3 et Audio Unit pour Mac.",
+   "en": "Zero latency, factory and user presets, VST3 on Windows, VST3 and Audio Unit on Mac."
+  }
+ },
+ "onirique-echobox": {
+  "replace": true,
+  "items": [
+   {
+    "src": "echo-character.mp4",
+    "fr": {
+     "kicker": "CHARACTER",
+     "title": "Du numérique pur à la bande usée",
+     "text": [
+      "Un delay créatif qui voyage, d'un seul bouton, du numérique le plus pur à la bande la plus usée.",
+      "Tout à gauche, chaque répétition est la copie exacte du son. Vers la droite, une bande chaude qui sature doucement, puis une bande usée, sombre, qui pleure. L'écran passe de la puce mémoire au magnéto à bobines."
+     ]
+    },
+    "en": {
+     "kicker": "CHARACTER",
+     "title": "From pure digital to worn tape",
+     "text": [
+      "A creative delay that travels, with one knob, from the purest digital to the most worn-out tape.",
+      "Fully left, every repeat is an exact copy of the sound. Turning right, a warm tape that saturates gently, then a worn, dark, wobbling tape. The screen turns from a memory chip into a reel-to-reel."
+     ]
+    }
+   },
+   {
+    "src": "echo-echo.mp4",
+    "fr": {
+     "kicker": "ECHO",
+     "title": "TIME, FEEDBACK, têtes, FREEZE",
+     "text": [
+      "TIME de 20 ms à 2 s ou SYNC sur le tempo, FEEDBACK jusqu'à 110 %, où l'écho s'emballe et chante tout seul.",
+      "Trois têtes de lecture se combinent comme sur un écho à bande multi-têtes pour créer des rythmes. FREEZE fige la bande et la fait tourner en boucle pendant que tu joues par-dessus."
+     ]
+    },
+    "en": {
+     "kicker": "ECHO",
+     "title": "TIME, FEEDBACK, heads, FREEZE",
+     "text": [
+      "TIME from 20 ms to 2 s or SYNC to the tempo, FEEDBACK up to 110%, where the echo runs away and sings on its own.",
+      "Three playback heads combine like a multi-head tape echo to build rhythms. FREEZE locks the tape into a loop while you play over it."
+     ]
+    }
+   },
+   {
+    "src": "echo-colour.mp4",
+    "fr": {
+     "kicker": "COLOUR",
+     "title": "PITCH, WOBBLE, PING-PONG, SPACE",
+     "text": [
+      "PITCH fait monter ou descendre les répétitions de -12 à +12 demi-tons, en cascade. WOBBLE rend le temps instable, pleurage côté bande, chorus côté numérique.",
+      "PING-PONG fait passer les échos d'un côté à l'autre, SPACE les fait tomber dans une réverbe."
+     ]
+    },
+    "en": {
+     "kicker": "COLOUR",
+     "title": "PITCH, WOBBLE, PING-PONG, SPACE",
+     "text": [
+      "PITCH moves the repeats up or down from -12 to +12 semitones, cascading. WOBBLE makes time unstable, wow on tape, chorus on digital.",
+      "PING-PONG bounces the echoes side to side, SPACE drops them into a reverb."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "23 presets d'usine, A/B, aucune latence. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "23 factory presets, A/B, zero latency. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
+ },
+ "based": {
+  "replace": true,
+  "items": [
+   {
+    "src": "based-chaine.mp4",
+    "fr": {
+     "kicker": "La chaîne",
+     "title": "L'ordre se change sans clic",
+     "text": [
+      "Noise Gate, SSL Channel, deux De-Esser, Saturation, 1176, Fairchild 670 et EQ paramétrique dans un seul plugin.",
+      "Glisse un module pour changer l'ordre de traitement, clique-le pour l'allumer ou le couper."
+     ]
+    },
+    "en": {
+     "kicker": "The chain",
+     "title": "Reorder without a fuss",
+     "text": [
+      "Noise Gate, SSL Channel, two De-Essers, Saturation, 1176, Fairchild 670 and a parametric EQ in one plugin.",
+      "Drag a module to change the processing order, click it to switch it on or off."
+     ]
+    }
+   },
+   {
+    "src": "based-modules.mp4",
+    "fr": {
+     "kicker": "Les modules",
+     "title": "Saturation, 1176, SSL",
+     "text": [
+      "La saturation en Tape, Tube ou Transformer, avec oversampling jusqu'à 8X. Le 1176 et ses ratios, la tranche SSL et son compresseur.",
+      "Tout est sur une seule page, sans menu à ouvrir."
+     ]
+    },
+    "en": {
+     "kicker": "The modules",
+     "title": "Saturation, 1176, SSL",
+     "text": [
+      "Saturation in Tape, Tube or Transformer, with up to 8X oversampling. The 1176 and its ratios, the SSL channel and its compressor.",
+      "Everything on one page, no menus to open."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "9 presets d'usine, zéro allocation dans le thread audio.",
+   "en": "9 factory presets, zero allocation on the audio thread."
+  }
+ },
+ "onirique-glue": {
+  "replace": true,
+  "items": [
+   {
+    "src": "glue-comp.mp4",
+    "fr": {
+     "kicker": "Le compresseur de bus",
+     "title": "Celui qui colle les mix",
+     "text": [
+      "La façade et les réglages du compresseur de bus des grandes consoles des années 80. Le VU s'éclaire en rouge tant qu'il travaille.",
+      "Un seul VCA pour les deux côtés : l'image stéréo ne bouge pas. Propre au niveau normal, un peu crémeux quand tu le pousses. RATIO 2, 4 ou 10 pour 1."
+     ]
+    },
+    "en": {
+     "kicker": "The bus compressor",
+     "title": "The one that glues mixes",
+     "text": [
+      "The front panel and controls of the bus compressor from the great 80s consoles. The VU lights up red while it works.",
+      "One VCA for both sides: the stereo image doesn't move. Clean at normal level, a little creamy when pushed. RATIO 2, 4 or 10 to 1."
+     ]
+    }
+   },
+   {
+    "src": "glue-reglages.mp4",
+    "fr": {
+     "kicker": "Les réglages",
+     "title": "ATTACK, RELEASE AUTO, SC FILTER, MIX",
+     "text": [
+      "ATTACK et RELEASE à crans, et AUTO, qui relâche vite après un coup isolé et lentement quand la compression dure.",
+      "SC FILTER jusqu'à 500 Hz : la basse et le kick ne le font plus pomper. MIX pour la compression parallèle."
+     ]
+    },
+    "en": {
+     "kicker": "Controls",
+     "title": "ATTACK, AUTO RELEASE, SC FILTER, MIX",
+     "text": [
+      "Stepped ATTACK and RELEASE, plus AUTO, which lets go fast after a lone hit and slowly when compression lasts.",
+      "SC FILTER up to 500 Hz: bass and kick stop making it pump. MIX for parallel compression."
+     ]
+    }
+   },
+   {
+    "src": "glue-fade.mp4",
+    "fr": {
+     "kicker": "AUTO FADE",
+     "title": "Le fondu de la console",
+     "text": [
+      "L'AUTO FADE de la console : un fondu jusqu'au silence, et retour, en 1 à 60 secondes.",
+      "Survoler un réglage affiche sa valeur, un double-clic le remet à sa valeur de départ."
+     ]
+    },
+    "en": {
+     "kicker": "AUTO FADE",
+     "title": "The console fade",
+     "text": [
+      "The console's AUTO FADE: a fade down to silence and back, in 1 to 60 seconds.",
+      "Hover a control to see its value, double-click to reset it."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Mono ou stéréo, traitement à fréquence doublée. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Mono or stereo, double-rate processing. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
+ },
+ "onirique-weight": {
+  "replace": true,
+  "items": [
+   {
+    "src": "weight-bas.mp4",
+    "fr": {
+     "kicker": "LOW FREQUENCY",
+     "title": "Un bas qui pèse",
+     "text": [
+      "L'égaliseur de programme à lampes des années 50 et son célèbre tour du bas. BOOST relève le bas jusqu'à +13,5 dB, et les lampes épaississent la basse.",
+      "ATTEN retire du bas, centré plus haut : les deux ensemble, le sub monte et le bas-médium boueux se creuse juste au-dessus."
+     ]
+    },
+    "en": {
+     "kicker": "LOW FREQUENCY",
+     "title": "A low end with weight",
+     "text": [
+      "The 50s tube program equalizer and its famous low-end trick. BOOST lifts the lows up to +13.5 dB, and the tubes thicken the bass.",
+      "ATTEN cuts lows, centred higher: together, the sub rises and the muddy low mids dip right above."
+     ]
+    }
+   },
+   {
+    "src": "weight-haut.mp4",
+    "fr": {
+     "kicker": "HIGH FREQUENCY",
+     "title": "Un haut qui respire",
+     "text": [
+      "BOOST jusqu'à +18 dB, une cloche prolongée par une étagère très large : le haut s'ouvre et reste léger. BANDWIDTH règle sa largeur.",
+      "ATTEN adoucit le haut en pente douce. Les aigus ne passent pas par les lampes : ils restent propres."
+     ]
+    },
+    "en": {
+     "kicker": "HIGH FREQUENCY",
+     "title": "A top end that breathes",
+     "text": [
+      "BOOST up to +18 dB, a bell extended by a very wide shelf: the top opens up and stays light. BANDWIDTH sets its width.",
+      "ATTEN softens the top with a gentle slope. The highs skip the tubes: they stay clean."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Mono ou stéréo, traitement à fréquence doublée. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Mono or stereo, double-rate processing. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
+ },
+ "onirique-massif": {
+  "replace": true,
+  "items": [
+   {
+    "src": "massif-graves.mp4",
+    "fr": {
+     "kicker": "Graves et bas-médium",
+     "title": "Le réseau passif, tel quel",
+     "text": [
+      "Le grand égaliseur passif stéréo à lampes des studios de mastering. Le levier BOOST / OUT / CUT, puis le gain, la largeur et la fréquence.",
+      "Des cloches qui se resserrent quand on pousse, et des bandes qui se chargent l'une l'autre : le bas reste rond même quand on insiste."
+     ]
+    },
+    "en": {
+     "kicker": "Lows and low mids",
+     "title": "The passive network, as is",
+     "text": [
+      "The big passive stereo tube mastering equalizer. The BOOST / OUT / CUT lever, then gain, bandwidth and frequency.",
+      "Bells that tighten as you push, and bands that load each other: the low end stays round even when you insist."
+     ]
+    }
+   },
+   {
+    "src": "massif-aigus.mp4",
+    "fr": {
+     "kicker": "Aigus et haut-médium",
+     "title": "Passif et classe A",
+     "text": [
+      "Pour moitié le réseau passif, pour moitié une bande en classe A discrète : le haut s'ouvre avec la douceur du passif et la précision du discret.",
+      "LINK fait tourner ensemble les deux côtés ; passe-haut, passe-bas et gain de sortie par canal."
+     ]
+    },
+    "en": {
+     "kicker": "Highs and high mids",
+     "title": "Passive and class A",
+     "text": [
+      "Half the passive network, half a discrete class A band: the top opens with passive smoothness and discrete precision.",
+      "LINK turns both sides together; high-pass, low-pass and output gain per channel."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Mono ou stéréo, traitement à fréquence doublée. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Mono or stereo, double-rate processing. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
+ },
+ "onirique-doublebox": {
+  "replace": true,
+  "items": [
+   {
+    "src": "double-scene.mp4",
+    "fr": {
+     "kicker": "La scène",
+     "title": "Quatre doubles, à la souris",
+     "text": [
+      "Quatre doubles autour de ta voix, deux de chaque côté, comme si elle avait été rechantée.",
+      "Sur la scène, de gauche à droite la position stéréo, de bas en haut le niveau ; la molette désaccorde. Retard jusqu'à 100 ms, désaccord jusqu'à ±50 cents."
+     ]
+    },
+    "en": {
+     "kicker": "The stage",
+     "title": "Four doubles, by mouse",
+     "text": [
+      "Four doubles around your vocal, two on each side, as if it had been sung again.",
+      "On the stage, left to right is stereo position, bottom to top is level; the wheel detunes. Delay up to 100 ms, detune up to ±50 cents."
+     ]
+    }
+   },
+   {
+    "src": "double-pitch.mp4",
+    "fr": {
+     "kicker": "PITCH, FORMANT, DRIFT",
+     "title": "Des doubles qui vivent",
+     "text": [
+      "PITCH change la hauteur en gardant la voyelle, FORMANT change la voyelle en gardant la hauteur, ±12 demi-tons chacun, pour les voix de ton choix.",
+      "DRIFT fait dériver les doubles en hauteur et en temps, comme une vraie seconde prise."
+     ]
+    },
+    "en": {
+     "kicker": "PITCH, FORMANT, DRIFT",
+     "title": "Doubles that live",
+     "text": [
+      "PITCH changes the pitch and keeps the vowel, FORMANT changes the vowel and keeps the pitch, ±12 semitones each, on the voices you pick.",
+      "DRIFT makes the doubles wander in pitch and time, like a real second take."
+     ]
+    }
+   },
+   {
+    "src": "double-manip.mp4",
+    "fr": {
+     "kicker": "MANIPULATE",
+     "title": "Un manipulateur de voix complet",
+     "text": [
+      "HARMONICS fait glisser les harmoniques sans changer la note, FM ajoute du grain puis un côté robot, ALTERNATOR descend jusqu'à l'octave du dessous.",
+      "RATIO, OCTAVE et GLIDE jouent sur la mélodie, SMEAR, STEREO et DETUNE sur l'espace, le tout dosé par son DRY / WET."
+     ]
+    },
+    "en": {
+     "kicker": "MANIPULATE",
+     "title": "A full voice manipulator",
+     "text": [
+      "HARMONICS slides the harmonics without changing the note, FM adds grit then a robotic edge, ALTERNATOR drops down to the octave below.",
+      "RATIO, OCTAVE and GLIDE work on the melody, SMEAR, STEREO and DETUNE on the space, all set by its DRY / WET."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Pensé pour une voix seule, 28 ms de latence déclarées au DAW. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Built for a single vocal, 28 ms latency reported to the DAW. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
  }
 }
