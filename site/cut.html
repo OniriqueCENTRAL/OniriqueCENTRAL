@@ -4826,23 +4826,25 @@ function watchAgent(since) {
   }, 15_000);
 }
 const VERDICT = { pour: "Pour", contre: "Contre", prudence: "Prudence" };
+const RUNNING_TEXT = "Il relit tout ce que l’arbre a appris, images comprises, sur le serveur et sans gêner le site : compte 10 à 20 minutes (tu peux fermer ce menu et revenir plus tard).";
 function agentView(brain, leaves, fill) {
   const a = brain.agent || { status: "jamais" };
   const ask = node("button", { className: "go", type: "button", textContent: a.running ? "Il relit l’arbre…" : "Demander son avis", disabled: !!a.running });
+  const stateLine = node("p", { className: "muted" });
   ask.onclick = async () => {
     ask.disabled = true; ask.textContent = "Il relit l’arbre…";
-    try { await bankFetch("/api/cut/brain/agent", { method: "POST" }); watchAgent(a.checkedAt); }
+    try { await bankFetch("/api/cut/brain/agent", { method: "POST" }); stateLine.textContent = RUNNING_TEXT; stateLine.hidden = false; watchAgent(a.checkedAt); }
     catch (error) { ask.disabled = false; ask.textContent = "Demander son avis"; alert(error.message); }
   };
   if (a.running) watchAgent(a.checkedAt);
-  const state = a.running ? "Il relit tout ce que l’arbre a appris, images comprises, sur le serveur et sans gêner le site : compte 10 à 20 minutes (tu peux fermer ce menu et revenir plus tard)."
+  const state = a.running ? RUNNING_TEXT
     : { jamais: "Il n’a encore rien relu. Il ne tourne que quand tu le lui demandes.",
       "sans-ia": "L’IA n’est pas encore installée sur le VPS (" + (a.error || "") + ") : en root, lance « onirique-superviseur », une seule fois. C’est gratuit, rien ne part à l’extérieur.",
       erreur: "Sa dernière relecture n’a pas abouti (" + (a.error || "erreur inconnue") + ")." + (a.at ? " Voici son avis précédent." : ""),
       ok: "" }[a.status] || "";
   const label = (key) => (leaves.get(key) ? leaves.get(key).branch.label + " › " + leaves.get(key).label : "");
   const kids = [node("div", { className: "row" }, ask, node("small", { className: "muted", textContent: a.at ? "Avis du " + dayText(a.at) + (a.model ? " · " + a.model : "") : "" }))];
-  if (state) kids.push(node("p", { className: "muted", textContent: state }));
+  stateLine.textContent = state; stateLine.hidden = !state; kids.push(stateLine);
   if (a.at) {
     if (a.resume) kids.push(node("p", { className: "agent-resume", textContent: a.resume }));
     if (a.alertes && a.alertes.length) kids.push(node("ul", { className: "agent-alerts" }, ...a.alertes.map((x) => node("li", { className: x.niveau },
