@@ -1686,5 +1686,52 @@
    "fr": "Windows et Mac (VST3 et AU).",
    "en": "Windows and Mac (VST3 and AU)."
   }
+ },
+ "onirique-pitchbox": {
+  "replace": true,
+  "items": [
+   {
+    "src": "pitch-transfer.mp4",
+    "fr": {
+     "kicker": "La prise",
+     "title": "Découpée en notes",
+     "text": [
+      "PitchBox analyse ta prise de voix et la découpe en notes, chacune avec sa justesse et sa courbe chantée.",
+      "Dans un DAW compatible ARA 2 (Studio One, Logic Pro, Cubase, REAPER…), la prise arrive toute seule. Dans les autres (FL Studio, Ableton Live…), TRANSFER l'enregistre au passage ; tu peux aussi glisser le fichier sur la fenêtre."
+     ]
+    },
+    "en": {
+     "kicker": "The take",
+     "title": "Cut into notes",
+     "text": [
+      "PitchBox analyses your vocal take and cuts it into notes, each with its tuning and sung curve.",
+      "In an ARA 2 DAW (Studio One, Logic Pro, Cubase, REAPER…), the take comes in by itself. In the others (FL Studio, Ableton Live…), TRANSFER records it as it plays; you can also drop the file on the window."
+     ]
+    }
+   },
+   {
+    "src": "pitch-correction.mp4",
+    "fr": {
+     "kicker": "La justesse",
+     "title": "D'un geste ou à la main",
+     "text": [
+      "DETECT KEY trouve la tonalité, AMOUNT dose la correction par gamme et SPEED la transition d'une note à l'autre.",
+      "Note par note : la hauteur, la MODULATION (ce qu'on garde du vibrato), le volume, et FORMANT pour déplacer le timbre sans changer la hauteur. Une modification s'entend aussitôt, sans nouveau rendu."
+     ]
+    },
+    "en": {
+     "kicker": "Tuning",
+     "title": "In one move or by hand",
+     "text": [
+      "DETECT KEY finds the key, AMOUNT sets how much the scale corrects and SPEED the move from note to note.",
+      "Note by note: pitch, MODULATION (how much vibrato stays), volume, and FORMANT to move the timbre without changing the pitch. Every change is heard at once, with no re-render."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Pensé pour une voix seule. Annuler / rétablir, export MIDI. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+   "en": "Built for a single vocal. Undo / redo, MIDI export. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
+  }
  }
 }
