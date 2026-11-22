@@ -207,8 +207,8 @@ async function work(id, leaves) {
 
 const view = (r) => ({ id: r.id, handle: r.handle, links: parse(r.links, []), status: r.status, step: r.step, progress: r.progress, error: r.error, author: r.author,
   at: r.created_at, updated: r.updated_at, ...parse(r.data, {}), thumbs: parse(r.thumbs, {}) });
-/** Les analyses pour le superviseur : leur résumé et leurs leçons, sans images. */
-export const accountsForAgent = () => all("SELECT handle, data FROM cut_accounts WHERE status = 'fini' ORDER BY id DESC LIMIT 3").map((r) => {
+/** Les analyses pour le superviseur : leur résumé et leurs leçons, sans images (les 6 dernières finies). */
+export const accountsForAgent = () => all("SELECT handle, data FROM cut_accounts WHERE status = 'fini' ORDER BY id DESC LIMIT 6").map((r) => {
   const d = parse(r.data, {});
   return { compte: r.handle, chiffres: d.account, avis: d.opinion && { resume: d.opinion.resume, ce_qui_marche: d.opinion.works, lecons: d.opinion.lessons } };
 });

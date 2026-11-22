@@ -186,6 +186,15 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .tiktok-seen { display: flex; gap: 10px; align-items: center; flex: 1 1 100%; color: var(--label); font-size: 13px; }
 .tiktok-seen img { width: 40px; height: 71px; object-fit: cover; border-radius: 6px; flex: none; }
 .accounts { display: grid; gap: 12px; }
+.checkup { display: grid; gap: 4px; margin: 0; padding: 10px 12px; list-style: none; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.25); }
+.checkup li { display: grid; grid-template-columns: 22px minmax(90px, max-content) 1fr; gap: 10px; align-items: center; padding: 6px 4px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.checkup li:hover { background: rgba(255,255,255,.04); }
+.checkup b { color: #fff; }
+.checkup small { color: var(--haze); font-size: 12px; }
+.checkup .tick { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font: 700 13px/1 var(--f-body); }
+.checkup .ok .tick { background: #22c55e; color: #04140a; box-shadow: 0 0 10px rgba(34,197,94,.45); }
+.checkup .wait .tick { border: 1px solid var(--line); color: var(--haze); }
+.checkup .ko .tick { background: rgba(var(--acc-lo), .6); color: #fff; }
 .account-ask { flex-wrap: nowrap; align-items: stretch; }
 .account-ask textarea { flex: 1; min-height: 52px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.35); color: var(--mist); font: 400 15px/1.5 var(--f-body); resize: vertical; }
 .account-ask textarea:focus { outline: none; border-color: var(--ember); }
@@ -4862,12 +4871,15 @@ function agentView(brain, leaves, fill) {
 // qui marche et des leçons, ajoutées à l’arbre d’un clic. ———
 let accountsPoll = 0;
 const bigNumber = (n) => (n == null ? "?" : n >= 1e6 ? String(Math.round(n / 1e5) / 10).replace(".", ",") + " M" : n >= 1e4 ? Math.round(n / 1e3) + " k" : String(n));
-function accountsView(leaves, fill) {
+function accountsView(brain, leaves, fill) {
   const box = node("div", { className: "accounts" });
   const field = node("textarea", { rows: 2, maxLength: 3000, placeholder: "https://www.tiktok.com/@compte (tout le compte), ou des liens de vidéos TikTok, un par ligne" });
   const go = node("button", { className: "go", type: "button", textContent: "Analyser" });
   const say = node("p", { className: "muted", textContent: "Le serveur lit les 40 dernières vidéos (chiffres, descriptions, musiques), regarde les meilleures, puis l’IA du VPS en tire ce qui marche. Compte 15 à 25 minutes ; tu peux fermer le menu et revenir plus tard." });
   const list = node("div", { className: "accounts-list" });
+  // Le récapitulatif : une ligne par compte, une encoche verte quand il est analysé ; s’il est pris en compte par le
+  // superviseur (avis donné après l’analyse) et combien de ses leçons sont dans l’arbre.
+  const checkup = node("ul", { className: "checkup" });
   go.onclick = async () => {
     go.disabled = true;
     try { await bankFetch("/api/cut/brain/accounts", jsonBody("POST", { url: field.value })); field.value = ""; await draw(); }
@@ -4906,17 +4918,34 @@ function accountsView(leaves, fill) {
           node("button", { className: "mini", type: "button", textContent: "En faire une leçon", onclick: () => fill(l.text, l.leaf, l.value, a.handle ? "https://www.tiktok.com/@" + a.handle : (a.links || [])[0] || "") }));
       })));
     }
-    return node("div", { className: "account-card" + (running ? " running" : "") }, ...kids);
+    const el = node("div", { className: "account-card" + (running ? " running" : "") }, ...kids);
+    el.dataset.id = a.id;
+    return el;
   };
   const draw = async () => {
     let data;
     try { data = await bankFetch("/api/cut/brain/accounts"); } catch (error) { list.replaceChildren(node("p", { className: "muted", textContent: error.message })); return; }
     list.replaceChildren(...data.accounts.map(card));
+    const agentAt = brain.agent && brain.agent.at || 0;
+    checkup.replaceChildren(...data.accounts.map((a) => {
+      const running = ["attente", "lecture", "ia"].includes(a.status), done = a.status === "fini";
+      const url = a.handle ? "https://www.tiktok.com/@" + a.handle : "";
+      const taught = brain.lessons.filter((x) => x.link && (x.link === url || (a.links || []).includes(x.link))).length;
+      const status = running ? (a.step || "En cours…") : !done ? "À relancer : " + (a.error || "l’analyse n’a pas abouti") : "Analysé le " + dayText(a.updated)
+        + (agentAt > a.updated ? " · pris en compte par le superviseur" : " · pris en compte au prochain avis du superviseur")
+        + (taught ? " · " + plural(taught, "leçon") + " dans l’arbre" : "");
+      const row = node("li", { className: done ? "ok" : running ? "wait" : "ko", title: "Voir l’analyse" },
+        node("span", { className: "tick", textContent: done ? "✓" : running ? "…" : "!" }),
+        node("b", { textContent: a.handle ? "@" + a.handle : plural((a.links || []).length, "vidéo") }), node("small", { textContent: status }));
+      row.onclick = () => { const c = list.querySelector('.account-card[data-id="' + a.id + '"]'); if (c) c.scrollIntoView({ behavior: "smooth", block: "start" }); };
+      return row;
+    }));
+    checkup.hidden = !data.accounts.length;
     clearTimeout(accountsPoll);
     if (data.accounts.some((a) => ["attente", "lecture", "ia"].includes(a.status)) && !$("tree-page").hidden) accountsPoll = setTimeout(draw, 8000);
   };
   draw();
-  box.append(node("div", { className: "row account-ask" }, field, go), say, list);
+  box.append(node("div", { className: "row account-ask" }, field, go), say, checkup, list);
   return box;
 }
 
@@ -5274,7 +5303,7 @@ async function renderTree() {
     form.open = true; form.scrollIntoView({ behavior: "smooth", block: "center" }); text.focus({ preventScroll: true });
   };
   box.replaceChildren(kpis, week, node("h3", { textContent: "L’avis du superviseur" }), agentView(brain, leaves, fill),
-    node("h3", { textContent: "Analyser un compte TikTok" }), accountsView(leaves, fill),
+    node("h3", { textContent: "Analyser un compte TikTok" }), accountsView(brain, leaves, fill),
     node("h3", { textContent: "Le réseau" }), neuralView(brain, leaves, openLeaf),
     node("h3", { textContent: "Ce qu’elle a vu, entendu et lu" }), seenView(brain), ...(props.length ? [node("h3", { textContent: "À valider (" + props.length + ")" }), node("div", { className: "tree-props" }, ...props)] : []),
     form, node("h3", { textContent: "L’arbre" }), tree, node("h3", { textContent: "Comment elle est nourrie" }), journal);
