@@ -16,14 +16,14 @@ export const SOLDES = {
   finTexte: "jusqu'au 1er décembre",
   remises: {
     vocalbox: 30, 'onirique-eclipse': 30, based: 30, 'onirique-halo': 30, 'onirique-vision': 30,
-    'onirique-n73': 20, 'onirique-doublebox': 20, 'onirique-resobox': 20, 'onirique-modbox': 20,
+    'onirique-n73': 20, 'onirique-doublebox': 20, 'onirique-resobox': 20, 'onirique-modbox': 20, 'onirique-de-esser': 20,
     'onirique-weight': 15, 'onirique-massif': 15, 'onirique-glue': 15, 'onirique-optobox': 15, 'onirique-pitchbox': 15,
-    'onirique-enhancer': 15,
+    'onirique-enhancer': 15, 'onirique-f76': 15, 'onirique-l2a': 15,
     tuner: 10, 'onirique-eq': 10, 'onirique-verb': 10, 'onirique-echobox': 10, 'onirique-vocal-mini': 10,
     'onirique-vocal-spacer': 10,
   },
   // Le dernier sorti passe en tête de la liste des offres.
-  enTete: 'onirique-vision',
+  enTete: 'onirique-de-esser',
   // Les abonnements (ALL ACCESS, ESSENTIAL ; pas la formule à la carte) : la remise porte sur le début de l'abonnement,
   // puis le prix normal revient tout seul. Un coupon Stripe s'en charge (payments.js) ; il n'est plus accepté après la date.
   abonnements: {

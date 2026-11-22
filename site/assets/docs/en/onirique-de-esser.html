@@ -1,0 +1,74 @@
+<ul class="toc">
+  <li><a href="#de-vue">Overview</a></li>
+  <li><a href="#de-auto">AUTO mode</a></li>
+  <li><a href="#de-manuel">MANUAL mode</a></li>
+  <li><a href="#de-familles">Sound families</a></li>
+  <li><a href="#de-gestes">Gestures</a></li>
+  <li><a href="#de-reglages">All the controls</a></li>
+  <li><a href="#de-conseils">Tips</a></li>
+</ul>
+
+<h2 id="de-vue">Overview</h2>
+<p>ONIRIQUE DE-ESSER handles what hisses, pops or breathes in a vocal, in two ways. In <b>AUTO</b>, it’s a classic de-esser set with a THRESHOLD, working on its own during playback. In <b>MANUAL</b> (MANUEL on the plugin), it captures your take, cuts it into events (every S, every CH, every P, every breath) and you set each one by hand.</p>
+<p>3 ms of latency, the same in both modes: switching never shifts anything. Mono or stereo.</p>
+
+<h2 id="de-auto">1. AUTO mode</h2>
+<p>One detector per sound, each on its own band: <b>S</b> (at the FREQ frequency), <b>T</b> (around 4.2 kHz), <b>CH</b> (around 3.2 kHz) and <b>F</b> (the high hiss, around 9 kHz). You switch on the ones you want to treat. When a band goes above the THRESHOLD, only that zone is turned down; the rest of the vocal doesn’t move.</p>
+<p>The detector also checks how much room the band takes in the sound: a bright voice has a lot of top end everywhere, and its vowels are not mistaken for S’s. A band has to weigh clearly more than usual in that voice to be turned down.</p>
+<p>The view shows what is removed, <b>sound by sound</b>: the vocal level, the removed part in colour, and the letter of the sound turned down (S, T, CH, F) above each removal, with its reduction. The dotted line is the THRESHOLD: drag it right in the view; the thin line is the detected level.</p>
+<ul>
+  <li><b>RANGE</b>: the strongest reduction allowed.</li>
+  <li><b>CLARITY</b>: gives back brightness and air (a soft shelf from 3 kHz), but fades out while a sound is being turned down: the brightness comes back, not the S’s.</li>
+  <li><b>LISTEN</b>: you only hear what is removed, to set FREQ and THRESHOLD by ear.</li>
+</ul>
+
+<h2 id="de-manuel">2. MANUAL mode</h2>
+<ol>
+  <li>Click <b>CAPTURE</b>, then play your take in the DAW. The take is recorded at its place in the project timeline and cut into events as it goes.</li>
+  <li>Pick a family (SIBILANCES, CONSONNES for consonants, RESPIRATIONS for breaths): its events show up.</li>
+  <li>Hover an event to hear it, drag it down to lower it. Click CAPTURE again to stop.</li>
+</ol>
+<p>During playback, every event you set is turned down <b>as a whole</b> for its duration, like clip gain drawn by hand, with a 5 ms fade (20 ms for a breath): no click, no filter, the sound stays your voice. Outside the events, nothing changes.</p>
+<p>Two views: <b>COLONNES</b> (columns), every event of the family side by side (their sizes compare at a glance, the former size stays as an outline when you lower one), and <b>TIMELINE</b>, the whole take with every sound in place and the playhead.</p>
+<p><b>TOUT RÉDUIRE</b> (reduce all) lowers a whole family at once: the most salient ones (those that stick out most from their phrase) more. An event set by hand no longer moves when you change TOUT RÉDUIRE; a double-click hands it back.</p>
+<p>Event settings are kept in your project. The captured take is saved separately on your computer (ONIRIQUE DE-ESSER/Captures folder): on another computer, the settings still apply, only the waveforms are missing.</p>
+
+<h2 id="de-familles">3. Sound families</h2>
+<div class="table"><table>
+  <tr><th>Family</th><th>Letters</th><th>What it is</th></tr>
+  <tr><td>SIBILANCES</td><td>S, Z, CH, F</td><td>A high hiss that lasts (over 45 ms). Z: a voiced S; CH: lower (2.5 to 4.5 kHz); F: mostly above 9 kHz.</td></tr>
+  <tr><td>CONSONNES</td><td>P, B, T, K</td><td>A short attack. P and B: the low thump of a plosive; T: a bright attack; K: a broader one.</td></tr>
+  <tr><td>RESPIRATIONS</td><td>R</td><td>A breath with no pitch, quieter than the voice, lasting over 100 ms.</td></tr>
+</table></div>
+
+<h2 id="de-gestes">4. Gestures</h2>
+<div class="table"><table>
+  <tr><th>Gesture</th><th>Effect</th></tr>
+  <tr><td>Hover</td><td>Hear the event (with its gain), when ÉCOUTE AU SURVOL (listen on hover) is on.</td></tr>
+  <tr><td>Drag down</td><td>Lower it (down to −30 dB, in 0.5 dB steps).</td></tr>
+  <tr><td>Double-click</td><td>Hand it back to TOUT RÉDUIRE.</td></tr>
+  <tr><td>Right-click</td><td>Listen, hand back to TOUT RÉDUIRE, ignore, set to 0 dB.</td></tr>
+  <tr><td>Left / right arrows</td><td>Previous / next event (and hear it).</td></tr>
+  <tr><td>Up / down arrows</td><td>+1 / −1 dB.</td></tr>
+  <tr><td>Space · Delete</td><td>Listen · ignore it (it stays as is).</td></tr>
+  <tr><td>Wheel (TIMELINE)</td><td>Zoom; Shift + wheel or drag the background to move.</td></tr>
+</table></div>
+
+<h2 id="de-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>MODE</td><td>AUTO · MANUEL</td><td>Switches with a 30 ms crossfade.</td></tr>
+  <tr><td>THRESHOLD</td><td>−60 – 0 dB</td><td>Above it, the sound is turned down (AUTO).</td></tr>
+  <tr><td>RANGE</td><td>0 – 24 dB</td><td>The strongest reduction (AUTO).</td></tr>
+  <tr><td>FREQ</td><td>3 – 10 kHz</td><td>Where your S’s are (AUTO).</td></tr>
+  <tr><td>S · T · CH · F</td><td>on · off</td><td>The sounds treated (AUTO).</td></tr>
+  <tr><td>CLARITY</td><td>0 – 100 %</td><td>Brightness given back without the S’s (AUTO).</td></tr>
+  <tr><td>LISTEN</td><td>on · off</td><td>Only what is removed (AUTO).</td></tr>
+  <tr><td>TOUT RÉDUIRE</td><td>0 – 100 % per family</td><td>Lowers the whole family (MANUAL).</td></tr>
+</table></div>
+
+<h2 id="de-conseils">Tips</h2>
+<div class="tip"><p><b>Find your S’s</b>: in AUTO, switch LISTEN on and turn FREQ until you only hear the hiss, then lower the THRESHOLD until S letters show up on the S’s, and nowhere else.</p></div>
+<div class="tip"><p><b>A lead take</b>: in MANUAL, TOUT RÉDUIRE at 40 % on sibilance, then go through the columns one by one with the arrows: fix by hand the two or three S’s that still sting.</p></div>
+<div class="tip"><p><b>Breaths</b>: TOUT RÉDUIRE at 50–70 % lowers them without cutting them; a vocal with no breath at all sounds fake.</p></div>
+<div class="tip"><p>If you change the take in your DAW, click CAPTURE again and replay the passage: the events of that passage are redone, the others keep their settings.</p></div>

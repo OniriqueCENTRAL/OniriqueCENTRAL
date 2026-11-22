@@ -1,0 +1,41 @@
+<ul class="toc">
+  <li><a href="#l2-vue">Vue d’ensemble</a></li>
+  <li><a href="#l2-cellule">La cellule optique</a></li>
+  <li><a href="#l2-mode">COMPRESS et LIMIT</a></li>
+  <li><a href="#l2-bas">MIX et OVERSAMPLING</a></li>
+  <li><a href="#l2-reglages">Tous les réglages</a></li>
+  <li><a href="#l2-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="l2-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE L2A est un <b>compresseur optique</b> : il nivelle une voix sans qu’on l’entende travailler. Deux boutons suffisent : <b>PEAK REDUCTION</b> pour la quantité de compression, <b>GAIN</b> pour rattraper le niveau. Le VU trône au centre, entre les deux.</p>
+<p>Mono ou stéréo. La latence est celle du suréchantillonnage choisi, déclarée au DAW.</p>
+
+<h2 id="l2-cellule">1. La cellule optique</h2>
+<p>Le son éclaire une cellule qui baisse le gain avec un léger retard, puis revient lentement, en deux temps : la plus grande part assez vite, le reste en une à plusieurs secondes. Plus elle a été éclairée longtemps, plus le retour est lent. C’est ce qui donne ce nivellement doux et musical, qui ne pompe pas.</p>
+
+<h2 id="l2-mode">2. COMPRESS et LIMIT</h2>
+<p><b>COMPRESS</b> : une compression douce, le ratio monte en douceur. <b>LIMIT</b> : un ratio plus fort, qui tient davantage les crêtes. Le caractère de la cellule reste le même dans les deux modes.</p>
+
+<h2 id="l2-bas">3. MIX et OVERSAMPLING</h2>
+<ul>
+  <li><b>MIX</b> : le son direct mélangé au son compressé, pour une compression parallèle, parfaitement en phase.</li>
+  <li><b>OVERSAMPLING</b> : OFF, 2x, 4x ou 8x. La nouvelle latence est déclarée au DAW.</li>
+  <li><b>METER</b> : le VU montre la réduction (GAIN RED) ou le niveau de sortie (+10, +4).</li>
+</ul>
+
+<h2 id="l2-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>PEAK REDUCTION</td><td>0 – 100</td><td>La quantité de compression.</td></tr>
+  <tr><td>GAIN</td><td>−12 – +30 dB</td><td>Le niveau de sortie.</td></tr>
+  <tr><td>MODE</td><td>COMPRESS · LIMIT</td><td>Douce ou plus ferme.</td></tr>
+  <tr><td>METER</td><td>GAIN RED · +10 · +4</td><td>Ce que montre le VU.</td></tr>
+  <tr><td>OVERSAMPLING</td><td>OFF · 2x · 4x · 8x</td><td>Aigus plus propres, un peu plus de latence.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Compression parallèle, en phase.</td></tr>
+</table></div>
+
+<h2 id="l2-conseils">Conseils</h2>
+<div class="tip"><p><b>Une voix posée</b> : COMPRESS, PEAK REDUCTION pour 3 à 6 dB de réduction sur les phrases, GAIN pour revenir au même niveau qu’en bypass.</p></div>
+<div class="tip"><p><b>Une basse égale</b> : PEAK REDUCTION vers 50, la cellule lisse les notes sans tuer l’attaque.</p></div>
+<div class="tip"><p><b>Après F76</b> : ONIRIQUE F76 attrape les crêtes, L2A nivelle derrière. Chacun travaille peu, la voix reste naturelle.</p></div>

@@ -1,0 +1,74 @@
+<ul class="toc">
+  <li><a href="#de-vue">Vue d’ensemble</a></li>
+  <li><a href="#de-auto">Le mode AUTO</a></li>
+  <li><a href="#de-manuel">Le mode MANUEL</a></li>
+  <li><a href="#de-familles">Les familles de sons</a></li>
+  <li><a href="#de-gestes">Les gestes</a></li>
+  <li><a href="#de-reglages">Tous les réglages</a></li>
+  <li><a href="#de-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="de-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE DE-ESSER traite ce qui siffle, claque ou souffle dans une voix, de deux façons. En <b>AUTO</b>, c’est un de-esser classique réglé par un THRESHOLD, qui travaille tout seul pendant la lecture. En <b>MANUEL</b>, il capture ta prise, la découpe en événements (chaque S, chaque CH, chaque P, chaque respiration) et tu règles chacun à la main.</p>
+<p>3 ms de latence, la même dans les deux modes : passer de l’un à l’autre ne décale rien. Mono ou stéréo.</p>
+
+<h2 id="de-auto">1. Le mode AUTO</h2>
+<p>Un détecteur par son, chacun sur sa bande : <b>S</b> (à la fréquence FREQ), <b>T</b> (vers 4,2 kHz), <b>CH</b> (vers 3,2 kHz) et <b>F</b> (le souffle aigu, vers 9 kHz). Tu coches ceux que tu veux traiter. Quand le niveau d’une bande dépasse le THRESHOLD, seule cette zone est baissée, le reste de la voix ne bouge pas.</p>
+<p>Le détecteur regarde aussi la place que prend la bande dans le son : une voix brillante a beaucoup d’aigu partout, ses voyelles ne sont pas prises pour des S. Une bande doit peser nettement plus que d’habitude dans cette voix pour être baissée.</p>
+<p>La vue montre ce qui est retiré, <b>son par son</b> : le niveau de la voix, la part retirée en couleur, et la lettre du son baissé (S, T, CH, F) au-dessus de chaque retrait, avec sa réduction. La ligne pointillée est le THRESHOLD : tu la glisses directement dans la vue, le trait fin est le niveau détecté.</p>
+<ul>
+  <li><b>RANGE</b> : la réduction la plus forte permise.</li>
+  <li><b>CLARITY</b> : rend de l’éclat et de l’air (une étagère douce dès 3 kHz), mais s’efface pendant qu’un son est baissé : l’éclat revient, pas les S.</li>
+  <li><b>LISTEN</b> : tu n’entends plus que ce qui est retiré, pour régler FREQ et THRESHOLD à l’oreille.</li>
+</ul>
+
+<h2 id="de-manuel">2. Le mode MANUEL</h2>
+<ol>
+  <li>Clique sur <b>CAPTURE</b>, puis lance la lecture de ta prise dans le DAW. La prise est enregistrée à sa place dans le temps du projet, et découpée au fur et à mesure.</li>
+  <li>Choisis une famille (SIBILANCES, CONSONNES, RESPIRATIONS) : ses événements s’affichent.</li>
+  <li>Survole un événement pour l’entendre, glisse-le vers le bas pour le baisser. Reclique sur CAPTURE pour arrêter.</li>
+</ol>
+<p>Pendant la lecture, chaque événement réglé est baissé <b>en entier</b> pendant sa durée, comme un gain de clip posé à la main, avec un fondu de 5 ms (20 ms pour une respiration) : pas de clic, pas de filtre, le son reste celui de ta voix. Hors des événements, rien ne change.</p>
+<p>Deux vues : <b>COLONNES</b>, tous les événements de la famille côte à côte (leurs tailles sont comparables d’un coup d’œil, l’ancienne taille reste en filigrane quand tu baisses), et <b>TIMELINE</b>, toute la prise avec chaque son à sa place et la tête de lecture.</p>
+<p><b>TOUT RÉDUIRE</b> baisse une famille d’un coup : les plus saillants (ceux qui dépassent le plus de leur phrase) davantage. Un événement réglé à la main ne bouge plus quand tu changes TOUT RÉDUIRE ; un double-clic le lui rend.</p>
+<p>Les réglages des événements sont gardés dans ton projet. La prise capturée est enregistrée à part sur ton ordinateur (dossier ONIRIQUE DE-ESSER/Captures) : sur un autre ordinateur, les réglages s’appliquent quand même, seules les formes d’onde manquent.</p>
+
+<h2 id="de-familles">3. Les familles de sons</h2>
+<div class="table"><table>
+  <tr><th>Famille</th><th>Lettres</th><th>Ce que c’est</th></tr>
+  <tr><td>SIBILANCES</td><td>S, Z, CH, F</td><td>Un souffle aigu qui dure (plus de 45 ms). Z : un S voisé ; CH : plus grave (2,5 à 4,5 kHz) ; F : surtout au-dessus de 9 kHz.</td></tr>
+  <tr><td>CONSONNES</td><td>P, B, T, K</td><td>Une attaque brève. P et B : le coup de grave d’une plosive ; T : une attaque aiguë ; K : une attaque plus large.</td></tr>
+  <tr><td>RESPIRATIONS</td><td>R</td><td>Un souffle sans hauteur, plus faible que la voix, qui dure plus de 100 ms.</td></tr>
+</table></div>
+
+<h2 id="de-gestes">4. Les gestes</h2>
+<div class="table"><table>
+  <tr><th>Geste</th><th>Effet</th></tr>
+  <tr><td>Survoler</td><td>Entendre l’événement (avec son gain), si ÉCOUTE AU SURVOL est allumé.</td></tr>
+  <tr><td>Glisser vers le bas</td><td>Le baisser (jusqu’à −30 dB, par pas de 0,5 dB).</td></tr>
+  <tr><td>Double-clic</td><td>Le rendre à TOUT RÉDUIRE.</td></tr>
+  <tr><td>Clic droit</td><td>Écouter, rendre à TOUT RÉDUIRE, ignorer, mettre à 0 dB.</td></tr>
+  <tr><td>Flèches gauche / droite</td><td>L’événement précédent / suivant (et l’entendre).</td></tr>
+  <tr><td>Flèches haut / bas</td><td>+1 / −1 dB.</td></tr>
+  <tr><td>Espace · Suppr</td><td>L’écouter · l’ignorer (il reste tel quel).</td></tr>
+  <tr><td>Molette (TIMELINE)</td><td>Zoomer ; Maj + molette ou glisser le fond pour se déplacer.</td></tr>
+</table></div>
+
+<h2 id="de-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>MODE</td><td>AUTO · MANUEL</td><td>Les deux en fondu de 30 ms.</td></tr>
+  <tr><td>THRESHOLD</td><td>−60 – 0 dB</td><td>Au-dessus, le son est baissé (AUTO).</td></tr>
+  <tr><td>RANGE</td><td>0 – 24 dB</td><td>La réduction la plus forte (AUTO).</td></tr>
+  <tr><td>FREQ</td><td>3 – 10 kHz</td><td>Où sont tes S (AUTO).</td></tr>
+  <tr><td>S · T · CH · F</td><td>allumé · éteint</td><td>Les sons traités (AUTO).</td></tr>
+  <tr><td>CLARITY</td><td>0 – 100 %</td><td>L’éclat rendu sans les S (AUTO).</td></tr>
+  <tr><td>LISTEN</td><td>allumé · éteint</td><td>Seulement ce qui est retiré (AUTO).</td></tr>
+  <tr><td>TOUT RÉDUIRE</td><td>0 – 100 % par famille</td><td>Baisse la famille d’un coup (MANUEL).</td></tr>
+</table></div>
+
+<h2 id="de-conseils">Conseils</h2>
+<div class="tip"><p><b>Trouver ses S</b> : en AUTO, allume LISTEN et tourne FREQ jusqu’à n’entendre que le sifflement, puis descends le THRESHOLD jusqu’à ce que les lettres S apparaissent sur les S, et pas ailleurs.</p></div>
+<div class="tip"><p><b>Une prise lead</b> : en MANUEL, TOUT RÉDUIRE à 40 % sur les sibilances, puis passe les colonnes une par une avec les flèches : reprends à la main les deux ou trois S qui piquent encore.</p></div>
+<div class="tip"><p><b>Les respirations</b> : TOUT RÉDUIRE à 50–70 % les baisse sans les couper ; une voix sans aucune respiration sonne fausse.</p></div>
+<div class="tip"><p>Si tu changes la prise dans ton DAW, reclique sur CAPTURE et rejoue le passage : les événements de ce passage sont refaits, ceux d’ailleurs gardent leurs réglages.</p></div>

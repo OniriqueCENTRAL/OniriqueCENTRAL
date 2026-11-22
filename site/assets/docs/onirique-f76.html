@@ -1,0 +1,49 @@
+<ul class="toc">
+  <li><a href="#f7-vue">Vue d’ensemble</a></li>
+  <li><a href="#f7-compression">Pousser dans le compresseur</a></li>
+  <li><a href="#f7-ratio">RATIO et ALL</a></li>
+  <li><a href="#f7-versions">BLACK et BLUE</a></li>
+  <li><a href="#f7-bas">MIX et OVERSAMPLING</a></li>
+  <li><a href="#f7-reglages">Tous les réglages</a></li>
+  <li><a href="#f7-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="f7-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE F76 est un <b>compresseur FET</b> : très rapide, nerveux, avec du caractère. Il tient une voix devant, donne du claquant à une caisse claire, serre une basse. La façade suit celle des racks de studio : INPUT et OUTPUT en grand, ATTACK et RELEASE l’un au-dessus de l’autre, la colonne RATIO, le VU et la colonne METER.</p>
+<p>Mono ou stéréo. La latence est celle du suréchantillonnage choisi, déclarée au DAW.</p>
+
+<h2 id="f7-compression">1. Pousser dans le compresseur</h2>
+<p>Comme sur l’appareil, le seuil est fixe : c’est <b>INPUT</b> qui règle la quantité de compression. Plus tu pousses, plus il compresse ; <b>OUTPUT</b> rattrape le niveau.</p>
+<p><b>ATTACK</b> va de 800 µs (tout à gauche) à 20 µs (tout à droite), <b>RELEASE</b> de 1,1 s à 50 ms : à droite, c’est plus rapide. Le relâchement dépend du programme, comme sur la machine : il revient plus lentement après une longue compression.</p>
+
+<h2 id="f7-ratio">2. RATIO et ALL</h2>
+<p>4, 8, 12 ou 20 : plus haut, plus la compression tient. <b>ALL</b>, c’est tous les boutons enfoncés à la fois : le ratio grimpe, le genou se déforme et le grain arrive. C’est l’écrasement des batteries et des voix agressives.</p>
+
+<h2 id="f7-versions">3. BLACK et BLUE</h2>
+<p>Juste au-dessus du VU. <b>BLACK</b> : la version propre et serrée. <b>BLUE</b> : la première génération, plus colorée, avec plus de grain et des médiums en avant. La version ne change que le son, pas les réglages.</p>
+
+<h2 id="f7-bas">4. MIX et OVERSAMPLING</h2>
+<ul>
+  <li><b>MIX</b> : le son direct mélangé au son compressé, pour une compression parallèle. Le son direct est retardé exactement comme le son compressé : aucun creux de phase, à toutes les valeurs.</li>
+  <li><b>OVERSAMPLING</b> : OFF, 2x, 4x ou 8x. Le compresseur tourne plus vite, les aigus restent propres même quand ça compresse fort. La nouvelle latence est déclarée au DAW.</li>
+  <li><b>METER</b> : le VU montre la réduction (GR) ou le niveau de sortie (+8, +4), ou s’éteint (OFF).</li>
+</ul>
+
+<h2 id="f7-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>INPUT</td><td>−12 – +36 dB</td><td>Pousse dans le compresseur (seuil fixe).</td></tr>
+  <tr><td>OUTPUT</td><td>−24 – +24 dB</td><td>Le niveau de sortie.</td></tr>
+  <tr><td>ATTACK</td><td>800 µs – 20 µs</td><td>À droite, plus rapide.</td></tr>
+  <tr><td>RELEASE</td><td>1,1 s – 50 ms</td><td>À droite, plus rapide.</td></tr>
+  <tr><td>RATIO</td><td>4 · 8 · 12 · 20 · ALL</td><td>La force de la compression.</td></tr>
+  <tr><td>VERSION</td><td>BLACK · BLUE</td><td>Propre ou coloré.</td></tr>
+  <tr><td>METER</td><td>GR · +8 · +4 · OFF</td><td>Ce que montre le VU.</td></tr>
+  <tr><td>OVERSAMPLING</td><td>OFF · 2x · 4x · 8x</td><td>Aigus plus propres, un peu plus de latence.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Compression parallèle, en phase.</td></tr>
+</table></div>
+
+<h2 id="f7-conseils">Conseils</h2>
+<div class="tip"><p><b>Une voix rap devant</b> : RATIO 8, ATTACK vers 5, RELEASE vers 6, INPUT jusqu’à 6 à 8 dB de réduction sur les crêtes.</p></div>
+<div class="tip"><p><b>Une batterie qui écrase</b> : ALL, ATTACK et RELEASE au plus rapide, INPUT fort, puis MIX vers 40 % pour garder les attaques.</p></div>
+<div class="tip"><p><b>Avant L2A</b> : F76 attrape les crêtes vite, ONIRIQUE L2A nivelle ensuite en douceur. C’est la chaîne classique des voix en studio.</p></div>
