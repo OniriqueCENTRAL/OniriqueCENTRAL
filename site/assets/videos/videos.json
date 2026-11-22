@@ -801,5 +801,278 @@
    "fr": "4 échantillons de latence seulement (aucune à 96 kHz), léger sur le processeur, Windows et Mac (VST3 et AU).",
    "en": "Only 4 samples of latency (none at 96 kHz), light on the CPU, Windows and Mac (VST3 and AU)."
   }
+ },
+ "onirique-eq": {
+  "replace": true,
+  "items": [
+   {
+    "src": "eq-bandes.mp4",
+    "fr": {
+     "kicker": "Huit bandes",
+     "title": "Directement sur l'analyseur",
+     "text": [
+      "Huit bandes à tirer directement sur l'analyseur : cloche, shelf grave et aigu, notch, coupe-bas et coupe-haut de 12 à 48 dB par octave.",
+      "La molette sur un point règle sa largeur, et le casque fait écouter une bande seule tant que tu tiens son point."
+     ]
+    },
+    "en": {
+     "kicker": "Eight bands",
+     "title": "Right on the analyser",
+     "text": [
+      "Eight bands you drag right on the analyser: bell, low and high shelf, notch, low-cut and high-cut from 12 to 48 dB per octave.",
+      "The wheel on a point sets its width, and the headphones let you hear one band alone while you hold its point."
+     ]
+    }
+   },
+   {
+    "src": "eq-dyn.mp4",
+    "fr": {
+     "kicker": "Dynamique",
+     "title": "GAIN et RANGE, séparés",
+     "text": [
+      "Chaque bande peut devenir DYNAMIQUE, avec deux réglages séparés : GAIN, toujours appliqué, et RANGE, ce que la bande ajoute quand sa zone dépasse le seuil.",
+      "Tu baisses une bande de 3 dB et tu la laisses creuser 6 dB de plus seulement sur les passages qui dépassent. Le SIDECHAIN de chaque bande écoute son propre signal ou une autre piste."
+     ]
+    },
+    "en": {
+     "kicker": "Dynamic",
+     "title": "GAIN and RANGE, separate",
+     "text": [
+      "Every band can go DYNAMIC, with two separate controls: GAIN, always applied, and RANGE, what the band adds when its zone goes over the threshold.",
+      "Cut a band by 3 dB and let it dig 6 dB more only on the passages that go over. Each band's SIDECHAIN listens to its own signal or to another track."
+     ]
+    }
+   },
+   {
+    "src": "eq-instances.mp4",
+    "fr": {
+     "kicker": "INSTANCES",
+     "title": "Toute ta session, une fenêtre",
+     "text": [
+      "Tous les ONIRIQUE EQ de ta session dans une seule fenêtre, une ligne par piste avec son nom, sa couleur, sa courbe et son spectre.",
+      "Tu règles n'importe lequel sans ouvrir les autres."
+     ]
+    },
+    "en": {
+     "kicker": "INSTANCES",
+     "title": "Your whole session, one window",
+     "text": [
+      "Every ONIRIQUE EQ in your session in a single window, one row per track with its name, colour, curve and spectrum.",
+      "Adjust any of them without opening the others."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Trois traitements : ZERO LATENCY, NATURAL PHASE (la phase d'un EQ analogique, sans latence) et LINEAR PHASE. Presets d'usine et utilisateur, Windows et Mac (VST3 et AU).",
+   "en": "Three processing modes: ZERO LATENCY, NATURAL PHASE (analog EQ phase, no latency) and LINEAR PHASE. Factory and user presets, Windows and Mac (VST3 and AU)."
+  }
+ },
+ "tuner": {
+  "replace": true,
+  "items": [
+   {
+    "src": "tuner-correction.mp4",
+    "fr": {
+     "kicker": "Autotune",
+     "title": "Naturel ou effet robot",
+     "text": [
+      "Un autotune dans l'esprit des références du genre. RETUNE SPEED règle la vitesse de correction, de la voix naturelle à l'effet robot.",
+      "FLEX-TUNE laisse passer les notes tenues, SUSTAIN et NATURAL VIBRATO gardent la vie de la voix."
+     ]
+    },
+    "en": {
+     "kicker": "Autotune",
+     "title": "Natural or robot",
+     "text": [
+      "An autotune in the spirit of the genre's references. RETUNE SPEED sets how fast it corrects, from natural voice to robot effect.",
+      "FLEX-TUNE lets held notes through, SUSTAIN and NATURAL VIBRATO keep the voice alive."
+     ]
+    }
+   },
+   {
+    "src": "tuner-modes.mp4",
+    "fr": {
+     "kicker": "LIVE ou HQ",
+     "title": "Pour enregistrer, pour mixer",
+     "text": [
+      "LIVE : aucune latence, pour enregistrer avec le retour casque. HQ : une correction plus précise pour le mix.",
+      "HARD TUNE pour l'effet le plus franc."
+     ]
+    },
+    "en": {
+     "kicker": "LIVE or HQ",
+     "title": "To record, to mix",
+     "text": [
+      "LIVE: zero latency, to record with headphone monitoring. HQ: more precise correction for the mix.",
+      "HARD TUNE for the boldest effect."
+     ]
+    }
+   },
+   {
+    "src": "tuner-timbre.mp4",
+    "fr": {
+     "kicker": "Le timbre",
+     "title": "Formant, Throat, vocodeur",
+     "text": [
+      "FORMANT et THROAT changent le timbre de la voix, TRANSPOSE la décale.",
+      "Le VOCODEUR est piloté par la voix elle-même. Sortie MIDI des notes chantées."
+     ]
+    },
+    "en": {
+     "kicker": "Timbre",
+     "title": "Formant, Throat, vocoder",
+     "text": [
+      "FORMANT and THROAT change the voice's timbre, TRANSPOSE shifts it.",
+      "The VOCODER is driven by the voice itself. MIDI output of the sung notes."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Windows et Mac (VST3 et AU).",
+   "en": "Windows and Mac (VST3 and AU)."
+  }
+ },
+ "onirique-vocal-spacer": {
+  "replace": true,
+  "items": [
+   {
+    "src": "spacer-pocket.mp4",
+    "fr": {
+     "kicker": "Vocal Pocket",
+     "title": "De la place pour la voix",
+     "text": [
+      "Un EQ dynamique 20 bandes piloté par ta voix en sidechain : il ne creuse l'instrumental que là où la voix est masquée, et seulement pendant qu'elle chante. La poche suit les phrases, pas les syllabes : pas de pompage.",
+      "Sans sidechain, le mode STATIC applique une poche fixe en forme de voix. DEPTH règle sa profondeur, LO et HI ses limites."
+     ]
+    },
+    "en": {
+     "kicker": "Vocal Pocket",
+     "title": "Room for the vocal",
+     "text": [
+      "A 20-band dynamic EQ driven by your vocal through the sidechain: it only carves the beat where the vocal is masked, and only while it sings. The pocket follows phrases, not syllables: no pumping.",
+      "Without sidechain, STATIC mode applies a fixed vocal-shaped pocket. DEPTH sets how deep, LO and HI its limits."
+     ]
+    }
+   },
+   {
+    "src": "spacer-space.mp4",
+    "fr": {
+     "kicker": "Space et Restore",
+     "title": "Largeur et énergie",
+     "text": [
+      "Space règle la largeur stéréo, ramène les graves au centre et fait briller les côtés. Restore redonne du punch au kick et de l'énergie au médium.",
+      "L'Auto Gain garde le volume perçu constant, pour que tu compares le son, pas le niveau."
+     ]
+    },
+    "en": {
+     "kicker": "Space and Restore",
+     "title": "Width and energy",
+     "text": [
+      "Space sets the stereo width, pulls the lows to the centre and makes the sides shine. Restore brings back the kick's punch and the mids' energy.",
+      "Auto Gain keeps the perceived volume steady, so you compare the sound, not the level."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Aucune latence. Presets d'usine et utilisateur. VST3 pour Windows, VST3 et Audio Unit pour Mac.",
+   "en": "Zero latency. Factory and user presets. VST3 on Windows, VST3 and Audio Unit on Mac."
+  }
+ },
+ "onirique-riser": {
+  "replace": true,
+  "items": [
+   {
+    "src": "riser-capture.mp4",
+    "fr": {
+     "kicker": "Capture",
+     "title": "Lance la lecture, la montée est prête",
+     "text": [
+      "Pose ONIRIQUE RISER sur ta piste de voix et lance la lecture : il capture la voix tout seul. À l'arrêt, la montée est prête.",
+      "Attrape la forme d'onde et glisse-la dans ton DAW, sur la mesure indiquée : elle finit pile là où la voix commence. Plus besoin d'exporter ni de retourner l'audio."
+     ]
+    },
+    "en": {
+     "kicker": "Capture",
+     "title": "Hit play, the riser is ready",
+     "text": [
+      "Put ONIRIQUE RISER on your vocal track and hit play: it captures the vocal by itself. When you stop, the riser is ready.",
+      "Grab the waveform and drop it into your DAW on the bar shown: it ends right where the vocal starts. No more exporting or reversing audio."
+     ]
+    }
+   },
+   {
+    "src": "riser-reglages.mp4",
+    "fr": {
+     "kicker": "Les réglages",
+     "title": "Durée et effets en un clic",
+     "text": [
+      "Un grand bouton pour la durée, au tempo du morceau, d'un temps à 4 mesures. Les sifflantes sont nettoyées pour qu'aucun S ne ressorte à l'envers, avec la reverb de la VOCALBOX.",
+      "Des effets en un clic : PHONE, CHORUS, TREMOLO, SWEEP, WIDE. Écoute et boucle dans le plugin, choix de la phrase, et IN SYNC pour l'entendre au bon moment sans même la glisser."
+     ]
+    },
+    "en": {
+     "kicker": "Controls",
+     "title": "Length and effects in one click",
+     "text": [
+      "One big knob for the length, in time with the song, from one beat to 4 bars. Sibilance is cleaned so no S comes back reversed, with VOCALBOX's reverb.",
+      "One-click effects: PHONE, CHORUS, TREMOLO, SWEEP, WIDE. Listen and loop in the plugin, pick the phrase, and IN SYNC to hear it at the right time without even dragging it."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Presets d'usine et utilisateur, Windows et Mac (VST3 et AU).",
+   "en": "Factory and user presets, Windows and Mac (VST3 and AU)."
+  }
+ },
+ "onirique-vocal-mini": {
+  "replace": true,
+  "items": [
+   {
+    "src": "mini-comp.mp4",
+    "fr": {
+     "kicker": "Tout-en-un",
+     "title": "Une compression qui tient la voix",
+     "text": [
+      "Le traitement vocal tout-en-un pour un son propre, équilibré et professionnel en toute simplicité. Le grand bouton COMP tient la voix, le MULTIBAND l'équilibre.",
+      "Moins de réglages. Plus de mix."
+     ]
+    },
+    "en": {
+     "kicker": "All-in-one",
+     "title": "Compression that holds the vocal",
+     "text": [
+      "The all-in-one vocal processor for a clean, balanced, professional sound, simply. The big COMP knob holds the vocal, MULTIBAND balances it.",
+      "Fewer controls. More mix."
+     ]
+    }
+   },
+   {
+    "src": "mini-sections.mp4",
+    "fr": {
+     "kicker": "L'essentiel",
+     "title": "Clean, EQ, FX, Delay, Reverb",
+     "text": [
+      "Le nettoyage, l'EQ, les effets (de-ess, drive, phone, doubler, chorus), un delay et une reverb : tout ce qu'il faut à une voix, rangé sur une seule page.",
+      "LIVE pour enregistrer, MIX pour mixer."
+     ]
+    },
+    "en": {
+     "kicker": "The essentials",
+     "title": "Clean, EQ, FX, Delay, Reverb",
+     "text": [
+      "Clean-up, EQ, effects (de-ess, drive, phone, doubler, chorus), a delay and a reverb: everything a vocal needs, on one page.",
+      "LIVE to record, MIX to mix."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Presets d'usine, Windows et Mac (VST3 et AU).",
+   "en": "Factory presets, Windows and Mac (VST3 and AU)."
+  }
  }
 }
