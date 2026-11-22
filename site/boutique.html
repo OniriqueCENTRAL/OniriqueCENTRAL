@@ -114,6 +114,7 @@ header nav { display: flex; align-items: center; gap: 10px; }
 .features .kicker { font: 500 12px/1.4 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .features h2 { margin: 8px 0 10px; font: 800 24px/1.2 var(--f-display); color: rgb(var(--acc)); }
 .features p { margin: 0 0 10px; color: var(--label); }
+.features .foot-note { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--haze); font-size: 15px; }
 @media (max-width: 860px) { .features h2 { font-size: 21px; } }
 .block-title { margin: 32px 0 12px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 
@@ -406,8 +407,11 @@ const DOCS = { "tuner": 1, "onirique-verb": 1, "onirique-enhancer": 1, "onirique
 // chaque vidéo ne tourne que quand elle est à l'écran. Renvoie false s'il n'y en a pas (la fiche montre alors l'image).
 async function setupVideos(product) {
   let all = null;
-  try { all = await fetch("/assets/videos/videos.json?v=3").then((r) => r.ok ? r.json() : null); } catch { return false; }
-  const list = all?.[product.slug];
+  try { all = await fetch("/assets/videos/videos.json?v=4").then((r) => r.ok ? r.json() : null); } catch { return false; }
+  // une entrée : la liste des vidéos, ou { items, replace, foot } quand la série couvre toute la description (elle la remplace,
+  // « foot » garde les caractéristiques techniques)
+  const entry = all?.[product.slug];
+  const list = Array.isArray(entry) ? entry : entry?.items;
   if (!list?.length) return false;
   const en = window.OniriqueI18n?.lang === "en";
   const watch = "IntersectionObserver" in window
@@ -423,6 +427,9 @@ async function setupVideos(product) {
       el("div", { className: "text" }, el("div", { className: "kicker", textContent: t.kicker }), el("h2", { textContent: t.title }),
         ...t.text.map((p) => el("p", { textContent: p }))));
   }));
+  const foot = entry?.foot && ((en && entry.foot.en) || entry.foot.fr);
+  if (foot) $("features").append(el("p", { className: "foot-note", textContent: foot }));
+  if (entry?.replace) { $("desc").hidden = true; if ($("desc").previousElementSibling?.classList.contains("block-title")) $("desc").previousElementSibling.hidden = true; }
   $("features").hidden = false;
   return true;
 }

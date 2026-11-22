@@ -1,44 +1,89 @@
 {
- "onirique-de-esser": [
-  {
-   "src": "deesser-auto.mp4",
-   "fr": {
-    "kicker": "Mode AUTO",
-    "title": "Ce qui est retiré, son par son",
-    "text": [
-     "Tu glisses la ligne du THRESHOLD directement dans la vue : tout ce qui siffle au-dessus est baissé, et la lettre du son retiré s'affiche au-dessus de chaque retrait.",
-     "Tu choisis ce que tu traites, S, T, CH ou F, et tu vois tout de suite ce que ça change."
-    ]
+ "onirique-de-esser": {
+  "replace": true,
+  "items": [
+   {
+    "src": "deesser-auto.mp4",
+    "fr": {
+     "kicker": "Mode AUTO",
+     "title": "Ce qui est retiré, son par son",
+     "text": [
+      "Un de-esser comme tu les connais : un THRESHOLD, et tout ce qui siffle au-dessus est baissé. Sa ligne se glisse directement dans la vue.",
+      "Tu choisis ce que tu traites, S, T, CH ou F, et tu vois en direct ce qui est retiré : la lettre du son baissé s'affiche au-dessus de chaque retrait."
+     ]
+    },
+    "en": {
+     "kicker": "AUTO mode",
+     "title": "What's removed, sound by sound",
+     "text": [
+      "A de-esser as you know it: a THRESHOLD, and everything hissing above it is turned down. Its line drags right in the view.",
+      "Pick what you treat, S, T, CH or F, and see live what's removed: the letter of the lowered sound shows above each removal."
+     ]
+    }
    },
-   "en": {
-    "kicker": "AUTO mode",
-    "title": "What's removed, sound by sound",
-    "text": [
-     "Drag the THRESHOLD line right in the view: everything hissing above it is turned down, and the letter of the removed sound shows above each removal.",
-     "Pick what you treat, S, T, CH or F, and see right away what it changes."
-    ]
-   }
-  },
-  {
-   "src": "deesser-manuel.mp4",
-   "fr": {
-    "kicker": "Mode MANUEL",
-    "title": "Chaque S, à la main",
-    "text": [
-     "Tu lances ta prise, elle s'enregistre toute seule. Chaque S apparaît dans sa colonne : tu le survoles, tu l'entends, tu le tires vers le bas.",
-     "TOUT RÉDUIRE baisse toute la famille d'un coup, les plus forts davantage. Ceux que tu as réglés à la main ne bougent plus."
-    ]
+   {
+    "src": "deesser-reglages.mp4",
+    "fr": {
+     "kicker": "Mode AUTO",
+     "title": "LISTEN, RANGE, CLARITY",
+     "text": [
+      "LISTEN te fait entendre seulement ce qui est retiré, pour trouver tes S à l'oreille. RANGE limite la réduction.",
+      "CLARITY rend l'éclat et l'air de la voix sans faire revenir les S."
+     ]
+    },
+    "en": {
+     "kicker": "AUTO mode",
+     "title": "LISTEN, RANGE, CLARITY",
+     "text": [
+      "LISTEN lets you hear only what's removed, to find your S's by ear. RANGE caps the reduction.",
+      "CLARITY brings back the brightness and air of the voice without bringing the S's back."
+     ]
+    }
    },
-   "en": {
-    "kicker": "MANUAL mode",
-    "title": "Every S, by hand",
-    "text": [
-     "Play your take, it records itself. Every S shows up in its own column: hover it, hear it, drag it down.",
-     "TOUT RÉDUIRE (reduce all) lowers the whole family at once, the loudest ones more. The ones you set by hand stay put."
-    ]
+   {
+    "src": "deesser-manuel.mp4",
+    "fr": {
+     "kicker": "Mode MANUEL",
+     "title": "Chaque S, à la main",
+     "text": [
+      "Tu lances ta prise dans ton DAW : elle s'enregistre toute seule et se découpe au fur et à mesure. Chaque S, chaque CH, chaque P, chaque respiration apparaît à part.",
+      "Tu le survoles, tu l'entends. Tu le glisses vers le bas, il baisse, et rien d'autre ne bouge. TOUT RÉDUIRE baisse toute la famille d'un coup, les plus forts davantage ; ceux que tu as réglés à la main ne bougent plus."
+     ]
+    },
+    "en": {
+     "kicker": "MANUAL mode",
+     "title": "Every S, by hand",
+     "text": [
+      "Play your take in your DAW: it records itself and is cut up as it goes. Every S, every CH, every P, every breath shows up on its own.",
+      "Hover it, hear it. Drag it down, it goes down, and nothing else moves. TOUT RÉDUIRE (reduce all) lowers the whole family at once, the loudest ones more; the ones you set by hand stay put."
+     ]
+    }
+   },
+   {
+    "src": "deesser-timeline.mp4",
+    "fr": {
+     "kicker": "Mode MANUEL",
+     "title": "Toute la prise, chaque son à sa place",
+     "text": [
+      "En TIMELINE, toute ta prise avec chaque son à sa place ; la molette zoome.",
+      "SIBILANCES, CONSONNES, RESPIRATIONS : chaque famille a son TOUT RÉDUIRE. Tu ajoutes une piste, tu changes une prise ? Il l'entend à la lecture et l'ajoute, sans réenregistrer ce qu'il a déjà."
+     ]
+    },
+    "en": {
+     "kicker": "MANUAL mode",
+     "title": "The whole take, every sound in place",
+     "text": [
+      "In TIMELINE, your whole take with every sound in place; the wheel zooms.",
+      "SIBILANCES, CONSONNES (consonants), RESPIRATIONS (breaths): each family has its own TOUT RÉDUIRE. Added a track, changed a take? It hears it on playback and adds it, without recording again what it already has."
+     ]
+    }
    }
+  ],
+  "foot": {
+   "fr": "Tes réglages restent dans ton projet. 3 ms de latence, la même dans les deux modes. 10 presets d'usine, A / B / C, Windows et Mac (VST3 et AU).",
+   "en": "Your settings stay in your project. 3 ms of latency, the same in both modes. 10 factory presets, A / B / C, Windows and Mac (VST3 and AU)."
   }
- ],
+ },
  "onirique-f76": [
   {
    "src": "f76.mp4",
