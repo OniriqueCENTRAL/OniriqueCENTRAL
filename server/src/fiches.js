@@ -54,6 +54,18 @@ export function applyRetouches() {
     if (vb) for (const [from, to] of AUTOTUNE) run('UPDATE versions SET notes = replace(notes, ?, ?) WHERE product_id = ?', from, to, vb.id);
     setSetting('retouches_textes', 5);
   }
+  // 22/11/2026, choix de Nov : ONIRIQUE F76 et ONIRIQUE L2A rejoignent ESSENTIAL (mensuel et annuel), à la suite des cinq.
+  if (done < 6) {
+    const add = ['onirique-f76', 'onirique-l2a'].map((slug) => get('SELECT id FROM products WHERE slug = ?', slug)?.id).filter(Boolean);
+    for (const plan of all(`SELECT * FROM plans WHERE kind = 'all' AND upper(name) LIKE '%ESSENTIAL%'`)) {
+      let ids = [];
+      try { ids = JSON.parse(plan.product_ids || '[]'); } catch { ids = []; }
+      if (! Array.isArray(ids) || ids.length === 0) continue;   // sans liste, la formule couvre déjà tout
+      for (const id of add) if (! ids.includes(id)) ids.push(id);
+      run('UPDATE plans SET product_ids = ? WHERE id = ?', JSON.stringify(ids), plan.id);
+    }
+    if (add.length === 2) setSetting('retouches_textes', 6);
+  }
 }
 const AUTOTUNE = [
   ['justesse naturelle ou effet robot', 'autotune naturel ou effet robot'],
