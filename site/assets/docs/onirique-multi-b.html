@@ -1,0 +1,55 @@
+<ul class="toc">
+  <li><a href="#mb-vue">Vue d’ensemble</a></li>
+  <li><a href="#mb-bandes">Les quatre bandes</a></li>
+  <li><a href="#mb-ecran">Régler dans l’écran</a></li>
+  <li><a href="#mb-temps">ATTACK, RELEASE, OUTPUT</a></li>
+  <li><a href="#mb-bas">MIX et OVERSAMPLING</a></li>
+  <li><a href="#mb-reglages">Tous les réglages</a></li>
+  <li><a href="#mb-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="mb-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE MULTI-B est un <b>compresseur multibande optique</b> : il coupe le son en quatre bandes et compresse chacune à part, avec une cellule optique douce et crémeuse. Les graves qui débordent se calment sans toucher aux aigus, la présence qui agresse se tient sans éteindre l’air, et une voix reste égale du début à la fin de la phrase.</p>
+<p>Mono ou stéréo. La latence est celle du suréchantillonnage choisi, déclarée au DAW (aucune en OFF).</p>
+
+<h2 id="mb-bandes">1. Les quatre bandes</h2>
+<p><b>LOW</b>, <b>LO-MID</b>, <b>HI-MID</b> et <b>HIGH</b>, séparées par trois coupures (200 Hz, 1,5 kHz et 6 kHz au départ) à 24 dB par octave. Sans compression, les bandes se recombinent à plat : le timbre ne change pas.</p>
+<p>Chaque bande a son <b>THRESHOLD</b> (au-dessus, elle est compressée), son <b>GAIN</b> (son niveau après compression : rattrapage, ou égalisation dynamique) et son <b>SOLO</b> pour l’écouter seule. Les onglets en haut choisissent la bande dont tu règles les potards.</p>
+<p>La compression est pensée pour la voix : détection sur le corps du son plutôt que sur les crêtes, genou très large, ratio doux. Les graves réagissent un peu plus lentement (pas de distorsion), les aigus un peu plus vite (les sibilances tenues).</p>
+
+<h2 id="mb-ecran">2. Régler dans l’écran</h2>
+<ul>
+  <li>Glisse une <b>poignée blanche</b> pour déplacer une coupure.</li>
+  <li>Dans une bande, <b>monte ou descends</b> pour régler son seuil (ligne rose). Maj : réglage fin.</li>
+  <li>Un clic choisit la bande sans rien changer ; la valeur ne bouge qu’une fois que tu glisses.</li>
+  <li>La <b>réduction</b> de chaque bande tombe en rideau depuis le haut, avec sa valeur en grand. La barre blanche montre le niveau de la bande, le fond le spectre de la sortie.</li>
+</ul>
+
+<h2 id="mb-temps">3. ATTACK, RELEASE, OUTPUT</h2>
+<p>Communs aux quatre bandes. <b>ATTACK</b> (1 à 200 ms) : la vitesse à laquelle la compression prend. <b>RELEASE</b> (20 ms à 2 s) : la vitesse à laquelle elle relâche ; comme une cellule optique, une phrase longtemps compressée relâche plus doucement. <b>OUTPUT</b> : le niveau de sortie.</p>
+
+<h2 id="mb-bas">4. MIX et OVERSAMPLING</h2>
+<ul>
+  <li><b>MIX</b> : le son direct mélangé au son compressé, pour une compression parallèle. Le son direct est retardé exactement comme le son compressé : aucun creux de phase, à toutes les valeurs.</li>
+  <li><b>OVERSAMPLING</b> : OFF, 2x, 4x ou 8x. La nouvelle latence est déclarée au DAW.</li>
+  <li><b>RÉDUCTION</b> : la plus forte des quatre bandes, en direct.</li>
+</ul>
+
+<h2 id="mb-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>Coupures</td><td>40 Hz – 1 kHz · 300 Hz – 8 kHz · 1,5 – 16 kHz</td><td>Les limites des quatre bandes.</td></tr>
+  <tr><td>THRESHOLD</td><td>−60 – 0 dB, par bande</td><td>Au-dessus, la bande est compressée.</td></tr>
+  <tr><td>GAIN</td><td>−12 – +12 dB, par bande</td><td>Le niveau de la bande après compression.</td></tr>
+  <tr><td>SOLO</td><td>par bande</td><td>N’écouter que cette bande.</td></tr>
+  <tr><td>ATTACK</td><td>1 – 200 ms</td><td>La prise de la compression.</td></tr>
+  <tr><td>RELEASE</td><td>20 ms – 2 s</td><td>Le relâchement.</td></tr>
+  <tr><td>OUTPUT</td><td>−12 – +12 dB</td><td>Le niveau de sortie.</td></tr>
+  <tr><td>OVERSAMPLING</td><td>OFF · 2x · 4x · 8x</td><td>Plus de précision, un peu plus de latence.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Compression parallèle, en phase.</td></tr>
+</table></div>
+
+<h2 id="mb-conseils">Conseils</h2>
+<div class="tip"><p><b>Une voix égale</b> : pars de Vocal Smooth, descends les seuils jusqu’à 3 à 5 dB de réduction par bande sur les passages forts, puis rattrape avec OUTPUT.</p></div>
+<div class="tip"><p><b>Une présence qui agresse</b> : seuil bas sur HI-MID seulement (De-Harsh), le reste à 0 dB : la bande ne se baisse que quand elle ressort.</p></div>
+<div class="tip"><p><b>Trouver une coupure</b> : mets la bande en SOLO et glisse sa poignée jusqu’à n’entendre que ce que tu veux tenir.</p></div>

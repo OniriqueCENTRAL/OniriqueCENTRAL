@@ -1,0 +1,55 @@
+<ul class="toc">
+  <li><a href="#mb-vue">Overview</a></li>
+  <li><a href="#mb-bandes">The four bands</a></li>
+  <li><a href="#mb-ecran">Setting it in the display</a></li>
+  <li><a href="#mb-temps">ATTACK, RELEASE, OUTPUT</a></li>
+  <li><a href="#mb-bas">MIX and OVERSAMPLING</a></li>
+  <li><a href="#mb-reglages">All the controls</a></li>
+  <li><a href="#mb-conseils">Tips</a></li>
+</ul>
+
+<h2 id="mb-vue">Overview</h2>
+<p>ONIRIQUE MULTI-B is an <b>optical multiband compressor</b>: it splits the sound into four bands and compresses each one on its own, with a soft, creamy optical cell. Lows that spill over calm down without touching the highs, harsh presence is held without dulling the air, and a vocal stays even from the start to the end of the phrase.</p>
+<p>Mono or stereo. Latency is that of the chosen oversampling, reported to the DAW (none when OFF).</p>
+
+<h2 id="mb-bandes">1. The four bands</h2>
+<p><b>LOW</b>, <b>LO-MID</b>, <b>HI-MID</b> and <b>HIGH</b>, split by three crossovers (200 Hz, 1.5 kHz and 6 kHz to start with) at 24 dB per octave. Without compression, the bands sum back flat: the tone doesn’t change.</p>
+<p>Each band has its own <b>THRESHOLD</b> (above it, the band is compressed), its <b>GAIN</b> (its level after compression: make-up, or dynamic EQ) and its <b>SOLO</b> to hear it alone. The tabs at the top pick the band whose knobs you set.</p>
+<p>The compression is built for vocals: detection on the body of the sound rather than the peaks, a very wide knee, a gentle ratio. The lows react a little slower (no distortion), the highs a little faster (sibilance held).</p>
+
+<h2 id="mb-ecran">2. Setting it in the display</h2>
+<ul>
+  <li>Drag a <b>white handle</b> to move a crossover.</li>
+  <li>Inside a band, <b>move up or down</b> to set its threshold (pink line). Shift: fine adjustment.</li>
+  <li>A click picks the band without changing anything; the value only moves once you drag.</li>
+  <li>Each band’s <b>reduction</b> drops like a curtain from the top, with its value in large type. The white bar shows the band’s level, the background the output spectrum.</li>
+</ul>
+
+<h2 id="mb-temps">3. ATTACK, RELEASE, OUTPUT</h2>
+<p>Shared by the four bands. <b>ATTACK</b> (1 to 200 ms): how fast compression grabs. <b>RELEASE</b> (20 ms to 2 s): how fast it lets go; like an optical cell, a phrase compressed for a long time releases more gently. <b>OUTPUT</b>: the output level.</p>
+
+<h2 id="mb-bas">4. MIX and OVERSAMPLING</h2>
+<ul>
+  <li><b>MIX</b>: the dry sound blended with the compressed one, for parallel compression. The dry sound is delayed exactly like the compressed one: no phase dip, at any setting.</li>
+  <li><b>OVERSAMPLING</b>: OFF, 2x, 4x or 8x. The new latency is reported to the DAW.</li>
+  <li><b>RÉDUCTION</b> (reduction): the strongest of the four bands, live.</li>
+</ul>
+
+<h2 id="mb-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>Crossovers</td><td>40 Hz – 1 kHz · 300 Hz – 8 kHz · 1.5 – 16 kHz</td><td>The edges of the four bands.</td></tr>
+  <tr><td>THRESHOLD</td><td>−60 – 0 dB, per band</td><td>Above it, the band is compressed.</td></tr>
+  <tr><td>GAIN</td><td>−12 – +12 dB, per band</td><td>The band’s level after compression.</td></tr>
+  <tr><td>SOLO</td><td>per band</td><td>Hear only that band.</td></tr>
+  <tr><td>ATTACK</td><td>1 – 200 ms</td><td>How fast compression grabs.</td></tr>
+  <tr><td>RELEASE</td><td>20 ms – 2 s</td><td>How fast it lets go.</td></tr>
+  <tr><td>OUTPUT</td><td>−12 – +12 dB</td><td>The output level.</td></tr>
+  <tr><td>OVERSAMPLING</td><td>OFF · 2x · 4x · 8x</td><td>More precision, a little more latency.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Parallel compression, in phase.</td></tr>
+</table></div>
+
+<h2 id="mb-conseils">Tips</h2>
+<div class="tip"><p><b>An even vocal</b>: start from Vocal Smooth, lower the thresholds until 3 to 5 dB of reduction per band on loud passages, then make up with OUTPUT.</p></div>
+<div class="tip"><p><b>Harsh presence</b>: low threshold on HI-MID only (De-Harsh), the rest at 0 dB: the band only goes down when it jumps out.</p></div>
+<div class="tip"><p><b>Finding a crossover</b>: solo the band and drag its handle until you only hear what you want to hold.</p></div>

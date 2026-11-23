@@ -1737,5 +1737,52 @@
    "fr": "Pensé pour une voix seule. Annuler / rétablir, export MIDI. VST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
    "en": "Built for a single vocal. Undo / redo, MIDI export. VST3 on Windows; VST3 and Audio Unit on Mac (Intel and Apple Silicon)."
   }
+ },
+ "onirique-multi-b": {
+  "replace": true,
+  "items": [
+   {
+    "src": "multib-bandes.mp4",
+    "fr": {
+     "kicker": "Quatre bandes",
+     "title": "Tout se règle dans l'écran",
+     "text": [
+      "ONIRIQUE MULTI-B coupe ton son en quatre bandes, LOW, LO-MID, HI-MID et HIGH, et compresse chacune à part avec une cellule optique : douce, crémeuse, sans angle ni pompage.",
+      "Tu glisses les coupures, tu montes ou descends le seuil de chaque bande, et tu vois sa réduction tomber en rideau, avec sa valeur en grand. SOLO te fait écouter une bande seule."
+     ]
+    },
+    "en": {
+     "kicker": "Four bands",
+     "title": "Everything is set in the display",
+     "text": [
+      "ONIRIQUE MULTI-B splits your sound into four bands, LOW, LO-MID, HI-MID and HIGH, and compresses each one on its own with an optical cell: soft, creamy, no edges, no pumping.",
+      "Drag the crossovers, move each band's threshold up or down, and watch its reduction drop like a curtain, with its value in large type. SOLO lets you hear one band alone."
+     ]
+    }
+   },
+   {
+    "src": "multib-reglages.mp4",
+    "fr": {
+     "kicker": "Les réglages",
+     "title": "THRESHOLD, ATTACK, RELEASE",
+     "text": [
+      "Par bande, THRESHOLD et GAIN ; pour toutes, ATTACK, RELEASE et OUTPUT. Les graves réagissent un peu plus lentement, les aigus un peu plus vite.",
+      "Sans compression, les quatre bandes se recombinent à plat : rien ne colore ton son. En bas, le MIX pour la compression parallèle, parfaitement en phase."
+     ]
+    },
+    "en": {
+     "kicker": "The controls",
+     "title": "THRESHOLD, ATTACK, RELEASE",
+     "text": [
+      "Per band, THRESHOLD and GAIN; for all of them, ATTACK, RELEASE and OUTPUT. The lows react a little slower, the highs a little faster.",
+      "Without compression, the four bands sum back flat: nothing colours your sound. At the bottom, MIX for parallel compression, perfectly in phase."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "OVERSAMPLING jusqu'à 8x. 11 presets d'usine (voix, batterie, basse, bus), A / B / C, Windows et Mac (VST3 et AU).",
+   "en": "OVERSAMPLING up to 8x. 11 factory presets (vocals, drums, bass, bus), A / B / C, Windows and Mac (VST3 and AU)."
+  }
  }
 }
