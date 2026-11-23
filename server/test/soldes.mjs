@@ -34,6 +34,7 @@ const eq = product('onirique-eq', 'ONIRIQUE EQ', 4999);
 const halo = product('onirique-halo', 'ONIRIQUE HALO', 9999);
 const vision = product('onirique-vision', 'ONIRIQUE VISION', 13900);
 const deesser = product('onirique-de-esser', 'ONIRIQUE DE-ESSER', 7999);
+const multib = product('onirique-multi-b', 'ONIRIQUE MULTI-B', 7499);
 const autre = product('onirique-inconnu', 'PLUGIN HORS LISTE', 4999);
 const partenaire = product('onirique-modbox', 'MODBOX D\'UN PARTENAIRE', 7999, 'relic');
 
@@ -43,6 +44,7 @@ assert.equal(saleOf(n73).priceCents, 7199);
 assert.equal(saleOf(vision).priceCents, 9730);
 assert.equal(saleOf(eq).priceCents, 4499);
 assert.equal(saleOf(deesser).priceCents, 6399);
+assert.equal(saleOf(multib).priceCents, 6374);
 assert.equal(saleOf(autre), null);
 assert.equal(saleOf(partenaire), null);
 // Après la date : plus rien.
@@ -75,13 +77,13 @@ const site = await call('GET', '/api/site');
 assert.equal(site.popup.id, SOLDES.id);
 assert.equal(site.popup.theme, 'black-friday');
 assert.equal(site.popup.title, "Jusqu'à -30 %");
-// DE-ESSER, le dernier sorti, ouvre la liste ; puis les plus fortes remises (à remise égale, le plus cher d'abord) ;
+// MULTI-B, le dernier sorti, ouvre la liste ; puis les plus fortes remises (à remise égale, le plus cher d'abord) ;
 // l'abonnement annuel ALL ACCESS la ferme.
 const annuel = Number(run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('ALL ACCESS ONIRIQUE — annuel', 'year', 38499, 1, 'all')").lastInsertRowid);
 run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('ALL ACCESS ONIRIQUE — mensuel', 'month', 3999, 1, 'all')");
 run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('À LA CARTE', 'month', 999, 1, 'pick')");
 const popup = (await call('GET', '/api/site')).popup;
-assert.deepEqual(popup.deals.map((d) => d.slug), ['onirique-de-esser', 'vocalbox', 'onirique-vision', null]);
+assert.deepEqual(popup.deals.map((d) => d.slug), ['onirique-multi-b', 'vocalbox', 'onirique-vision', null]);
 assert.deepEqual([popup.deals[3].name, popup.deals[3].href, popup.deals[3].sale.priceCents], ['ALL ACCESS ONIRIQUE, la première année', '/boutique#plans', 26949]);
 
 // Les abonnements : -30 % la première année en annuel, les 3 premiers mois au mois ; pas la formule à la carte ; plus rien après la date.
