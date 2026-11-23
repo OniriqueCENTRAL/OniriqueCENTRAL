@@ -24,21 +24,23 @@
     }
    },
    {
-    "src": "deesser-reglages.mp4",
+    "src": "deesser-reglages-pan.mp4",
     "fr": {
      "kicker": "Mode AUTO",
-     "title": "LISTEN, RANGE, CLARITY",
+     "title": "LISTEN, RANGE, CLARITY, PAN S",
      "text": [
       "LISTEN te fait entendre seulement ce qui est retiré, pour trouver tes S à l'oreille. RANGE limite la réduction.",
-      "CLARITY rend l'éclat et l'air de la voix sans faire revenir les S."
+      "CLARITY rend l'éclat et l'air de la voix sans faire revenir les S.",
+      "PAN S déplace seulement tes sibilances de gauche à droite pendant qu'elles passent : le reste de la voix reste au centre. Aussi en MANUEL, dans OPTIONS."
      ]
     },
     "en": {
      "kicker": "AUTO mode",
-     "title": "LISTEN, RANGE, CLARITY",
+     "title": "LISTEN, RANGE, CLARITY, PAN S",
      "text": [
       "LISTEN lets you hear only what's removed, to find your S's by ear. RANGE caps the reduction.",
-      "CLARITY brings back the brightness and air of the voice without bringing the S's back."
+      "CLARITY brings back the brightness and air of the voice without bringing the S's back.",
+      "PAN S moves only your sibilance from left to right as it goes by: the rest of the voice stays in the centre. Also in MANUAL, under OPTIONS."
      ]
     }
    },
