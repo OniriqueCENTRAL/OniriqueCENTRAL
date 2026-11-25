@@ -159,6 +159,7 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
       <button data-rubrique="vpn">VPN</button>
       <button data-rubrique="performances">Performances</button>
       <button data-rubrique="confidentialite">Confidentialité</button>
+      <button data-rubrique="autorisations">Autorisations</button>
       <button data-rubrique="extensions">Extensions</button>
       <button data-rubrique="apparence">Apparence</button>
       <button data-rubrique="apropos">À propos</button>
@@ -296,6 +297,20 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
       </div>
     </section>
 
+    <section id="autorisations">
+      <h2>Autorisations</h2>
+      <p class="intro">Caméra, micro, position, notifications… site par site. « Demander » laisse le site te reposer la question.</p>
+      <div class="carte">
+        <div class="ligne"><div class="texte"><b>Ajouter un site</b><small>Pour l'autoriser ou le bloquer avant même de l'ouvrir.</small></div></div>
+        <form class="ligne" id="acces-ajout" style="padding-top:0;border:0">
+          <input id="acces-site" class="champ-texte" placeholder="meet.google.com" aria-label="Adresse du site" spellcheck="false">
+          <button class="bouton principal">Ajouter</button>
+        </form>
+      </div>
+      <p class="note" id="acces-vide" hidden>Aucun site n'a encore reçu ni refusé d'accès.</p>
+      <div id="acces-liste"></div>
+    </section>
+
     <section id="extensions">
       <h2>Extensions</h2>
       <p class="intro">Les extensions de Chrome marchent ici aussi. Le bouton en forme de pièce de puzzle, dans la barre, les ouvre.</p>
@@ -416,7 +431,7 @@ function placerCurseur(choix) {
   c.style.width = actif.offsetWidth + "px";
 }
 document.addEventListener("click", (e) => {
-  const b = e.target.closest(".choix button");
+  const b = e.target.closest(".choix[data-cle] button");
   if (!b) return;
   const choix = b.closest(".choix");
   const valeur = "nombre" in choix.dataset ? Number(b.dataset.valeur) : b.dataset.valeur;
@@ -441,8 +456,83 @@ document.getElementById("fichier-fond").addEventListener("change", (e) => {
   lecteur.readAsDataURL(f);
   e.target.value = "";
 });
-// Les mesures (mémoire, processeur, pubs bloquées) se rafraîchissent tant que la page est ouverte.
-setInterval(() => { if (!document.hidden) envoyer({ type: "lire" }); }, 5000);
+// Les mesures (mémoire, processeur, pubs bloquées) et les autorisations se rafraîchissent tant que la page est ouverte.
+setInterval(() => {
+  if (document.hidden) return;
+  envoyer({ type: "lire" });
+  if (document.getElementById("autorisations").classList.contains("visible")) envoyer({ type: "acces" });
+}, 5000);
+
+// Autorisations par site : les grandes toujours affichées, les autres seulement si le site en a reçu une.
+const GENRES = {
+  camera: "Caméra", micro: "Micro", position: "Position", notifications: "Notifications", midi: "MIDI complet (SysEx)",
+  pressepapiers: "Lire le presse-papiers", fichiers: "Modifier tes fichiers", telechargements: "Plusieurs téléchargements d'affilée",
+  lecture: "Lecture automatique du son", capteurs: "Capteurs de mouvement", polices: "Polices installées", fenetres: "Placement des fenêtres",
+};
+const PRINCIPAUX = ["camera", "micro", "position", "notifications", "midi"];
+const ETATS = [["demander", "Demander"], ["oui", "Autoriser"], ["non", "Bloquer"]];
+const sitesAjoutes = new Set();
+let acces = [];
+const el = (balise, classe = "", texte = "") => Object.assign(document.createElement(balise), { className: classe, textContent: texte });
+const nomDeSite = (site) => site.replace(/^https:\/\//, "");
+function afficherAcces() {
+  const parSite = new Map([...sitesAjoutes].map((s) => [s, {}]));
+  for (const a of acces) { if (!parSite.has(a.site)) parSite.set(a.site, {}); parSite.get(a.site)[a.genre] = a.etat; }
+  const boite = document.getElementById("acces-liste");
+  const vu = JSON.stringify([...parSite]);
+  if (boite.dataset.vu === vu) return;
+  boite.dataset.vu = vu;
+  document.getElementById("acces-vide").hidden = parSite.size > 0;
+  boite.replaceChildren(...[...parSite].sort(([a], [b]) => nomDeSite(a).localeCompare(nomDeSite(b))).map(([site, etats]) => {
+    const carte = el("div", "carte");
+    const tete = el("div", "ligne");
+    const titre = el("div", "texte");
+    titre.append(el("b", "", nomDeSite(site)));
+    const oublier = el("button", "retirer", "×");
+    oublier.title = "Tout remettre à « Demander »";
+    oublier.setAttribute("aria-label", `Tout remettre à « Demander » pour ${nomDeSite(site)}`);
+    oublier.onclick = () => {
+      sitesAjoutes.delete(site);
+      for (const genre of Object.keys(etats)) envoyer({ type: "accesChanger", site, genre, etat: "demander" });
+      afficherAcces();
+    };
+    tete.append(titre, oublier);
+    carte.append(tete);
+    for (const genre of Object.keys(GENRES).filter((g) => PRINCIPAUX.includes(g) || g in etats)) {
+      const ligne = el("div", "ligne");
+      const texte = el("div", "texte");
+      texte.append(el("b", "", GENRES[genre]));
+      const choix = el("div", "choix");
+      choix.setAttribute("aria-label", `${GENRES[genre]} pour ${nomDeSite(site)}`);
+      for (const [valeur, libelle] of ETATS) {
+        const b = el("button", "", libelle);
+        b.setAttribute("aria-pressed", String((etats[genre] || "demander") === valeur));
+        b.onclick = () => {
+          choix.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+          placerCurseur(choix);
+          envoyer({ type: "accesChanger", site, genre, etat: valeur });
+        };
+        choix.append(b);
+      }
+      ligne.append(texte, choix);
+      carte.append(ligne);
+    }
+    return carte;
+  }));
+  boite.querySelectorAll(".choix").forEach(placerCurseur);
+}
+document.getElementById("acces-ajout").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const champ = document.getElementById("acces-site");
+  const saisie = champ.value.trim();
+  let site = null;
+  try { site = new URL(saisie.includes("://") ? saisie : "https://" + saisie); } catch { }
+  if (!site || !/^https?:$/.test(site.protocol) || !site.hostname.includes(".") && site.hostname !== "localhost") { champ.focus(); return; }
+  sitesAjoutes.add(site.origin);
+  champ.value = "";
+  afficherAcces();
+});
+document.querySelector('nav button[data-rubrique="autorisations"]').addEventListener("click", () => envoyer({ type: "acces" }));
 
 document.getElementById("ext-ajouter").onclick = () => {
   const lien = document.getElementById("ext-lien").value.trim();
@@ -478,7 +568,7 @@ function afficher(m) {
   document.body.classList.toggle("sans-animations", !r.Animations);
   const moteurs = document.getElementById("moteurs");
   if (!moteurs.querySelector("button")) moteurs.innerHTML = m.moteurs.map((x) => `<button data-valeur="${x.id}">${x.nom}</button>`).join("");
-  document.querySelectorAll(".choix").forEach((choix) => {
+  document.querySelectorAll(".choix[data-cle]").forEach((choix) => {
     const v = String(r[choix.dataset.cle]);
     choix.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.valeur === v)));
     placerCurseur(choix);
@@ -508,6 +598,7 @@ function afficher(m) {
     document.getElementById("carte-dossier-dl").hidden = true;
     document.getElementById("carte-google").hidden = true;
     document.querySelector('nav button[data-rubrique="extensions"]').hidden = true;
+    document.querySelector('nav button[data-rubrique="autorisations"]').hidden = true;
   }
   if (m.dossierDl) document.getElementById("dossier-dl").textContent = m.dossierDl;
   document.getElementById("dossier-dl-defaut").hidden = !m.dossierDlChoisi;
@@ -570,6 +661,7 @@ function afficher(m) {
 window.chrome?.webview?.addEventListener("message", (e) => {
   const m = e.data;
   if (m.type === "etat") afficher(m);
+  if (m.type === "acces") { acces = m.liste; afficherAcces(); }
   if (m.type === "efface") document.getElementById("efface-statut").textContent = "C'est effacé.";
   if (m.type === "maj") {
     const s = document.getElementById("maj-statut");
@@ -578,6 +670,7 @@ window.chrome?.webview?.addEventListener("message", (e) => {
   }
 });
 envoyer({ type: "lire" });
+envoyer({ type: "acces" });
 addEventListener("resize", () => document.querySelectorAll("section.visible .choix").forEach(placerCurseur));
 </script>
 </body>

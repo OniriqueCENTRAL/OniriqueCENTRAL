@@ -1,6 +1,6 @@
 {
   "proprietaires": {
-    "ONIRIQUE": { "git": ["ONIRIQUE"], "plugins": ["ONIRIQUE TUNE", "OniriqueCHANNELSTRIP", "OniriqueREVERB"] },
+    "ONIRIQUE": { "git": ["ONIRIQUE"], "plugins": ["ONIRIQUE TUNE", "OniriqueCHANNELSTRIP", "OniriqueREVERB", "OniriquePRISME"] },
     "TOM": { "git": ["tomgurdian"], "plugins": ["OniriqueRESOBOX", "OniriqueECHOBOX", "OniriqueMODBOX", "OniriqueMETERBOX", "OniriqueDOUBLEBOX", "OniriquePITCHBOX"] },
     "Nov": { "git": ["Nov"], "plugins": ["OniriqueVOCALBOX", "OniriqueVOCALSPACER", "OniriqueTHECHOIR", "OniriqueEQ", "OniriqueRISER", "OniriquePLAYER", "OniriqueBROADCAST", "OniriqueSTREAM"] },
     "RELIC": { "git": [], "plugins": ["BLOOM"] },

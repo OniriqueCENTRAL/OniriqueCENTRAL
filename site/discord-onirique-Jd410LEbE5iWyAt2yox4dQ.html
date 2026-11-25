@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Page privée : jamais reliée, jamais indexée, adresse transmise seulement par lien. -->
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="referrer" content="no-referrer">
+<title>Discord ONIRIQUE — lien privé</title>
+<meta name="description" content="Tes deux comptes Discord côte à côte, dans une seule fenêtre.">
+<meta property="og:title" content="Discord ONIRIQUE">
+<meta property="og:description" content="Tes deux comptes Discord côte à côte, dans une seule fenêtre. Lien privé.">
+<meta name="theme-color" content="#09080A">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<style>
+main { padding-block: clamp(36px, 7vw, 80px); overflow-x: clip; }
+.hero { position: relative; display: grid; grid-template-columns: auto 1fr; gap: clamp(20px, 4vw, 36px); align-items: center; }
+.hero::before { content: ""; position: absolute; inset: -120px -40px auto -160px; height: 360px; z-index: -1; background: radial-gradient(closest-side, rgba(var(--acc), .22), transparent 70%); filter: blur(10px); }
+.logo { width: clamp(96px, 16vw, 150px); height: auto; filter: drop-shadow(0 18px 30px rgba(0,0,0,.55)); }
+.hero h1 { margin: 10px 0 6px; }
+.lead { margin: 0; font-size: 19px; color: var(--mist); }
+.prive { display: inline-flex; align-items: center; gap: 8px; }
+.prive::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 10px rgba(var(--acc), .8); }
+
+.telecharger { margin-top: clamp(28px, 5vw, 44px); padding: clamp(20px, 3vw, 28px); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--glass), rgba(14,10,12,.55); box-shadow: var(--glass-shadow); display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; justify-content: space-between; }
+.bouton { display: inline-flex; align-items: center; gap: 12px; padding: 16px 26px; border-radius: 999px; background: linear-gradient(180deg, rgb(var(--acc)), #a11d35); color: #fff; text-decoration: none; font: 700 15px/1 var(--f-display); letter-spacing: .04em; box-shadow: 0 10px 30px rgba(var(--acc), .35), inset 0 1px 0 rgba(255,255,255,.25); transition: transform .15s, box-shadow .15s; }
+.bouton:hover { color: #fff; transform: translateY(-1px); box-shadow: 0 14px 36px rgba(var(--acc), .45), inset 0 1px 0 rgba(255,255,255,.25); }
+.bouton svg { width: 18px; height: 18px; }
+.infos { margin: 0; color: var(--haze); font: 500 13px/1.6 var(--f-mono); letter-spacing: .04em; }
+
+.atouts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 18px; padding: 0; list-style: none; }
+.atouts li { margin: 0; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: rgba(255,255,255,.02); }
+.atouts strong { display: block; margin-bottom: 4px; font: 700 15px/1.3 var(--f-display); }
+.atouts span { color: var(--haze); font-size: 15px; line-height: 1.55; }
+
+ol.etapes { counter-reset: etape; padding: 0; list-style: none; }
+ol.etapes li { counter-increment: etape; position: relative; padding-left: 46px; margin-bottom: 14px; }
+ol.etapes li::before { content: counter(etape); position: absolute; left: 0; top: 2px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(var(--acc), .5); color: var(--ember-text); font: 600 13px/1 var(--f-mono); }
+.empreinte { word-break: break-all; }
+.discret { color: var(--haze); font-size: 14px; }
+@media (max-width: 560px) { .atouts { grid-template-columns: 1fr; } .hero { grid-template-columns: 1fr; justify-items: center; text-align: center; } .hero .eyebrow { justify-content: center; } .telecharger { justify-content: center; text-align: center; } }
+@media (prefers-reduced-motion: reduce) { .bouton { transition: none; } }
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <svg class="logo" viewBox="0 0 256 256" role="img" aria-label="Logo Discord ONIRIQUE">
+      <defs>
+        <radialGradient id="avant" cx=".3" cy=".78" r=".95"><stop offset="0" stop-color="#f0405a"/><stop offset=".34" stop-color="#a11d35"/><stop offset=".72" stop-color="#4a111f"/><stop offset="1" stop-color="#1a0c11"/></radialGradient>
+        <radialGradient id="arriere" cx=".82" cy=".16" r="1"><stop offset="0" stop-color="#a42a43"/><stop offset=".55" stop-color="#561a29"/><stop offset="1" stop-color="#2f1019"/></radialGradient>
+        <linearGradient id="filet" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4ecec" stop-opacity=".72"/><stop offset=".55" stop-color="#d9c6c9" stop-opacity=".16"/><stop offset="1" stop-color="#f0405a" stop-opacity=".55"/></linearGradient>
+        <filter id="halo" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="11"/></filter>
+        <path id="bulle-avant" d="M72 82H146A50 50 0 0 1 196 132V168A50 50 0 0 1 146 218H84L40 242L46 205A50 50 0 0 1 22 168V132A50 50 0 0 1 72 82Z"/>
+        <path id="bulle-arriere" d="M126 26H190A46 46 0 0 1 236 72V112A46 46 0 0 1 216 150L225 180L186 158H126A46 46 0 0 1 80 112V72A46 46 0 0 1 126 26Z"/>
+        <path id="etoile" d="M109 100C113 133 126 146 159 150C126 154 113 167 109 200C105 167 92 154 59 150C92 146 105 133 109 100Z"/>
+        <mask id="decoupe" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><rect width="256" height="256" fill="#fff"/><use href="#bulle-avant" fill="#000" stroke="#000" stroke-width="13" stroke-linejoin="round"/></mask>
+      </defs>
+      <g mask="url(#decoupe)">
+        <use href="#bulle-arriere" fill="url(#arriere)" stroke="url(#arriere)" stroke-width="3" stroke-linejoin="round"/>
+        <use href="#bulle-arriere" fill="none" stroke="url(#filet)" stroke-width="1.6" stroke-linejoin="round"/>
+      </g>
+      <use href="#bulle-avant" fill="url(#avant)" stroke="url(#avant)" stroke-width="3" stroke-linejoin="round"/>
+      <use href="#bulle-avant" fill="none" stroke="url(#filet)" stroke-width="1.8" stroke-linejoin="round"/>
+      <use href="#etoile" fill="#ff8d9d" opacity=".8" filter="url(#halo)"/>
+      <use href="#etoile" fill="#fff6f4"/>
+    </svg>
+    <div>
+      <p class="eyebrow prive">Lien privé</p>
+      <h1>Discord ONIRIQUE</h1>
+      <p class="lead">Tes deux comptes Discord côte à côte, dans une seule fenêtre.</p>
+    </div>
+  </section>
+
+  <div class="telecharger">
+    <a class="bouton" href="telechargement/discord-onirique-Jd410LEbE5iWyAt2yox4dQ/Installer-Discord-ONIRIQUE.exe" download="Installer Discord ONIRIQUE.exe">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+      Télécharger l'installateur
+    </a>
+    <p class="infos">Windows 10 et 11 · version 1.0.0 ·&nbsp;48&nbsp;Mo</p>
+  </div>
+
+  <ul class="atouts">
+    <li><strong>Deux comptes, une fenêtre</strong><span>Tes vrais Discord et Discord Canary, connectés en même temps, avec vocal et notifications.</span></li>
+    <li><strong>Bouton ÉCHELLE</strong><span>Six dispositions : côte à côte, un grand et un petit, haut et bas… Ton choix est retenu.</span></li>
+    <li><strong>Une seule barre</strong><span>Les barres de Discord disparaissent, il ne reste que celle de l'app, en sombre.</span></li>
+    <li><strong>Vencord en option</strong><span>Plugins et thèmes, installés à ta demande depuis l'installateur officiel.</span></li>
+  </ul>
+
+  <h2>Installer</h2>
+  <ol class="etapes">
+    <li>Installe <a href="https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&amp;platform=win&amp;arch=x64" rel="noreferrer">Discord</a> et <a href="https://discord.com/api/downloads/distributions/app/installers/latest?channel=canary&amp;platform=win&amp;arch=x64" rel="noreferrer">Discord Canary</a>, puis connecte un compte dans chacun.</li>
+    <li>Ouvre l'installateur. Si Windows affiche « Windows a protégé votre ordinateur », clique sur « Informations complémentaires », puis « Exécuter quand même » : le fichier n'est pas signé.</li>
+    <li>Coche Vencord si tu le veux, puis clique sur INSTALLER. L'app s'ouvre toute seule, et se retrouve ensuite dans le menu Démarrer.</li>
+  </ol>
+
+  <h2>À savoir</h2>
+  <p>Pour désinstaller : Paramètres de Windows, Applications, puis Discord ONIRIQUE. Discord, Canary et Vencord restent en place.</p>
+  <p>Vencord modifie Discord, ce que ses conditions d'utilisation n'autorisent pas : tu l'installes à tes risques.</p>
+  <p class="discret">Empreinte SHA-256 de l'installateur : <code class="empreinte">2a1983a759f4c67a01fb474c352fb62a1b1f9c83b28655b5f4f5dcaf02a688a1</code></p>
+  <p class="discret">Discord ONIRIQUE est un projet indépendant d'ONIRIQUE, sans lien avec Discord Inc. Cette page n'est pas publique : ne transmets son lien qu'à des personnes de confiance.</p>
+</main>
