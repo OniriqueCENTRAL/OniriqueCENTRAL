@@ -558,6 +558,13 @@ try {
     // Le téléchargement par le lien : l'adresse est signée avec le lien, qu'on ne peut pas retirer.
     assert.ok((await call('GET', share.tracks[0].version.downloadUrl)).length > 0);
     await call('GET', share.tracks[0].version.downloadUrl.replace(/&l=\d+/, ''), { expect: 403 });
+    // Un auditeur connecté : sa notification porte son nom et sa photo ; son compte ne peut pas être changé dans l'adresse.
+    const signed = (await call('POST', `/api/sounds/share/${shareToken(url)}`, { token: other.token, body: {} })).tracks[0].version.downloadUrl;
+    await call('GET', signed.replace(/&u=\d+/, `&u=${member.id}`), { expect: 403 });
+    await call('GET', signed);
+    const got = (await call('GET', '/api/me/sounds/notices', { token: member.token })).items.find((n) => n.kind === 'download');
+    assert.equal(got.who, 'client');
+    assert.equal(got.actor.id, other.id);
     assert.ok((await call('GET', '/api/push/key')).key.length > 40);
     await call('POST', '/api/me/push', { token: member.token, body: { endpoint: 'http://x', keys: { p256dh: 'a', auth: 'b' } }, expect: 400 });
     await call('POST', '/api/me/push', { token: member.token, body: { endpoint: 'https://push.test/abc', keys: { p256dh: 'a', auth: 'b' } }, expect: 201 });

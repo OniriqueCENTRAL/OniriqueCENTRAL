@@ -474,10 +474,10 @@ function signKey() {
 const sign = (text) => crypto.createHmac('sha256', signKey()).update(text).digest('base64url');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 // Un téléchargement depuis un lien d'écoute porte ce lien (l), pour prévenir celui qui l'a partagé, et le destinataire du
-// mail qui l'a amené là (r), pour son suivi.
-function audioUrl(versionId, download = false, linkId = 0, r = '') {
-  const e = now() + 6 * 3600_000, d = download ? 1 : 0, l = download ? linkId : 0, rr = l ? r : '';
-  return `/api/sounds/audio/${versionId}?e=${e}&d=${d}${l ? `&l=${l}` : ''}${rr ? `&r=${rr}` : ''}&s=${sign(`${versionId}.${e}.${d}${l ? `.${l}` : ''}${rr ? `.r${rr}` : ''}`)}`;
+// mail qui l'a amené là (r), pour son suivi, et le compte connecté qui télécharge (u), pour son nom et sa photo.
+function audioUrl(versionId, download = false, linkId = 0, r = '', userId = 0) {
+  const e = now() + 6 * 3600_000, d = download ? 1 : 0, l = download ? linkId : 0, rr = l ? r : '', u = l ? userId || 0 : 0;
+  return `/api/sounds/audio/${versionId}?e=${e}&d=${d}${l ? `&l=${l}` : ''}${rr ? `&r=${rr}` : ''}${u ? `&u=${u}` : ''}&s=${sign(`${versionId}.${e}.${d}${l ? `.${l}` : ''}${rr ? `.r${rr}` : ''}${u ? `.u${u}` : ''}`)}`;
 }
 // Le HM (hm.js) : un son du CLOUD y entre par l'adresse signée que son auteur écoute (elle prouve son accès), puis chaque
 // participant en reçoit une adresse fraîche.
@@ -1680,7 +1680,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       tracks: tracks.map((t) => ({
         id: t.id, position: t.position, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
         offers: p.kind === 'pack' ? offersOf(t, p.user_id, simulate) : [], sold: !!t.sold,
-        version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: download && !t.via_link ? audioUrl(t.vid, true, link.id, contact?.token) : null },
+        version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: download && !t.via_link ? audioUrl(t.vid, true, link.id, contact?.token, viewerId) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView), private: !!t.private,
       })),
       // Les sons privés, pour qui n'en est pas membre : leur place et leur nom, rien pour les écouter.
@@ -1762,8 +1762,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // Le fichier audio, par une adresse signée ; la lecture peut sauter n'importe où (Range, géré par sendFile).
   app.get('/api/sounds/audio/:id', wrap(async (req, res) => {
     const e = Number(req.query.e), d = req.query.d === '1' ? 1 : 0, l = d ? id(req.query.l) : 0, s = String(req.query.s || '');
-    const rr = l ? str(req.query.r, 64) : '';
-    if (!(e > now()) || !same(s, sign(`${id(req.params.id)}.${e}.${d}${l ? `.${l}` : ''}${rr ? `.r${rr}` : ''}`))) throw new HttpError(403, "Ce lien d'écoute a expiré : recharge la page.");
+    const rr = l ? str(req.query.r, 64) : '', u = l ? id(req.query.u) : 0;
+    if (!(e > now()) || !same(s, sign(`${id(req.params.id)}.${e}.${d}${l ? `.${l}` : ''}${rr ? `.r${rr}` : ''}${u ? `.u${u}` : ''}`))) throw new HttpError(403, "Ce lien d'écoute a expiré : recharge la page.");
     const v = get('SELECT * FROM sound_versions WHERE id = ?', id(req.params.id));
     if (!v) throw new HttpError(404, 'Son introuvable.');
     // Une prod de pack téléchargée depuis un lien part avec le tag de son producteur (s'il en a un).
@@ -1782,7 +1782,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       const title = get('SELECT title FROM sound_tracks WHERE id = ?', v.track_id)?.title || v.filename, contact = recipientFor(link.user_id, rr);
       // Un lecteur qui reprend le fichier par morceaux (Range) ne compte qu'une fois.
       if (!req.headers.range || /^bytes=0-/.test(req.headers.range)) trackRecipient(contact, 'download', title);
-      tell(link, 'download', { who: contactName(contact), title, key: `${v.id}:${contact?.id || req.ip}` });
+      const actor = u ? get('SELECT id, name, email FROM users WHERE id = ?', u) : null;
+      tell(link, 'download', { actor: contactName(contact) ? null : actor, who: contactName(contact) || nameOf(actor), title, key: `${v.id}:${contact?.id || u || req.ip}` });
     }
     res.sendFile(file);
   }));
