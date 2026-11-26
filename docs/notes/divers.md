@@ -67,10 +67,16 @@
 
 ## BPM et tonalité (`site/assets/bpm-key-worker.js`), blanc du Downloader
 - Le même worker sert à BPM et tonalité, PROD du Downloader, CUT, Mes sons, Stems et Transposition : après une
-  modification, augmenter son `?v=` dans ces six pages.
+  modification, augmenter son `?v=` dans ces six pages. ONIRIQUE SESSION (dépôt OniriqueSession) en garde une copie
+  identique dans `ui/assets/` : les modifier ensemble.
 - Mesuré sur 95 prods dont le nom donne le BPM (60 avec la tonalité), les 240 s du milieu : BPM juste 87 %, tonalité
-  juste 60 %. Profils de Krumhansl : 27 % (quinte ou majeur lus à cause des harmoniques des 808). Un profil appris sur
-  ces prods n'a rien gagné en validation croisée. Les noms se trompent parfois (même prod nommée 114 et 127 BPM).
+  juste 60 %. Profils de Krumhansl : 27 % (quinte ou majeur lus à cause des harmoniques des 808). Les noms se trompent
+  parfois (même prod nommée 114 et 127 BPM).
+- Tonalité depuis le 26 nov. 2026 : saillance des notes (harmoniques rendues à leur note), basse et aigu à part, profils
+  appris sur 105 prods rap. En validation croisée sur ces prods : 64 % justes, contre 58 % avec Temperley et 29 % avec
+  Krumhansl ; 9 sessions sur 12 justes quand tous les stems jouent ensemble (8 avec Temperley). Appris sur la chroma
+  simple, un profil ne gagnait rien : c'est la saillance qui le rend utile. Le jeu d'essai (prods nommées d'un PC de
+  studio, décodées en 22 050 Hz mono) n'est pas dans le dépôt.
 - Pièges : compter 3 temps pour choisir le battement fait lire un tempo aux deux tiers (164 → 109) ; un MP3 garde
   25 ms de blanc (retard de l'encodeur) dans les logiciels qui ignorent son en-tête LAME : le WAV est exact partout.
   Les MP3 exportés par FL Studio n'ont pas cet en-tête (~29 ms de blanc au début).

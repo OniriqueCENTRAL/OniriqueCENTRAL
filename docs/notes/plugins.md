@@ -16,6 +16,16 @@
 - PITCHBOX, RESOBOX, DOUBLEBOX, METERBOX, MODBOX, MIMIC : binaires sur les branches `ci-build-Windows` /
   `ci-build-macOS`, puis `deploy/publish-plugin.mjs` sur le serveur (dossiers `win/`, `mac/`, `notes.txt`).
 - Les autres : compilés sur un PC Windows, publiés avec `deploy/add-version.mjs` (aussi pour le Mac : `… mac`).
+- ONIRIQUE SESSION (dépôt `OniriqueSession`, application Python + pywebview, de Tom) : Windows en un seul .exe
+  (PyInstaller `--onefile`) compilé sur un PC ; Mac à chaque envoi sur `master` par GitHub Actions (`mac.yml`), une
+  .app Apple Silicon et une Intel, ouvertes une fois sur la machine de compilation (capture jointe aux artefacts). Une
+  version n'a qu'un fichier Mac dans CENTRAL : celui d'Apple Silicon. L'interface tourne dans le Safari du Mac : pas
+  de `(?<!`, de `color-mix` ni de propriétés CSS récentes, qui laissent la fenêtre vide ou sans couleurs.
+- SESSION est aussi dans l'application CENTRAL (rubrique SESSION, mêmes droits que CUT) : la page `site/session.html`
+  (fichiers dans `site/assets/session/`, copiés de `ui/` du dépôt OniriqueSession : les modifier ensemble) et
+  `app/main/session/`, le portage en Node de la partie Python (lecture des stems, .flp octet pour octet identique,
+  Pro Tools par PTSL en http2). Sa page ne reçoit pas l'habillage de la CENTRAL ; seule elle peut appeler
+  `session:*`. LUNA (AAF, pyaaf2) et le Mac restent dans l'application à part.
 
 ## Licences
 - Kit commun : `plugin-license/` (source de vérité, notice dans son README), copié sous `License/` dans chaque

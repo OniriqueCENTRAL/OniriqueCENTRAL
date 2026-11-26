@@ -327,6 +327,10 @@ dialog { padding: 0; border: 1px solid; color: var(--mist); max-width: calc(100v
 a.saver:hover { background: rgba(255,255,255,.05); }
 .saver img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex: none; }
 .saver small { display: block; color: var(--haze); font-size: 12px; }
+.saver > span { flex: 1; min-width: 0; }
+.saver-del { opacity: 0; }
+.saver:hover .saver-del, .saver-del:focus-visible { opacity: 1; }
+@media (hover: none) { .saver-del { opacity: 1; } }
 .dlg-head { display: flex; align-items: center; gap: 12px; padding: 16px 16px 0; }
 .dlg-head img, .dlg-head .cover-ph { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: none; }
 .dlg-head b { flex: 1; min-width: 0; font: 700 17px var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1450,7 +1454,12 @@ async function showSavers(p) {
       el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
     el("div", { className: "dlg-body savers" }, ...(list.length ? list.map((x) => el(x.handle ? "a" : "div", { className: "saver", ...(x.handle ? { href: "profil?u=" + encodeURIComponent(x.handle) } : {}) },
       el("img", { src: x.avatar ? x.avatar + "?w=120" : "assets/favicon.png?v=2", alt: "" }),
-      el("span", {}, el("b", { textContent: x.name }), el("small", { textContent: (x.handle ? "@" + x.handle + " · " : "") + "le " + when(x.at) }))))
+      el("span", {}, el("b", { textContent: x.name }), el("small", { textContent: (x.handle ? "@" + x.handle + " · " : "") + "le " + when(x.at) })),
+      p.mine ? el("button", { className: "x saver-del", type: "button", title: "Retirer " + x.name, ariaLabel: "Retirer " + x.name, onclick: (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (!confirm("Retirer " + x.name + " ? " + (p.kind === "playlist" ? "La playlist" : "Le projet") + " disparaîtra de sa page.")) return;
+        api("DELETE", "/me/sounds/projects/" + p.id + "/savers/" + x.id).then(() => { dialog.close(); showSavers(p); }, fail);
+      } }, icon("close")) : null))
       : [el("p", { className: "muted", textContent: "Personne n’a encore enregistré " + (p.kind === "playlist" ? "cette playlist" : "ce projet") + " depuis un de ses liens." })])));
   dialog.addEventListener("close", () => dialog.remove());
   document.body.append(dialog);
@@ -2193,7 +2202,7 @@ async function detectProd(file) {
   const length = Math.min(source.duration, 240), from = (source.duration - length) / 2;
   const mono = await A.render(source, { rate: 22050, channels: 1, from, to: from + length });
   return new Promise((resolve) => {
-    const worker = new Worker("assets/bpm-key-worker.js?v=2"), samples = mono.getChannelData(0);
+    const worker = new Worker("assets/bpm-key-worker.js?v=3"), samples = mono.getChannelData(0);
     worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
     worker.onerror = () => { worker.terminate(); resolve({}); };
     worker.postMessage({ samples, sampleRate: 22050 }, [samples.buffer]);

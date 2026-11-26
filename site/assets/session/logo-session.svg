@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Logo ONIRIQUE Session : les stems posés en pistes, tous partis du même point (la tête de lecture et l'étoile). -->
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0D0809"/>
+      <stop offset=".55" stop-color="#1A080A"/>
+      <stop offset="1" stop-color="#5C0B16"/>
+    </linearGradient>
+    <radialGradient id="braise" cx="50%" cy="100%" r="70%">
+      <stop offset="0" stop-color="#E23444" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#E23444" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="clip" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFECEE"/>
+      <stop offset="1" stop-color="#FFECEE" stop-opacity=".35"/>
+    </linearGradient>
+    <linearGradient id="lead" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FF6B78"/>
+      <stop offset="1" stop-color="#E23444" stop-opacity=".55"/>
+    </linearGradient>
+    <filter id="lueur" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#fond)"/>
+  <rect width="1024" height="1024" rx="224" fill="url(#braise)"/>
+  <rect x="6" y="6" width="1012" height="1012" rx="218" fill="none" stroke="#FFD2D6" stroke-opacity=".12" stroke-width="4"/>
+  <g filter="url(#lueur)">
+    <!-- La tête de lecture -->
+    <rect x="238" y="214" width="10" height="600" rx="5" fill="#FFECEE" opacity=".55"/>
+    <!-- Les pistes : longueurs et silences différents, même départ -->
+    <rect x="268" y="262" width="500" height="64" rx="32" fill="url(#clip)"/>
+    <rect x="268" y="366" width="300" height="64" rx="32" fill="url(#clip)"/>
+    <rect x="608" y="366" width="170" height="64" rx="32" fill="url(#clip)" opacity=".8"/>
+    <rect x="268" y="470" width="528" height="64" rx="32" fill="url(#lead)"/>
+    <rect x="268" y="574" width="190" height="64" rx="32" fill="url(#clip)"/>
+    <rect x="498" y="574" width="250" height="64" rx="32" fill="url(#clip)" opacity=".8"/>
+    <rect x="268" y="678" width="420" height="64" rx="32" fill="url(#clip)"/>
+    <!-- L'étoile à quatre branches de la charte, en haut de la tête de lecture -->
+    <path d="M243 112 Q243 200 331 200 Q243 200 243 288 Q243 200 155 200 Q243 200 243 112 Z" fill="#FFECEE"/>
+  </g>
+</svg>

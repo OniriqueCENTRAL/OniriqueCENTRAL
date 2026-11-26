@@ -12,6 +12,9 @@
 - Paiement en 10 fois (`LEASE`, `payments.js`) : prix du plugin (soldé s'il l'est, 30 € au moins) en 10 mensualités,
   licence `lease:<abonnement>` au mois puis définitive à la dixième ; les mensualités sont comptées chez Stripe
   (`invoice.paid`, ajouté aux webhooks au démarrage par `syncStripeHooks`).
+- Onglet « GAINS » du panel admin (route `/api/admin/gains`, règle et charges dans `server/src/control.js`) : chaque vente
+  encaissée par ONIRIQUE se partage en 20 % charges, 50 % au fondateur créateur du plugin (`products.founder_id`),
+  15 % à chacun des deux autres. Calcul à l'affichage, aucun virement automatique.
 - Restent à faire côté légal : identité de l'éditeur dans les mentions légales, médiateur, achat réel d'essai.
 
 ## Packs de prods (ONIRIQUE CLOUD, `sound_projects.kind = 'pack'`)

@@ -253,6 +253,32 @@ try {
     assert.ok('avatar' in users[0], 'la photo de profil est dans la liste des comptes');
   });
 
+  await step('GAINS : 20 % charges, 50 % au créateur du plugin, le reste partagé entre les deux autres', async () => {
+    const tom = await account('tom', 'founder');
+    const nov = await account('nov', 'founder');
+    run(`UPDATE users SET role = 'admin' WHERE role = 'founder' AND id NOT IN (?, ?, ?)`, founder.id, tom.id, nov.id);
+    await call('PUT', `/api/admin/gains/products/${a.id}`, { token: admin.token, body: { founderId: tom.id }, expect: 403 });
+    await call('PUT', `/api/admin/gains/products/${a.id}`, { token: founder.token, body: { founderId: alice.id }, expect: 400 });
+    await call('PUT', `/api/admin/gains/products/${a.id}`, { token: founder.token, body: { founderId: tom.id } });
+    await call('PUT', `/api/admin/gains/products/${b.id}`, { token: founder.token, body: { founderId: nov.id } });
+    await call('PUT', `/api/admin/gains/products/${partnerPlugin.id}`, { token: founder.token, body: { founderId: nov.id }, expect: 404 });
+    const pack = run(`INSERT INTO packs (name, price_cents, product_ids, created_at) VALUES ('AB', 4000, ?, 0)`, JSON.stringify([a.id, b.id])).lastInsertRowid;
+    const when = Date.UTC(2020, 0, 15);
+    const sale = (kind, ref, cents, provider = 'stripe') => run(`INSERT INTO orders (user_id, kind, ref_id, amount_cents, provider, created_at) VALUES (?, ?, ?, ?, ?, ?)`, alice.id, kind, ref, cents, provider, when);
+    sale('product', a.id, 10000);            // Tom 50 %, les deux autres 15 % chacun
+    sale('pack', pack, 4000);                // moitié A (Tom), moitié B (Nov)
+    sale('product', partnerPlugin.id, 9999); // encaissé par ABRASION : hors partage
+    sale('product', a.id, 3000, 'promo');    // offert : rien d'encaissé
+    await call('GET', '/api/admin/gains', { token: alice.token, expect: 403 });
+    const g = await call('GET', '/api/admin/gains', { token: admin.token });
+    const m = g.months.find((x) => x.month === '2020-01');
+    assert.equal(m.cents, 14000);
+    assert.equal(m.charges, 2800);
+    assert.deepEqual(m.founders, { [founder.id]: 1500 + 600, [tom.id]: 5000 + 1300, [nov.id]: 1500 + 1300 });
+    assert.equal(m.charges + Object.values(m.founders).reduce((s, v) => s + v, 0), m.cents);
+    assert.ok(g.costs.length === 3 && g.products.every((p) => p.name !== 'RAW'));
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

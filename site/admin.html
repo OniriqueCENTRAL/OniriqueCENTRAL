@@ -389,6 +389,24 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     </div>
     </section>
 
+    <!-- L'équipe : ce que coûte ONIRIQUE chaque mois et comment l'argent de la boutique se partage -->
+    <section class="tab" id="tab-gains" data-label="GAINS" data-staff>
+    <div class="tiles" id="gains-tiles"></div>
+    <div class="bar"><h2>Charges</h2></div>
+    <p class="sub">Ce que coûte ONIRIQUE pour tourner, ramené au mois.</p>
+    <div class="table"><table><tbody id="gains-costs"></tbody></table></div>
+    <div class="bar"><h2>Répartition</h2><button class="act" id="gains-reload" type="button">Actualiser</button></div>
+    <p class="sub">Calculée toute seule sur chaque vente encaissée par ONIRIQUE (plugins ONIRIQUE, abonnements, packs) : <strong>20 %</strong> pour les charges (serveur, Claude, nom de domaine), <strong>50 %</strong> pour le fondateur qui a créé le plugin vendu, et le reste, <strong>15 %</strong> chacun, pour les deux autres fondateurs. Un pack ou un abonnement partage ses 50 % entre les créateurs de ses plugins ; l'All Access, l'abonnement à la carte et ONIRIQUE CLOUD comptent tous les plugins ONIRIQUE. Les plugins des partenaires (RELIC, ABRASION) sont encaissés par eux et n'entrent pas dans ce partage, pas plus que les plugins gratuits ou offerts par un code. Les renouvellements d'abonnement, suivis chez Stripe, ne sont pas encore comptés.</p>
+    <p class="error" id="gains-error" role="alert"></p>
+    <div class="table"><table>
+      <thead id="gains-head"></thead>
+      <tbody id="gains-months"></tbody>
+    </table></div>
+    <div class="bar"><h2>Créateur de chaque plugin</h2></div>
+    <p class="sub" id="gains-owners-info">Celui qui touche les 50 % des ventes du plugin. Un plugin sans créateur partage ses 80 % à parts égales entre les fondateurs.</p>
+    <div class="table"><table><tbody id="gains-owners"></tbody></table></div>
+    </section>
+
     <!-- Réservé aux fondateurs : l'argent encaissé par ONIRIQUE pour les vendeurs, et les versements à faire -->
     <section class="tab" id="tab-payouts" data-label="Versements" hidden>
     <div class="tiles" id="payouts-tiles"><div class="tile"><b>…</b><span>Solde à verser</span></div></div>
@@ -1606,9 +1624,50 @@ async function loadPayouts() {
 }
 $("payouts-reload").onclick = loadPayouts;
 
+//------------------------------------------------------------------------------ GAINS (équipe)
+// Les charges du mois et la part de chacun, mois par mois ; le serveur fait le calcul (route /admin/gains).
+async function loadGains() {
+  let g;
+  try { g = await api("GET", "/admin/gains"); $("gains-error").textContent = ""; }
+  catch (error) { $("gains-error").textContent = error.message; return; }
+  const monthly = g.costs.reduce((s, c) => s + c.monthlyCents, 0);
+  const sum = (pick) => g.months.reduce((s, m) => s + pick(m), 0);
+  const current = new Date().toISOString().slice(0, 7);
+  const now = g.months.find((m) => m.month === current) || { cents: 0, charges: 0, founders: {} };
+  $("gains-tiles").replaceChildren(...[["Charges par mois", monthly], ["Encaissé ce mois-ci", now.cents], ["20 % charges ce mois-ci", now.charges],
+    ...g.founders.map((f) => [`${f.name} · ce mois-ci`, now.founders[f.id] || 0]), ["Encaissé depuis le début", sum((m) => m.cents)]]
+    .map(([label, cents]) => el("div", { className: "tile" }, el("b", { textContent: money(cents) }), el("span", { textContent: label }))));
+  $("gains-costs").replaceChildren(...g.costs.map((c) => el("tr", {}, el("td", { textContent: c.label }), el("td", { className: "sub", textContent: c.detail }), el("td", { textContent: money(c.monthlyCents) + " / mois" }))),
+    el("tr", {}, el("td", {}, el("strong", { textContent: "Total" })), el("td", { className: "sub", textContent: money(monthly * 12) + " par an" }), el("td", {}, el("strong", { textContent: money(monthly) + " / mois" }))));
+  $("gains-head").replaceChildren(el("tr", {}, ...["Mois", "Encaissé", "Charges (20 %)", ...g.founders.map((f) => f.name)].map((t) => el("th", { textContent: t }))));
+  const month = (key) => new Date(key + "-15").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  $("gains-months").replaceChildren(...(g.months.length ? [...g.months.map((m) => el("tr", {},
+    el("td", {}, month(m.month), el("div", { className: "sub", textContent: `${m.sales} vente${m.sales > 1 ? "s" : ""}` })),
+    el("td", { textContent: money(m.cents) }),
+    el("td", {}, money(m.charges), el("div", { className: "sub", textContent: m.charges >= monthly ? "charges couvertes" : `manque ${money(monthly - m.charges)}` })),
+    ...g.founders.map((f) => el("td", { textContent: money(m.founders[f.id] || 0) })))),
+    el("tr", {}, el("td", {}, el("strong", { textContent: "Total" })), el("td", {}, el("strong", { textContent: money(sum((m) => m.cents)) })),
+      el("td", {}, el("strong", { textContent: money(sum((m) => m.charges)) })), ...g.founders.map((f) => el("td", {}, el("strong", { textContent: money(sum((m) => m.founders[f.id] || 0)) }))))]
+    : [el("tr", {}, el("td", { colSpan: 3 + g.founders.length, className: "sub", textContent: "Aucune vente encaissée pour le moment." }))]));
+  // Le créateur de chaque plugin : seul un fondateur le change.
+  const founder = me.role === "founder";
+  $("gains-owners").replaceChildren(...g.products.map((p) => {
+    const pick = el("select", { className: "act", disabled: !founder, ariaLabel: "Créateur de " + p.name },
+      el("option", { value: "", textContent: "Personne", selected: !p.founderId }),
+      ...g.founders.map((f) => el("option", { value: String(f.id), textContent: f.name, selected: f.id === p.founderId })));
+    pick.onchange = async () => {
+      try { await api("PUT", `/admin/gains/products/${p.id}`, { founderId: pick.value ? Number(pick.value) : null }); await loadGains(); }
+      catch (error) { $("gains-error").textContent = error.message; }
+    };
+    return el("tr", {}, el("td", { textContent: p.name }), el("td", {}, pick));
+  }));
+  if (!founder) $("gains-owners-info").textContent = "Celui qui touche les 50 % des ventes du plugin. Seul un fondateur peut le changer.";
+}
+$("gains-reload").onclick = loadGains;
+
 //------------------------------------------------------------------------------ Rubriques
 // Une barre d'onglets : la rubrique choisie est gardée dans l'adresse (#boutique…) et sur l'appareil.
-const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site", "tab-payouts": "versements", "tab-knob": "knob", "tab-da": "da" };
+const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site", "tab-payouts": "versements", "tab-gains": "gains", "tab-knob": "knob", "tab-da": "da" };
 function markTab(id, badge) {
   const button = document.querySelector(`#tabs [aria-controls="${id}"]`);
   if (!button) return;
@@ -1715,7 +1774,7 @@ function showDisk(disk) {
     $("panel").hidden = false;
     // Chaque partie se charge de son côté : une lente (boîte mail, réseaux) ne retient plus toute la page.
     const parts = [loadUsers, loadSupport, loadOrders, loadPlans, loadPacks, loadLive, loadProducts, loadPromos, loadMailbox, loadBrandKit,
-      loadSounds, loadRights, loadSocials, loadReferral, () => loadMailings(true), loadCredits, loadPayouts];
+      loadSounds, loadRights, loadSocials, loadReferral, () => loadMailings(true), loadCredits, loadPayouts, loadGains];
     const failed = (await Promise.allSettled(parts.map((load) => load()))).filter((r) => r.status === "rejected");
     if (failed.some((r) => r.reason && r.reason.status === 401)) return gate("Session expirée.", "Se reconnecter");
     if (failed.length) $("error").textContent = failed.length + (failed.length > 1 ? " parties n'ont" : " partie n'a") + " pas pu être chargée(s) : " + failed[0].reason.message;

@@ -50,12 +50,16 @@ body {
 ::-webkit-scrollbar-thumb { background: rgba(255, 235, 238, 0.12); border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 235, 238, 0.24); background-clip: content-box; border: 3px solid transparent; }
 
-/* Fond : la nuit et trois taches floues. */
+/* Fond : la nuit et trois taches floues. Le flou est dessiné par un dégradé au profil d'un flou de 90 px (une ellipse
+   floutée, bord à mi-hauteur, fondu sur trois écarts de chaque côté) : un filtre blur() serait refait par la carte
+   graphique à chaque image animée de l'application, et ferait tomber l'interface sous les 60 images par seconde. */
 .backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: var(--night); overflow: hidden; }
-.backdrop::before, .backdrop::after, .backdrop-glow { content: ''; position: absolute; border-radius: 50%; filter: blur(90px); }
-.backdrop::before { width: 720px; height: 560px; left: -220px; top: -260px; background: rgba(var(--acc-lo), 0.55); }
-.backdrop::after { width: 680px; height: 520px; right: -240px; bottom: -280px; background: rgba(var(--acc-lo), 0.45); }
-.backdrop-glow { width: 520px; height: 360px; left: 38%; top: 34%; background: rgba(var(--acc), 0.10); }
+.backdrop::before, .backdrop::after, .backdrop-glow { content: ''; position: absolute; --a: 0; --c: var(--acc-lo);
+  background: radial-gradient(closest-side, rgba(var(--c), var(--a)), rgba(var(--c), calc(var(--a) * .98)) 22%, rgba(var(--c), calc(var(--a) * .84)) 37%,
+    rgba(var(--c), calc(var(--a) * .5)) 53%, rgba(var(--c), calc(var(--a) * .16)) 68%, rgba(var(--c), calc(var(--a) * .02)) 84%, rgba(var(--c), 0)); }
+.backdrop::before { width: 1260px; height: 1100px; left: -490px; top: -530px; --a: .55; }
+.backdrop::after { width: 1220px; height: 1060px; right: -510px; bottom: -550px; --a: .45; }
+.backdrop-glow { width: 1060px; height: 900px; left: calc(38% - 270px); top: calc(34% - 270px); --a: .10; --c: var(--acc); }
 
 #app { position: relative; z-index: 1; height: 100%; display: grid; grid-template-rows: 52px 1fr; }
 
@@ -154,6 +158,9 @@ body {
 /* Chaque écran occupe toute la place à droite du menu, posé sur le fond de l'application (comme CUT et CLOUD) :
    pas de cadre autour, des marges qui suivent la fenêtre ; ses panneaux de verre portent le contenu. */
 .main { overflow-y: auto; padding: 0; min-width: 0; }
+/* Défilés par la carte graphique : sans ce calque à part (le fond transparent l'empêche), chaque cran de molette
+   faisait redessiner tout l'écran (images sautées pendant le défilement). */
+.main, .sidebar { will-change: scroll-position; }
 .main > .inner {
   min-height: 100%; padding: 26px clamp(20px, 3vw, 56px) 40px;
   animation: arrive .55s var(--ease);
@@ -307,7 +314,9 @@ button.key.copy:hover { color: var(--pink); }
 .cover img.shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .cover img.shot.framed { object-position: center; }
 .cover img.mark { width: 34%; opacity: .5; filter: grayscale(1) brightness(1.6); }
-.cover .pill { position: absolute; top: 10px; left: 10px; backdrop-filter: blur(10px); background: rgba(9, 8, 10, 0.72); }
+/* Pastilles posées sur l'image : un fond un peu plus dense au lieu d'un flou d'arrière-plan, refait à chaque image du
+   défilement pour chaque carte. */
+.cover .pill { position: absolute; top: 10px; left: 10px; background: rgba(9, 8, 10, 0.8); }
 .card-body { display: flex; flex-direction: column; gap: 6px; padding: 14px 18px 18px; flex: 1; min-width: 0; }
 .card-body .creator { font: 500 9px/1 var(--mono); letter-spacing: 0.12em; color: var(--haze); text-transform: uppercase; }
 .card-body > .muted { color: var(--text); font-size: 13px; }
@@ -444,7 +453,7 @@ button.key.copy:hover { color: var(--pink); }
 
 /* ---------- Bibliothèque : sélectionner des plugins à installer ---------- */
 .card .pick { position: absolute; top: 18px; right: 18px; z-index: 2; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; cursor: pointer;
-  background: rgba(9,8,10,.72); backdrop-filter: blur(10px); box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset; }
+  background: rgba(9,8,10,.8); box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset; }
 .card .pick input[type='checkbox'] { width: 16px; height: 16px; border-radius: 5px; background: rgba(0,0,0,.4); box-shadow: 0 0 0 1px rgba(255,255,255,.3) inset; }
 .card .pick input[type='checkbox']::after { content: none; }
 .card .pick input[type='checkbox']:checked { background: rgb(var(--acc)); box-shadow: 0 0 0 1px rgba(var(--acc-hi), .8) inset, 0 0 10px rgba(var(--acc), .6); }

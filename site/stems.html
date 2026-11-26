@@ -259,7 +259,7 @@ function commonName(files) {
 }
 
 const analyse = (samples) => new Promise((resolve) => {
-  const worker = new Worker("assets/bpm-key-worker.js?v=2");
+  const worker = new Worker("assets/bpm-key-worker.js?v=3");
   worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
   worker.onerror = () => { worker.terminate(); resolve({}); };
   worker.postMessage({ samples, sampleRate: RATE }, [samples.buffer]);
