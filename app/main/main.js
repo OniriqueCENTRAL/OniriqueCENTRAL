@@ -76,7 +76,7 @@ function coverWindow() {
   const [width, height] = win.getContentSize();
   fullView.view.setBounds({ x: 0, y: 0, width, height });
 }
-let shownTool = null, frozen = false; // frozen : une fenêtre de l'application (Paramètres…) est ouverte par-dessus
+let shownTool = null, shownView = null, frozen = false; // frozen : une fenêtre de l'application (Paramètres…) est ouverte par-dessus
 const toolContents = new Set(); // les pages de CUT et CLOUD, seules à pouvoir ouvrir la fenêtre de confirmation // l'outil à l'écran, pour le bouton « précédent » de la souris
 // ONIRIQUE_SITE : un site local, pour essayer CUT et CLOUD avant de les mettre en ligne (comme ONIRIQUE_SERVER pour l'API).
 const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
@@ -988,13 +988,16 @@ app.whenReady().then(async () => {
   handle('tool:show', async (tool, bounds, lang) => {
     await toolView(tool, lang);
     const view = await viewFor(tool);
+    toolBounds = Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))]));
+    // L'outil déjà à l'écran change seulement de place (le menu qui se déplie, image par image) : rien d'autre à refaire,
+    // sinon CLOUD serait regaré et relu à chaque image de l'animation.
+    if (shownTool === tool && shownView === view && !frozen && fullView?.view !== view) return view.setBounds(toolBounds);
     for (const other of toolViews.values()) if ((await other) !== view) await hideView(await other);
     if (!win.contentView.children.includes(view)) win.contentView.addChildView(view);
-    toolBounds = Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))]));
     if (fullView?.view === view) coverWindow(); else view.setBounds(toolBounds);
     // Une fenêtre de l'application est ouverte : l'outil reste caché derrière son image.
     if (frozen) await hideView(view); else await showView(view);
-    shownTool = tool;
+    shownTool = tool; shownView = frozen ? null : view;
     if (tool === 'cut' && !store.cutUsed) store.cutUsed = true;
   });
   // CUT préparé en fond (page chargée, cachée) pour s'ouvrir sans attente, chez qui s'en sert déjà.

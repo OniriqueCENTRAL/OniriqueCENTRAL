@@ -289,6 +289,11 @@ const svgEl = (tag, attrs) => { const n = document.createElementNS(NS, tag); for
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 // Sur téléphone, pas de balancement : la carte immobile ne coûte plus rien, on ne recalcule que quand elle bouge.
 const still = reduced || matchMedia("(pointer: coarse)").matches;
+// Le ciel, et le balancement de la carte au repos : 60 images par seconde au plus, même sur un écran plus rapide (chaque
+// image redessine le ciel et recompose le plan en perspective et le verre posé dessus). Le premier qui passe dans une
+// image ouvre le pas pour l'autre, pour qu'ils bougent sur les mêmes images.
+let beat = 0;
+const onBeat = (t) => { if (t - beat >= 15) beat = t; return beat === t; };
 const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
 const ROLES = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
 
@@ -323,7 +328,7 @@ const cityNodes = new Map();
   let last = 0;
   const frame = (t) => {
     if (!reduced) requestAnimationFrame(frame);
-    if (t - last < (still ? 33 : 0)) return; // 60 images/s, 30 sur téléphone (le scintillement est lent)
+    if (still ? t - last < 33 : !onBeat(t)) return; // 60 images/s, 30 sur téléphone (le scintillement est lent)
     last = t;
     g.clearRect(0, 0, w, h);
     for (const s of stars) {
@@ -404,6 +409,8 @@ Object.assign(cam, start);
 let lastView = "";
 const PERSP = 1400, halls = document.getElementsByClassName("hall"); // la perspective de #scene
 function tick(t) {
+  // Caméra arrivée : seul le balancement bouge, au pas du ciel. Quand on la manipule, la carte suit à chaque image.
+  if (["ax", "az", "z", "px", "py"].every((k) => cam[k] === goal[k]) && !onBeat(t)) return requestAnimationFrame(tick);
   for (const k of ["ax", "az", "z", "px", "py"]) { cam[k] += (goal[k] - cam[k]) * (reduced ? 1 : .065); if (Math.abs(goal[k] - cam[k]) < 1e-3) cam[k] = goal[k]; }
   const sway = still ? 0 : Math.sin(t / 4200) * 1.4, swayX = still ? 0 : Math.sin(t / 5300) * 1.2;
   const plane = $("plane"), view = [(cam.ax + swayX).toFixed(3), (cam.az + sway).toFixed(3), (cam.z / K).toFixed(5), cam.px.toFixed(2), cam.py.toFixed(2)];

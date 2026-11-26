@@ -299,28 +299,33 @@ new MutationObserver(async () => {
 
 function toolPage(tool) {
   const host = h('div', { class: 'tool-host' }, h('div', { class: 'tool-wait' }, starKnob(0.4, 110), h('div', { class: 'eyebrow' }, 'Ouverture…')));
-  // La page du site suit exactement la place de ce cadre, même quand la fenêtre change de taille.
+  // La page du site suit exactement la place de ce cadre, même quand la fenêtre change de taille. Pendant que le menu se
+  // déplie ou se replie, elle prend tout de suite sa largeur d'arrivée et glisse avec le bord du menu : changer sa taille
+  // à chaque image ferait attendre à la fenêtre qu'elle se redessine à chaque taille (images sautées, menu saccadé).
   const sync = () => {
     if (!host.isConnected || state.route.name !== tool) return;
     const r = host.getBoundingClientRect();
-    call('tool:show', tool, { x: r.left, y: r.top, width: r.width, height: r.height }, window.OniriqueI18n?.lang)
+    const width = slideTo === null ? r.width : r.right - slideTo;
+    call('tool:show', tool, { x: r.left, y: r.top, width, height: r.height }, window.OniriqueI18n?.lang)
       .then(() => { host.replaceChildren(); paintFrozen(); }, (error) => toast(error.message, true));
   };
   new ResizeObserver(sync).observe(host);
+  host.addEventListener('resync', sync);
   return host;
 }
 
 // Dans CUT et CLOUD, le menu se replie en une colonne étroite : l'outil ouvert, sa flèche pour déplier le menu, et
 // « Réinitialiser » pour repartir de zéro (ce qui est fait dans l'outil est gardé quand on passe de l'un à l'autre).
 let menuOpen = false;
+let slideTo = null, slides = 0; // pendant l'animation du menu : le bord gauche d'arrivée de la page de l'outil
 const chevron = (up) => {
   const box = h('span', { 'aria-hidden': 'true', style: { display: 'grid' } });
   box.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${up ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}"/></svg>`;
   return box;
 };
 const TOOL_NAMES = { cut: ['CUT', 'Clips sur le beat'], session: ['SESSION', 'Stems → projet'], cloud: ['CLOUD', 'Mes sons · projets'], carte: ['CARTE', 'Membres · villes'], watchparty: ['WATCHPARTY', 'Regarder ensemble'] };
-// Déplier ou replier le menu de CUT et CLOUD en douceur : la colonne s'élargit ou se resserre (la page de l'outil la
-// suit image par image), et les rubriques apparaissent en fondu, l'une après l'autre.
+// Déplier ou replier le menu de CUT et CLOUD en douceur : la colonne s'élargit ou se resserre (la page de l'outil glisse
+// avec elle), et les rubriques apparaissent en fondu, l'une après l'autre.
 function toggleMenu(open) {
   const before = document.querySelector('.shell .sidebar')?.getBoundingClientRect().width;
   menuOpen = open;
@@ -328,7 +333,16 @@ function toggleMenu(open) {
   const shell = document.querySelector('.shell'), bar = shell?.querySelector('.sidebar');
   if (!shell || !bar || !before || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const after = bar.getBoundingClientRect().width, ease = 'cubic-bezier(.2, .8, .2, 1)';
-  shell.animate({ gridTemplateColumns: [`${before}px 1fr`, `${after}px 1fr`] }, { duration: 320, easing: ease });
+  slideTo = shell.getBoundingClientRect().left + after;
+  const slide = shell.animate({ gridTemplateColumns: [`${before}px 1fr`, `${after}px 1fr`] }, { duration: 320, easing: ease });
+  const mine = ++slides;
+  // Arrivée (ou autre écran ouvert entre-temps) : la page reprend la place exacte de son cadre.
+  slide.finished.catch(() => {}).then(() => { if (mine === slides) { slideTo = null; document.querySelector('.tool-host')?.dispatchEvent(new Event('resync')); } });
+  // Les rubriques gardent leur largeur d'arrivée pendant que la colonne change de taille (elle les dévoile ou les recouvre) :
+  // sinon elles seraient remises en page et redessinées, ombres comprises, à chaque image.
+  const widths = [...bar.children].map((node) => node.getBoundingClientRect().width);
+  [...bar.children].forEach((node, i) => { node.style.width = `${widths[i]}px`; });
+  slide.finished.catch(() => {}).then(() => [...bar.children].forEach((node) => { node.style.width = ''; }));
   [...bar.children].forEach((node, i) => node.animate(
     { opacity: [0, 1], transform: [`translateX(${open ? -10 : 6}px)`, 'none'] },
     { duration: 260, delay: 60 + Math.min(i, 8) * 22, easing: ease, fill: 'backwards' }));
