@@ -177,6 +177,13 @@ export function mountRatings(app, { requireUser }) {
       WHERE l.project_id = ? GROUP BY u.id ORDER BY at DESC LIMIT 500`, id)
       .map((r) => ({ id: r.id, name: r.name || 'Membre', avatar: r.avatar ? `/api/media/${r.avatar}` : null, role: r.role, handle: r.handle || null, at: r.at })));
   });
+  // Le créateur retire quelqu'un de cette liste : le projet disparaît de sa page (il peut le réenregistrer s'il a encore un lien ouvert).
+  app.delete('/api/me/sounds/projects/:id/savers/:user', ...me, (req, res) => {
+    const id = Number(req.params.id) || 0;
+    if (!get('SELECT 1 FROM sound_projects WHERE id = ? AND user_id = ?', id, req.user.id)) throw new HttpError(404, 'Projet introuvable.');
+    run('DELETE FROM sound_saves WHERE user_id = ? AND link_id IN (SELECT id FROM sound_links WHERE project_id = ?)', Number(req.params.user) || 0, id);
+    res.json({ ok: true });
+  });
   // Sur la page d'écoute : la playlist autorise-t-elle l'ajout de ses sons ? (sans compte : non)
   app.get('/api/sounds/share/:token/members-add', (req, res) => {
     const l = openLink(req.params.token), p = l && l.project_id ? get('SELECT kind, members_add, user_id FROM sound_projects WHERE id = ?', l.project_id) : null;

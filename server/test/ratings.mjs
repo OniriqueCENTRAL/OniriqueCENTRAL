@@ -80,7 +80,9 @@ try {
     run('INSERT INTO sound_saves (user_id, link_id, created_at) VALUES (?, ?, ?)', c.id, link, now());
     assert.deepEqual((await call('GET', `/api/me/sounds/projects/${pl}/savers`, { token: a.token })).map((x) => x.name), ['inconnu']);
     await call('GET', `/api/me/sounds/projects/${pl}/savers`, { token: b.token, expect: 404 });
-    run('DELETE FROM sound_saves WHERE user_id = ?', c.id);
+    await call('DELETE', `/api/me/sounds/projects/${pl}/savers/${c.id}`, { token: b.token, expect: 404 }); // pas le créateur
+    await call('DELETE', `/api/me/sounds/projects/${pl}/savers/${c.id}`, { token: a.token });
+    assert.deepEqual(await call('GET', `/api/me/sounds/projects/${pl}/savers`, { token: a.token }), []);
   });
 
   await step('ajouter un son de la playlist d’un autre : seulement si son créateur l’autorise', async () => {
