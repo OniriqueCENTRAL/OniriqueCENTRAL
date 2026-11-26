@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="assets/session/logo-session.svg">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/session/session.css?v=2">
+<link rel="stylesheet" href="assets/session/session.css?v=3">
 
 <header class="top">
   <div class="brand"><img src="assets/session/logo-session.svg" alt="" width="36" height="36"><span><small>ONIRIQUE</small>SESSION</span></div>
@@ -52,6 +52,11 @@
       <span>ou clique pour les choisir · fichiers ou dossier entier · WAV, AIFF, FLAC, MP3</span>
     </button>
 
+    <!-- La progression : lecture des fichiers, écoute piste par piste, tempo et tonalité. -->
+    <div class="progress" id="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Progression" hidden>
+      <div class="progress-track"><i id="progress-fill"></i></div>
+      <p><span id="progress-text"></span><b id="progress-count"></b></p>
+    </div>
     <div class="panel" id="table" hidden>
       <div class="panel-head">
         <p><b id="count"></b><span id="state"></span></p>
@@ -139,5 +144,5 @@
 </main>
 <script src="assets/session/audio-kit.js?v=1"></script>
 <script src="assets/session/stem-kind.js?v=1"></script>
-<script src="assets/session/session.js?v=2"></script>
+<script src="assets/session/session.js?v=3"></script>
 </html>

@@ -35,6 +35,8 @@ window.addFiles = async (list) => {
   guessFromNames();
   show();
   analysing += fresh.length;
+  batch.total += fresh.length;
+  progress();
   // Deux pistes à la fois : chacune est décodée en entier par la page, la mémoire suit.
   const queue = [...fresh];
   const worker = async () => {
@@ -45,18 +47,38 @@ window.addFiles = async (list) => {
       const ear = s.from !== "nom" || ["Lead", "Backs", "Adlibs", "Melodie"].includes(s.kind);
       if (ear || !s.seconds || !($("i-bpm").value && $("i-key").value)) {
         status(`Écoute de « ${s.name} »… (${analysing} restantes)`);
+        progress(`Écoute de « ${s.name} »`);
         await listen(s, ear).catch((e) => { s.unread = e.message || String(e); }); // reconnue au nom seulement
       }
       analysing--;
+      batch.done++;
+      progress();
       show();
     }
   };
   await Promise.all(Array.from({ length: Math.min(2, fresh.length) }, worker));
+  if (analysing) return; // un autre dépôt écoute encore : il finira la barre
   S.refine(live());
   status("");
   show();
-  if (!$("i-bpm").value || !$("i-key").value) measureTempo();
+  if (!$("i-bpm").value || !$("i-key").value) { progress("Tempo et tonalité, sur toutes les pistes ensemble"); await measureTempo(); }
+  progress(null);
 };
+
+// La barre de progression, sous la zone de dépôt : « Lecture des fichiers », puis l'écoute piste par piste, puis le tempo
+// et la tonalité. progress(texte) : ce qui se passe ; progress(null) : terminé, la barre disparaît.
+const batch = { total: 0, done: 0, text: "" };
+function progress(text) {
+  if (text === null) { Object.assign(batch, { total: 0, done: 0, text: "" }); $("progress").hidden = true; return; }
+  if (text !== undefined) batch.text = text;
+  const ratio = batch.total ? batch.done / batch.total : 0;
+  $("progress").hidden = false;
+  $("progress").classList.toggle("busy", !batch.total); // pas encore de pistes à compter : la barre attend
+  $("progress").setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
+  $("progress-fill").style.width = (batch.total ? Math.max(4, ratio * 100) : 100) + "%";
+  $("progress-text").textContent = batch.text || "Écoute des pistes";
+  $("progress-count").textContent = batch.total ? `${batch.done} / ${batch.total}` : "";
+}
 
 /** Décode la piste, la reconnaît (le nom d'abord, le son sinon) et l'ajoute au mélange qui donne tempo et tonalité. */
 async function listen(s, ear = true) {
@@ -76,11 +98,16 @@ async function listen(s, ear = true) {
   for (let i = 0, n = Math.min(mono.length, mix.length); i < n; i++) mix[i] += mono[i];
 }
 
+/** Tempo et tonalité sur toutes les pistes jouées ensemble ; la promesse se tient quand c'est fini (ou raté). */
 function measureTempo() {
-  if (!mix) return;
+  if (!mix) return Promise.resolve();
   const worker = new Worker("assets/bpm-key-worker.js?v=3");
+  let finish;
+  const finished = new Promise((r) => (finish = r));
+  worker.onerror = () => { worker.terminate(); finish(); };
   worker.onmessage = ({ data }) => {
     worker.terminate();
+    finish();
     const bpm = data.tempo && data.tempo.bpm; // le worker rend { bpm, strength }
     if (Number.isFinite(bpm) && bpm > 0 && !$("i-bpm").value) $("i-bpm").value = String(Math.round(bpm * 10) / 10).replace(/\.0$/, "");
     if (data.key && !$("i-key").value) $("i-key").value = keyName(data.key);
@@ -89,6 +116,7 @@ function measureTempo() {
     target();
   };
   worker.postMessage({ samples: mix.slice(), sampleRate: RATE }); // une copie : le mélange reste pour des pistes ajoutées
+  return finished;
 }
 
 /** Ce que les noms disent déjà : « 130BPM », « Bb min », un préfixe commun (« Mirage_Kick », « Mirage_Snare »). */
@@ -435,7 +463,16 @@ async function gate() {
     depth = 0;
     document.body.classList.remove("dragging");
     showStep("pistes");
-    const paths = api.paths(e.dataTransfer?.files);
-    if (paths.length) window.addFiles(await api.register(paths));
+    // En tableau : une FileList ne passe pas le pont de l'application (elle y arrive vide), un tableau de fichiers si.
+    const paths = api.paths([...(e.dataTransfer?.files || [])]);
+    if (!paths.length) return;
+    if (!analysing) progress("Lecture des fichiers");
+    const list = await api.register(paths).catch(() => []);
+    if (!list.length) {
+      if (!analysing) progress(null);
+      $("error").textContent = "Aucun fichier audio dans ce dépôt (WAV, AIFF, FLAC, MP3, OGG, M4A).";
+      return;
+    }
+    window.addFiles(list);
   });
 })();
