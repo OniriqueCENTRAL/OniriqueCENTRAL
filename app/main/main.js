@@ -82,9 +82,9 @@ const toolContents = new Set(); // les pages de CUT et CLOUD, seules à pouvoir 
 const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
 // « page » : la vue où s'ouvrent, par-dessus CLOUD, les pages qu'on y ouvre (profil, écoute, messages…) ; CLOUD reste
 // chargé dessous et son lecteur continue de jouer.
-const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html', carte: 'carte.html', watchparty: 'watchparty.html', page: 'robots.txt' };
+const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html', carte: 'carte.html', watchparty: 'watchparty.html', session: 'session.html', page: 'robots.txt' };
 // Les pages du site qui ont leur propre écran dans l'application.
-const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud', carte: 'carte', watchparty: 'watchparty' };
+const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud', carte: 'carte', watchparty: 'watchparty', session: 'session' };
 const TOOL_SKIN = fs.readFileSync(path.join(__dirname, 'tool-skin.css'), 'utf8');
 // Les connexions aux plateformes (Spotify, Apple Music, et les comptes Google, Apple ou Facebook qu'elles proposent)
 // restent dans l'application : la vue y passe, ou une petite fenêtre s'ouvre (MusicKit), puis on revient au CLOUD.
@@ -177,7 +177,8 @@ function toolView(tool, lang) {
     web.on('did-frame-finish-load', (_event, isMain) => { if (!isMain) setAudioDevices(web); });
     web.on('dom-ready', () => {
       setAudioDevices(web);
-      web.insertCSS(TOOL_SKIN + (accentVars ? `:root { ${accentVars} }` : '')).catch(() => {});
+      // ONIRIQUE SESSION garde sa propre D.A : pas d'habillage de la CENTRAL sur sa page.
+      if (tool !== 'session') web.insertCSS(TOOL_SKIN + (accentVars ? `:root { ${accentVars} }` : '')).catch(() => {});
       // Les fenêtres « OK / Annuler » de la page : celles de l'application (voir tool:dialog), plus la boîte de Windows.
       web.executeJavaScript(`if (window.oniriqueDialog) {
         window.alert = (m) => { window.oniriqueDialog('alert', m); };
@@ -455,6 +456,12 @@ ipcMain.handle('theme:accent', async (event, p) => {
 
 // Spotify connecté sur cet appareil (son cookie de session dans la session de CUT et CLOUD), et la déconnexion.
 const webSession = () => session.fromPartition('persist:onirique-web');
+// ONIRIQUE SESSION (main/session/) : lire les stems donnés, écrire le projet FL Studio ou Pro Tools. Réservé à sa page.
+require('./session').register(ipcMain, (event) => {
+  if (!toolContents.has(event.sender.id)) return false;
+  try { const u = new URL(event.sender.getURL()); return u.origin === new URL(SITE).origin && pageOf(u.href) === 'session'; } catch { return false; }
+}, () => win);
+
 ipcMain.handle('tool:spotify', async (event) => {
   if (!toolContents.has(event.sender.id)) return false;
   return (await webSession().cookies.get({ name: 'sp_dc' })).some((c) => /(^|\.)spotify\.com$/.test(c.domain.replace(/^\./, '')));

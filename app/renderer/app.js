@@ -273,7 +273,7 @@ export function avatar(user, big = false) {
 }
 
 /** Les outils du site, affichés dans l'application avec la session du compte (la vue est posée par main.js). */
-const TOOL_ROUTES = ['cut', 'cloud', 'carte', 'watchparty'];
+const TOOL_ROUTES = ['cut', 'session', 'cloud', 'carte', 'watchparty'];
 
 // Tant qu'une fenêtre de l'application est ouverte, l'outil affiché n'est plus qu'une image : la fenêtre passe
 // devant lui et les clics ne traversent plus jusqu'à la page.
@@ -318,7 +318,7 @@ const chevron = (up) => {
   box.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${up ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}"/></svg>`;
   return box;
 };
-const TOOL_NAMES = { cut: ['CUT', 'Clips sur le beat'], cloud: ['CLOUD', 'Mes sons · projets'], carte: ['CARTE', 'Membres · villes'], watchparty: ['WATCHPARTY', 'Regarder ensemble'] };
+const TOOL_NAMES = { cut: ['CUT', 'Clips sur le beat'], session: ['SESSION', 'Stems → projet'], cloud: ['CLOUD', 'Mes sons · projets'], carte: ['CARTE', 'Membres · villes'], watchparty: ['WATCHPARTY', 'Regarder ensemble'] };
 // Déplier ou replier le menu de CUT et CLOUD en douceur : la colonne s'élargit ou se resserre (la page de l'outil la
 // suit image par image), et les rubriques apparaissent en fondu, l'une après l'autre.
 function toggleMenu(open) {
@@ -423,6 +423,7 @@ function sidebar() {
     item('support', 'Support', 'Écrire à l\'équipe'),
     h('div', { class: 'eyebrow nav-label' }, 'Outils'),
     item('cut', 'CUT', 'Clips sur le beat'),
+    item('session', 'SESSION', 'Stems → projet'),
     item('cloud', 'CLOUD', 'Mes sons · projets'),
     item('carte', 'CARTE', 'Membres · villes'),
     canWatch(me.user) ? item('watchparty', 'WATCHPARTY', 'Regarder ensemble') : null,
@@ -462,6 +463,7 @@ const VIEWS = {
   admin: adminView,
   'support-admin': supportAdminView,
   cut: () => toolPage('cut'),
+  session: () => toolPage('session'),
   cloud: () => toolPage('cloud'),
   carte: () => toolPage('carte'),
   watchparty: () => toolPage('watchparty'),

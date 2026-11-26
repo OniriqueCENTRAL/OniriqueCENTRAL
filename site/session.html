@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<title>ONIRIQUE SESSION</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- La page ne marche que dans l'application ONIRIQUE CENTRAL (elle y écrit le projet sur l'ordinateur) : pas d'index. -->
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="assets/session/logo-session.svg">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/session/session.css?v=1">
+
+<header class="top">
+  <div class="brand"><img src="assets/session/logo-session.svg" alt="" width="36" height="36"><span><small>ONIRIQUE</small>SESSION</span></div>
+  <!-- Les étapes : des clips sur une piste, la tête de lecture et l'étoile sur celle en cours (comme le logo). -->
+  <nav class="timeline" id="tabs" role="tablist" aria-label="Étapes">
+    <span class="playhead" id="playhead" aria-hidden="true"></span>
+    <button type="button" role="tab" data-step="pistes"><b>01</b>Pistes</button>
+    <button type="button" role="tab" data-step="morceau"><b>02</b>Morceau</button>
+    <button type="button" role="tab" data-step="template"><b>03</b>Template</button>
+    <button type="button" role="tab" data-step="projet"><b>04</b>Projet</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <!-- Hors de l'application, ou sans le droit : comme ONIRIQUE CUT. -->
+  <section class="locked" id="locked" hidden>
+    <img src="assets/session/logo-session.svg" alt="" width="72" height="72">
+    <h1 id="locked-title">ONIRIQUE SESSION</h1>
+    <p class="lede" id="locked-text"></p>
+    <a class="btn primary" id="locked-go" href="compte"></a>
+  </section>
+  <p class="error" id="error" role="alert"></p>
+
+  <!-- 01 · Les pistes -->
+  <section class="step" data-panel="pistes" role="tabpanel" aria-label="Pistes" hidden>
+    <div class="step-head">
+      <div><p class="num">01 <i>/ 04</i></p><h1>Les pistes</h1>
+        <p class="lede">Chaque stem est reconnu au nom, ou à l'écoute : son type, sa couleur et son bus suivent. Le type se corrige d'un clic.</p></div>
+      <button class="btn ghost" id="add" type="button" hidden>+ Ajouter des pistes</button>
+    </div>
+
+    <button class="drop" id="drop" type="button">
+      <svg class="lanes-art" viewBox="0 0 640 200" aria-hidden="true">
+        <g class="clips">
+          <rect x="40" y="20" width="420" height="22" rx="11"/><rect x="40" y="58" width="250" height="22" rx="11"/><rect x="310" y="58" width="150" height="22" rx="11"/>
+          <rect class="lead" x="40" y="96" width="460" height="22" rx="11"/><rect x="40" y="134" width="160" height="22" rx="11"/><rect x="220" y="134" width="210" height="22" rx="11"/>
+          <rect x="40" y="172" width="360" height="22" rx="11"/>
+        </g>
+        <g class="head"><rect x="24" y="8" width="3" height="190" rx="1.5"/><path d="M25.5 -12 Q25.5 4 41.5 4 Q25.5 4 25.5 20 Q25.5 4 9.5 4 Q25.5 4 25.5 -12 Z"/></g>
+      </svg>
+      <strong id="drop-title">Dépose toutes les pistes du morceau</strong>
+      <span>ou clique pour les choisir · fichiers ou dossier entier · WAV, AIFF, FLAC, MP3</span>
+    </button>
+
+    <div class="panel" id="table" hidden>
+      <div class="panel-head">
+        <p><b id="count"></b><span id="state"></span></p>
+        <p class="readout" id="readout"></p>
+      </div>
+      <div class="lanes">
+        <div class="lane labels" aria-hidden="true"><span></span><span>Type</span><span>Piste</span><span>Fichier</span><span>Bus</span><span>Format</span><span></span></div>
+        <div id="rows"></div>
+      </div>
+    </div>
+    <div class="step-foot" data-needs-stems hidden><span></span><button class="btn primary" type="button" data-go="morceau">Suivant : le morceau →</button></div>
+  </section>
+
+  <!-- 02 · Le morceau -->
+  <section class="step" data-panel="morceau" role="tabpanel" aria-label="Morceau" hidden>
+    <div class="step-head"><div><p class="num">02 <i>/ 04</i></p><h1>Le morceau</h1>
+      <p class="lede">Ce qui nomme le projet et remplit ses infos dans le DAW. Tempo et tonalité sont mesurés sur toutes les pistes jouées ensemble.</p></div></div>
+    <div class="song">
+      <div class="panel fields">
+        <label>Artiste<input id="i-artist" type="text" maxlength="80" placeholder="Nom de l'artiste"></label>
+        <label>Titre<input id="i-title" type="text" maxlength="80" placeholder="Titre du morceau"></label>
+        <label>Featuring<input id="i-feat" type="text" maxlength="80"></label>
+        <label>Producteur<input id="i-producer" type="text" maxlength="80"></label>
+        <label>Ingé son<input id="i-engineer" type="text" maxlength="80"></label>
+        <label>Label<input id="i-label" type="text" maxlength="80"></label>
+        <label>Genre<input id="i-genre" type="text" maxlength="40"></label>
+        <label class="wide">Notes<textarea id="i-comments" maxlength="2000" placeholder="Ce que l'ingé son doit savoir"></textarea></label>
+      </div>
+      <div class="panel console">
+        <label>Tempo<span class="big-field"><input id="i-bpm" type="text" inputmode="decimal" maxlength="6" placeholder="—"><i>BPM</i></span></label>
+        <label>Tonalité<select id="i-key"></select></label>
+        <p class="note" id="found"></p>
+      </div>
+    </div>
+    <div class="step-foot"><button class="btn ghost" type="button" data-go="pistes">← Pistes</button><button class="btn primary" type="button" data-go="template">Suivant : la template →</button></div>
+  </section>
+
+  <!-- 03 · DAW et template -->
+  <section class="step" data-panel="template" role="tabpanel" aria-label="Template" hidden>
+    <div class="step-head"><div><p class="num">03 <i>/ 04</i></p><h1>DAW et template</h1>
+      <p class="lede">Le logiciel où le projet s'ouvre, et la template dont il reprend pistes, bus et réglages.</p></div></div>
+    <div class="daws" role="group" aria-label="DAW">
+      <button class="daw" type="button" data-daw="fl"><b>FL Studio</b><span>.flp prêt à ouvrir</span></button>
+      <button class="daw" type="button" data-daw="protools"><b>Pro Tools</b><span>session créée dans Pro Tools</span></button>
+      <button class="daw" type="button" data-daw="luna" disabled title="LUNA se prépare dans l'application ONIRIQUE Session, pour l'instant"><b>LUNA</b><span>dans l'app ONIRIQUE Session</span></button>
+    </div>
+    <p class="note" id="daw-note"></p>
+    <div class="panel block" id="template-block">
+      <p class="label">Template</p>
+      <div class="pills" id="templates" role="group" aria-label="Template"></div>
+      <details class="factory" id="factory" hidden><summary id="factory-title"></summary><div class="pills" id="factory-list"></div></details>
+      <div class="path-row"><span class="path" id="template">Aucune : bus et routing créés par l'app</span>
+        <button class="link" id="template-pick" type="button">Autre fichier…</button></div>
+      <p class="note" id="template-note"></p>
+    </div>
+    <div class="step-foot"><button class="btn ghost" type="button" data-go="morceau">← Morceau</button><button class="btn primary" type="button" data-go="projet">Suivant : le projet →</button></div>
+  </section>
+
+  <!-- 04 · Le projet -->
+  <section class="step" data-panel="projet" role="tabpanel" aria-label="Projet" hidden>
+    <div class="step-head"><div><p class="num">04 <i>/ 04</i></p><h1>Le projet</h1>
+      <p class="lede">Le dossier du client, un dernier coup d'œil, et le projet est créé avec ses pistes renommées, ses bus et ses couleurs.</p></div></div>
+    <div class="final">
+      <div class="panel block">
+        <p class="label">Dossier des clients</p>
+        <div class="path-row"><span class="path" id="folder"></span><button class="link" id="folder-pick" type="button">Changer</button></div>
+        <p class="label">Client</p>
+        <div class="pills" id="client" role="group" aria-label="Client"></div>
+      </div>
+      <div class="panel console recap">
+        <dl id="recap"></dl>
+        <p class="target" id="target"></p>
+        <button class="btn create" id="create" type="button">Créer le projet</button>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="done" id="done" hidden>
+          <p id="done-text"></p>
+          <div class="actions"><button class="btn primary" id="open" type="button">Ouvrir le projet</button>
+            <button class="link" id="show" type="button">Afficher le dossier</button>
+            <button class="link" id="again" type="button">Nouveau morceau</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="step-foot"><button class="btn ghost" type="button" data-go="template">← Template</button><span></span></div>
+  </section>
+</main>
+<script src="assets/session/audio-kit.js?v=1"></script>
+<script src="assets/session/stem-kind.js?v=1"></script>
+<script src="assets/session/session.js?v=1"></script>
+</html>

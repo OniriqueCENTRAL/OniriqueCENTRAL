@@ -72,6 +72,7 @@ const ICONS = {
   admin: 'M6 4v16M12 4v16M18 4v16M4 9h4M10 15h4M16 7h4',
   'support-admin': 'M4 14a8 8 0 0 1 16 0M4 14v5h3v-6H4M20 14v5h-3v-6h3',
   cut: 'M9 6a3 3 0 1 1-6 0a3 3 0 0 1 6 0M9 18a3 3 0 1 1-6 0a3 3 0 0 1 6 0M8.2 7.8L20 18M8.2 16.2L20 6',
+  session: 'M5 3v18M9 6h11M9 10.5h6M17.5 10.5h2.5M9 15h11M9 19.5h7', // la tête de lecture et les pistes du logo de SESSION
   cloud: 'M7 18a4.5 4.5 0 0 1-.6-9a6 6 0 0 1 11.4 1.5A3.8 3.8 0 0 1 17.5 18z',
   carte: 'M12 21s-6.5-5.8-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.2 12 21 12 21zM12 7.2l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z',
   self: 'M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0',
