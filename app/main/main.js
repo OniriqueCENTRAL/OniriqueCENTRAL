@@ -177,8 +177,8 @@ function toolView(tool, lang) {
     web.on('did-frame-finish-load', (_event, isMain) => { if (!isMain) setAudioDevices(web); });
     web.on('dom-ready', () => {
       setAudioDevices(web);
-      // ONIRIQUE SESSION garde sa propre D.A : pas d'habillage de la CENTRAL sur sa page.
-      if (tool !== 'session') web.insertCSS(TOOL_SKIN + (accentVars ? `:root { ${accentVars} }` : '')).catch(() => {});
+      // ONIRIQUE SESSION garde sa propre D.A : pas d'habillage de la CENTRAL sur sa page, seulement la couleur d'accent.
+      web.insertCSS((tool === 'session' ? '' : TOOL_SKIN) + (accentVars ? `:root { ${accentVars} }` : '')).catch(() => {});
       // Les fenêtres « OK / Annuler » de la page : celles de l'application (voir tool:dialog), plus la boîte de Windows.
       web.executeJavaScript(`if (window.oniriqueDialog) {
         window.alert = (m) => { window.oniriqueDialog('alert', m); };

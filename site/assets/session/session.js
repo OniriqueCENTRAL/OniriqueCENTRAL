@@ -14,6 +14,8 @@ const DAWS = {
 
 let api = null, settings = {}, stems = [], mix = null, daw = "fl", template = null, analysing = 0;
 const TOKEN = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
+// Dans ONIRIQUE CENTRAL : la page se fond dans l'application (session.css, html.in-central).
+if (window.oniriqueSession) document.documentElement.classList.add("in-central");
 
 //----------------------------------------------------------------------------------------------------------------------
 // Les pistes.
