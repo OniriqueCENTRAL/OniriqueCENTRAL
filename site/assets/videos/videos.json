@@ -177,6 +177,25 @@
     }
    },
    {
+    "src": "l2a-modeles.mp4",
+    "fr": {
+     "kicker": "Quatre modèles",
+     "title": "TUBE, GRAY, SILVER, L2",
+     "text": [
+      "Le menu MODEL, au-dessus du VU, change la génération de l'appareil. TUBE, le son d'origine. GRAY, le modèle peint du milieu des années 60 : plus chaud, des aigus un peu adoucis, un retour plus lent.",
+      "SILVER, la façade en aluminium de la fin des années 60 : le plus rapide, punchy et transparent. L2, l'ancêtre du début des années 60 : le plus lent, un son adouci, toujours en LIMIT."
+     ]
+    },
+    "en": {
+     "kicker": "Four models",
+     "title": "TUBE, GRAY, SILVER, L2",
+     "text": [
+      "The MODEL menu above the VU switches the generation of the unit. TUBE, the original sound. GRAY, the painted mid-60s model: warmer, slightly softer highs, a slower recovery.",
+      "SILVER, the brushed-aluminium late-60s front panel: the fastest, punchy and transparent. L2, the early-60s ancestor: the slowest, a mellow sound, always in LIMIT."
+     ]
+    }
+   },
+   {
     "src": "l2a-modes.mp4",
     "fr": {
      "kicker": "Deux modes",
