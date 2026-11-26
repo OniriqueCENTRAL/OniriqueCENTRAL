@@ -92,6 +92,14 @@ export const packView = (p) => ({
   productIds: parseProductIds(p.product_ids) || [],
 });
 
+// GAINS : la règle de partage et les charges qu'elle couvre (en centimes par mois).
+export const GAINS = { charges: 0.2, creator: 0.5 };
+export const GAINS_COSTS = [
+  { label: 'Serveur (VPS IONOS)', monthlyCents: 1799, detail: '17,99 € par mois' },
+  { label: 'Nom de domaine onirique.store', monthlyCents: 2_00 / 12, detail: '2 € par an' },
+  { label: '3 abonnements Claude Pro', monthlyCents: 3 * 2160, detail: '3 × 21,60 € TTC par mois' },
+];
+
 function price(value) {
   const cents = int(value);
   if (cents === null || cents < 0 || cents > 10_000_00) throw new HttpError(400, 'Prix invalide.');
@@ -270,6 +278,66 @@ export function mountControl(admin) {
       if (paid(o)) t.paidCents += o.amountCents;
     }
     res.json({ orders: rows.slice(0, 500), totals, count: rows.length, scope: req.creator || null });
+  });
+
+  // GAINS : chaque euro encaissé par ONIRIQUE (plugins ONIRIQUE, abonnements, packs) se partage en 20 % pour les charges,
+  // 50 % pour le fondateur qui a créé le plugin vendu, le reste à parts égales entre les autres. Un achat qui couvre
+  // plusieurs plugins (pack, abonnement) partage ses 50 % entre leurs créateurs, plugin par plugin ; sans plugin désigné
+  // (All Access, à la carte, ONIRIQUE CLOUD), tous les plugins ONIRIQUE comptent. Les partenaires encaissent les leurs.
+  admin.get('/gains', (req, res) => {
+    staff(req);
+    const founders = all(`SELECT id, name, email, engineer_name FROM users WHERE role = 'founder' ORDER BY id`)
+      .map((u) => ({ id: u.id, name: u.engineer_name || u.name || u.email.split('@')[0] }));
+    const products = all(`SELECT id, name, creator, founder_id FROM products ORDER BY position, name`);
+    const ours = products.filter((p) => p.creator === 'onirique');
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const lists = {
+      plan: new Map(all('SELECT id, product_ids FROM plans').map((p) => [p.id, parseProductIds(p.product_ids)])),
+      pack: new Map(all('SELECT id, product_ids FROM packs').map((p) => [p.id, parseProductIds(p.product_ids)])),
+    };
+    const rest = (1 - GAINS.charges - GAINS.creator) / Math.max(1, founders.length - 1);
+    // La part de chaque fondateur dans un achat ; avec les charges, la somme fait 1.
+    const split = (ids) => {
+      const share = Object.fromEntries(founders.map((f) => [f.id, 0]));
+      const made = ids.map((id) => byId.get(id)?.founder_id).filter((id) => id in share);
+      if (!made.length) { for (const f of founders) share[f.id] += (1 - GAINS.charges) / founders.length; return share; }
+      for (const maker of made) for (const f of founders) share[f.id] += (f.id === maker ? GAINS.creator : rest) / made.length;
+      return share;
+    };
+    const months = new Map();
+    const orders = all(`SELECT kind, ref_id, amount_cents, provider, created_at FROM orders
+                        UNION ALL SELECT kind, ref_id, amount_cents, provider, created_at FROM orders_archive`);
+    for (const o of orders) {
+      if (['free', 'promo', 'demo'].includes(o.provider) || !(o.amount_cents > 0)) continue;
+      let ids;
+      if (['product', 'monthly', 'lease'].includes(o.kind)) {
+        if ((byId.get(o.ref_id)?.creator || 'onirique') !== 'onirique') continue;
+        ids = [o.ref_id];
+      } else ids = lists[o.kind]?.get(o.ref_id) || ours.map((p) => p.id);
+      const d = new Date(o.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!months.has(key)) months.set(key, { month: key, cents: 0, sales: 0, charges: 0, founders: {} });
+      const m = months.get(key);
+      m.cents += o.amount_cents;
+      m.sales++;
+      m.charges += o.amount_cents * GAINS.charges;
+      for (const [id, part] of Object.entries(split(ids))) m.founders[id] = (m.founders[id] || 0) + o.amount_cents * part;
+    }
+    const round = (m) => ({ ...m, charges: Math.round(m.charges), founders: Object.fromEntries(Object.entries(m.founders).map(([k, v]) => [k, Math.round(v)])) });
+    res.json({
+      rules: GAINS, costs: GAINS_COSTS.map((c) => ({ ...c, monthlyCents: Math.round(c.monthlyCents) })), founders,
+      months: [...months.values()].sort((x, y) => y.month.localeCompare(x.month)).map(round),
+      products: ours.map((p) => ({ id: p.id, name: p.name, founderId: p.founder_id })),
+    });
+  });
+
+  // Le créateur d'un plugin (celui qui touche ses 50 %) : seul un fondateur le change.
+  admin.put('/gains/products/:id', (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    const founderId = req.body?.founderId === null ? null : int(req.body?.founderId, 0);
+    if (founderId !== null && !get(`SELECT 1 FROM users WHERE id = ? AND role = 'founder'`, founderId)) throw new HttpError(400, 'Fondateur inconnu.');
+    if (!run(`UPDATE products SET founder_id = ? WHERE id = ? AND creator = 'onirique'`, founderId, int(req.params.id, 0)).changes) throw new HttpError(404, 'Plugin introuvable.');
+    res.json({ ok: true });
   });
 
   // Les fondateurs, pour choisir l'ingé d'un crédit.
