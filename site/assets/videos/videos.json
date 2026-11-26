@@ -158,7 +158,7 @@
   "replace": true,
   "items": [
    {
-    "src": "l2a-niveler.mp4",
+    "src": "l2a-niveler.mp4?v=2",
     "fr": {
      "kicker": "Le compresseur optique",
      "title": "Deux boutons suffisent",
@@ -196,7 +196,7 @@
     }
    },
    {
-    "src": "l2a-modes.mp4",
+    "src": "l2a-modes.mp4?v=2",
     "fr": {
      "kicker": "Deux modes",
      "title": "COMPRESS ou LIMIT",
@@ -215,7 +215,7 @@
     }
    },
    {
-    "src": "l2a-mix.mp4",
+    "src": "l2a-mix.mp4?v=2",
     "fr": {
      "kicker": "En bas",
      "title": "MIX et OVERSAMPLING",
