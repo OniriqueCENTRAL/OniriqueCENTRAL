@@ -5,10 +5,10 @@
 //
 // Tempo : enveloppe des attaques (flux spectral sur quatre bandes), puis autocorrélation ; le battement retenu est
 // celui dont le demi-temps se répète aussi, et 2, 4 et 8 temps plus loin, puis il est affiné sur 8, 16, 32 et 64 temps.
-// Tonalité : énergie des douze notes sur tout le morceau (pics du spectre dès 30 Hz, accordage estimé), comparée aux
-// profils de Temperley des 24 tonalités.
-// Mesuré sur 95 prods nommées par leurs beatmakers (BPM) dont 60 avec leur tonalité : BPM juste 77 % → 87 %,
-// tonalité juste 25 % → 60 % (les profils de Krumhansl lisaient la quinte ou le majeur à cause des harmoniques des 808).
+// Tonalité : saillance des notes sur tout le morceau (pics du spectre dès 40 Hz, accordage estimé, harmoniques rendues à
+// leur note), dans la basse et au-dessus, comparée à des profils appris sur des prods rap.
+// Mesuré sur 95 prods nommées par leurs beatmakers (BPM) : BPM juste 77 % → 87 %. Tonalité, sur 105 prods rap :
+// 29 % avec les profils de Krumhansl, 58 % avec ceux de Temperley, 64 % avec les profils appris (validation croisée).
 
 /** FFT en place pour une taille puissance de deux. */
 function makeFFT(n) {
@@ -147,10 +147,19 @@ function tempo(x, sampleRate) {
 //==============================================================================
 //  Tonalité
 //==============================================================================
-// Profils de Temperley (Music and Probability, 2007) : la tierce et la quinte y pèsent moins par rapport à la tonique
-// que dans ceux de Krumhansl, et les notes hors gamme presque rien.
-const MAJOR = [0.748, 0.060, 0.488, 0.082, 0.670, 0.460, 0.096, 0.715, 0.104, 0.366, 0.057, 0.400];
-const MINOR = [0.712, 0.084, 0.474, 0.618, 0.049, 0.460, 0.105, 0.747, 0.404, 0.067, 0.133, 0.330];
+// Le poids de chaque note dans une tonalité, la tonique en premier : 12 valeurs pour la basse (sous le ré 3, MIDI 50),
+// 12 pour le reste. Appris sur 105 prods rap et trap aux tonalités connues, à partir des profils de Krumhansl ; en
+// validation croisée (chaque prod jugée par un profil appris sans elle), 64 % de tonalités justes, contre 29 % avec
+// les profils de Krumhansl seuls, qui prenaient la quinte pour la tonique. La basse dit souvent la tonique, l'aigu ses
+// accords.
+const PROFILE = {
+  major: [0.1272, 0.0528, 0.0855, 0.0546, 0.0934, 0.1271, 0.0555, 0.1113, 0.0575, 0.1045, 0.0687, 0.062,
+    0.1348, 0.0524, 0.1112, 0.0492, 0.1417, 0.0767, 0.0512, 0.1, 0.0466, 0.0942, 0.0428, 0.0995],
+  minor: [0.1653, 0.0684, 0.0668, 0.0924, 0.0476, 0.1111, 0.047, 0.0978, 0.1104, 0.0526, 0.0863, 0.0543,
+    0.1189, 0.0444, 0.0937, 0.1003, 0.0619, 0.109, 0.0558, 0.1508, 0.0688, 0.0557, 0.0879, 0.0527],
+};
+const BASS_BELOW = 50;  // MIDI : ré 3
+const MAJOR_BIAS = 0.95; // le rap est surtout en mineur (91 prods sur 105) : un majeur doit l'emporter nettement
 
 function correlation(a, b) {
   const n = a.length;
@@ -166,11 +175,10 @@ function tonality(x, sampleRate) {
   const frames = Math.floor((x.length - N) / HOP) + 1;
   if (frames < 2) return null;
   const fft = makeFFT(N), win = hann(N), re = new Float64Array(N), im = new Float64Array(N), mag = new Float64Array(N / 2);
-  // Dès 30 Hz : la fondamentale des 808 compte.
-  const low = Math.ceil(30 * N / sampleRate), high = Math.min(N / 2 - 2, Math.floor(2000 * N / sampleRate));
+  const low = Math.ceil(40 * N / sampleRate), high = Math.min(N / 2 - 2, Math.floor(2000 * N / sampleRate));
 
   // Les pics du spectre de chaque trame : leur hauteur en demi-tons (69 = la 440) et leur poids.
-  const pitches = [], weights = [];
+  const pitches = [], weights = [], framesAt = [];
   for (let f = 0; f < frames; f++) {
     let energy = 0;
     for (let i = 0, o = f * HOP; i < N; i++) { re[i] = x[o + i] * win[i]; im[i] = 0; energy += x[o + i] ** 2; }
@@ -178,13 +186,15 @@ function tonality(x, sampleRate) {
     fft(re, im);
     let top = 0;
     for (let k = low - 1; k <= high + 1; k++) { mag[k] = Math.hypot(re[k], im[k]); if (mag[k] > top) top = mag[k]; }
+    framesAt.push(pitches.length);
     for (let k = low; k <= high; k++) {
       if (mag[k] <= mag[k - 1] || mag[k] < mag[k + 1] || mag[k] < top * 0.02) continue;
       const bin = k + parabola(Math.log(mag[k - 1] + 1e-12), Math.log(mag[k]), Math.log(mag[k + 1] + 1e-12));
       pitches.push(69 + 12 * Math.log2(bin * sampleRate / N / 440));
-      weights.push(Math.sqrt(mag[k] / top));
+      weights.push(mag[k] / top);
     }
   }
+  framesAt.push(pitches.length);
   if (pitches.length < 50) return null;
 
   // Accordage : l'écart moyen des pics par rapport au demi-ton juste (moyenne circulaire).
@@ -195,17 +205,32 @@ function tonality(x, sampleRate) {
   }
   const offset = Math.atan2(sy, sx) / (2 * Math.PI); // en demi-tons, entre -0.5 et 0.5
 
-  // Un pic compte d'autant plus qu'il tombe juste sur une note.
-  const chroma = new Float64Array(12);
-  for (let i = 0; i < pitches.length; i++) {
-    const p = pitches[i] - offset, note = Math.round(p);
-    chroma[((note % 12) + 12) % 12] += weights[i] * Math.cos(Math.PI * (p - note)) ** 2;
+  // Trame par trame, l'énergie de chaque note (un pic compte d'autant plus qu'il tombe juste dessus), puis sa
+  // saillance : une note reçoit ses harmoniques (2, 3… 6 fois sa fréquence) et perd ce qui n'est que l'harmonique d'une
+  // note plus grave. Sans cela, la troisième harmonique de la tonique (sa quinte, une octave plus haut) passait pour
+  // une vraie note, et la tonalité trouvée était souvent la quinte (mi mineur lu si mineur).
+  const STEPS = [0, 12, 19, 24, 28, 31]; // demi-tons des harmoniques 1 à 6
+  const bass = new Float64Array(12), treble = new Float64Array(12), semi = new Float64Array(128);
+  for (let f = 0; f + 1 < framesAt.length; f++) {
+    semi.fill(0);
+    for (let i = framesAt[f]; i < framesAt[f + 1]; i++) {
+      const p = pitches[i] - offset, note = Math.round(p);
+      if (note >= 0 && note < 128) semi[note] += weights[i] * Math.cos(Math.PI * (p - note)) ** 2;
+    }
+    for (let n = 0; n < 128; n++) {
+      let v = 0;
+      for (let h = 0; h < STEPS.length; h++) if (n + STEPS[h] < 128) v += semi[n + STEPS[h]] * 0.6 ** h;
+      for (let h = 1; h <= 4; h++) { const m = n - STEPS[h]; if (m >= 0 && semi[m] > 0) v -= semi[m] * semi[n] / (semi[m] + semi[n]); }
+      if (v > 0) (n < BASS_BELOW ? bass : treble)[n % 12] += v;
+    }
   }
+  const unit = (v) => { const s = v.reduce((a, b) => a + b, 0) || 1; return Array.from(v, (x) => x / s); };
+  const b = unit(bass), t = unit(treble), chroma = b.map((v, i) => v + t[i]);
 
   const keys = [];
   for (let tonic = 0; tonic < 12; tonic++) {
-    const rotated = Array.from({ length: 12 }, (_, i) => chroma[(i + tonic) % 12]);
-    keys.push({ tonic, mode: 'major', score: correlation(rotated, MAJOR) }, { tonic, mode: 'minor', score: correlation(rotated, MINOR) });
+    const rotated = [...b.slice(tonic), ...b.slice(0, tonic), ...t.slice(tonic), ...t.slice(0, tonic)];
+    keys.push({ tonic, mode: 'major', score: correlation(rotated, PROFILE.major) * MAJOR_BIAS }, { tonic, mode: 'minor', score: correlation(rotated, PROFILE.minor) });
   }
   keys.sort((a, b) => b.score - a.score);
   const max = Math.max(...chroma);

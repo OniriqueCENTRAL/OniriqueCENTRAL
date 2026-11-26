@@ -2202,7 +2202,7 @@ async function detectProd(file) {
   const length = Math.min(source.duration, 240), from = (source.duration - length) / 2;
   const mono = await A.render(source, { rate: 22050, channels: 1, from, to: from + length });
   return new Promise((resolve) => {
-    const worker = new Worker("assets/bpm-key-worker.js?v=2"), samples = mono.getChannelData(0);
+    const worker = new Worker("assets/bpm-key-worker.js?v=3"), samples = mono.getChannelData(0);
     worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
     worker.onerror = () => { worker.terminate(); resolve({}); };
     worker.postMessage({ samples, sampleRate: 22050 }, [samples.buffer]);
