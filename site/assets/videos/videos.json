@@ -1803,5 +1803,259 @@
    "fr": "OVERSAMPLING jusqu'à 8x. 11 presets d'usine (voix, batterie, basse, bus), A / B / C, Windows et Mac (VST3 et AU).",
    "en": "OVERSAMPLING up to 8x. 11 factory presets (vocals, drums, bass, bus), A / B / C, Windows and Mac (VST3 and AU)."
   }
+ },
+ "onirique-enhancer": {
+  "replace": true,
+  "items": [
+   {
+    "src": "enhancer-preampli.mp4",
+    "fr": {
+     "kicker": "Tube preamp",
+     "title": "La voix dans la lampe",
+     "text": [
+      "INPUT DRIVE pousse la voix dans la lampe jusqu'à +24 dB, et ses filaments s'allument derrière la vitre quand elle travaille. TUBE lui donne sa chaleur, des harmoniques paires.",
+      "BASS / AIR choisit ce que la lampe colore : le bas ou l'air. Le volume est rattrapé, la voix se densifie sans monter, et même à fond aucun son parasite n'arrive dans l'aigu."
+     ]
+    },
+    "en": {
+     "kicker": "Tube preamp",
+     "title": "The vocal through the tube",
+     "text": [
+      "INPUT DRIVE pushes the vocal into the tube up to +24 dB, and its filaments light up behind the glass when it works. TUBE gives it warmth, even harmonics.",
+      "BASS / AIR picks what the tube colours: the low end or the air. Level is compensated, so the vocal gets denser without getting louder, and even flat out no aliasing reaches the top end."
+     ]
+    }
+   },
+   {
+    "src": "enhancer-console.mp4",
+    "fr": {
+     "kicker": "Console EQ",
+     "title": "Quatre bandes, réglées pour la voix",
+     "text": [
+      "AIR à 12 kHz pour le souffle, TREBLE à 3,2 kHz pour la présence, DE-MUD qui creuse 320 Hz, là où une voix s'embourbe, et BASS à 110 Hz pour le corps.",
+      "Plus une bande est poussée, plus elle se resserre, comme sur une console. Un double-clic remet un bouton à sa valeur d'origine, Maj pour un réglage fin."
+     ]
+    },
+    "en": {
+     "kicker": "Console EQ",
+     "title": "Four bands, tuned for vocals",
+     "text": [
+      "AIR at 12 kHz for breath, TREBLE at 3.2 kHz for presence, DE-MUD cutting 320 Hz, where a vocal gets muddy, and BASS at 110 Hz for body.",
+      "The harder a band is pushed, the narrower it gets, like on a console. Double-click resets a knob, Shift for fine tuning."
+     ]
+    }
+   },
+   {
+    "src": "enhancer-gain.mp4",
+    "fr": {
+     "kicker": "Niveleur et effets",
+     "title": "Tenue, ouverture, plaque",
+     "text": [
+      "INPUT règle combien le niveleur tient la voix, et le VU-mètre à aiguille montre ce qu'il retire (GR) ou le niveau de sortie (OUT).",
+      "FLANGER ouvre la voix en stéréo, du frémissement au balayage ; REVERB ajoute la plaque de ONIRIQUE VERB, qui s'efface quand tu chantes. MIX mêle la voix d'origine et la voix traitée, et le limiteur garde la sortie sous -0,5 dBFS."
+     ]
+    },
+    "en": {
+     "kicker": "Leveler and effects",
+     "title": "Hold, width, plate",
+     "text": [
+      "INPUT sets how hard the leveler holds the vocal, and the needle VU meter shows what it takes off (GR) or the output level (OUT).",
+      "FLANGER opens the vocal in stereo, from a shimmer to a sweep; REVERB adds ONIRIQUE VERB's plate, which ducks while you sing. MIX blends the dry and processed vocal, and the limiter keeps the output under -0.5 dBFS."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Latence de 2,75 ms compensée par le DAW, fenêtre redimensionnable, VST3 pour Windows.",
+   "en": "2.75 ms latency compensated by the DAW, resizable window, VST3 for Windows."
+  }
+ },
+ "onirique-prisme": {
+  "replace": true,
+  "items": [
+   {
+    "src": "prisme-vues.mp4",
+    "fr": {
+     "kicker": "Quatre vues",
+     "title": "Fréquence, position, niveaux",
+     "text": [
+      "FRÉQUENCE : un spectre de 52 à 68 bandes très fines. POSITION : chaque bande devient un rayon, sa longueur donne son niveau, son angle sa place dans la stéréo ; la zone rouge signale ce qui risque de disparaître en mono.",
+      "NIVEAUX : crête gauche, crête droite et somme L+R. Tout sur un écran, ou une seule mesure en grand. Le son n'est jamais touché, sans latence."
+     ]
+    },
+    "en": {
+     "kicker": "Four views",
+     "title": "Frequency, position, levels",
+     "text": [
+      "FREQUENCY: a spectrum of 52 to 68 very fine bands. POSITION: each band becomes a ray, its length gives its level, its angle its place in the stereo field; the red zone flags what may vanish in mono.",
+      "LEVELS: left peak, right peak and the L+R sum. Everything on one screen, or a single meter full size. The sound is never touched, with no latency."
+     ]
+    }
+   },
+   {
+    "src": "prisme-lecture.mp4",
+    "fr": {
+     "kicker": "Lire dans le détail",
+     "title": "La valeur exacte, d'un clic",
+     "text": [
+      "Un clic sur le spectre pose une croix qui donne la fréquence et le niveau exacts. GELER fige l'image, MAXIMUM garde les plus hautes valeurs, Alt + glisser zoome sur une zone.",
+      "GRAVES règle la résolution du bas à 40, 20 ou 10 Hz ; lecture en crête ou en RMS, gauche et droite séparées ou additionnées, pondération dBA, dBB ou dBC."
+     ]
+    },
+    "en": {
+     "kicker": "Reading in detail",
+     "title": "The exact value, in one click",
+     "text": [
+      "A click on the spectrum drops a crosshair with the exact frequency and level. FREEZE holds the picture, MAXIMUM keeps the highest values, Alt + drag zooms into an area.",
+      "LOWS sets the low-end resolution to 40, 20 or 10 Hz; peak or RMS reading, left and right separate or summed, dBA, dBB or dBC weighting."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "VST3 pour Windows, en mono ou en stéréo, sortie identique au bit près.",
+   "en": "VST3 for Windows, mono or stereo, bit-identical output."
+  }
+ },
+ "onirique-stream": {
+  "replace": true,
+  "items": [
+   {
+    "src": "stream-envoi.mp4",
+    "fr": {
+     "kicker": "Le son de ton DAW",
+     "title": "Ta session dans Discord",
+     "text": [
+      "Pose Stream en dernier sur le master : le son de ton DAW part vers VB-CABLE pendant que le DAW reste sur l'ASIO de ta carte son. Partage la fenêtre du DAW dans Discord avec le son activé, tes potes entendent ta session.",
+      "LEVEL règle ce qui part, SENT montre ce qui est envoyé, STOP et START coupent ou relancent le stream. Le son de ton DAW, lui, n'est jamais touché."
+     ]
+    },
+    "en": {
+     "kicker": "Your DAW's sound",
+     "title": "Your session in Discord",
+     "text": [
+      "Put Stream last on the master: your DAW's sound goes to VB-CABLE while the DAW stays on your audio interface's ASIO. Share the DAW window in Discord with sound on, and your friends hear your session.",
+      "LEVEL sets what goes out, SENT shows what is sent, STOP and START cut or restart the stream. Your DAW's own sound is never touched."
+     ]
+    }
+   },
+   {
+    "src": "stream-echo.mp4",
+    "fr": {
+     "kicker": "Sortie et ECHO GUARD",
+     "title": "Sans larsen",
+     "text": [
+      "La sortie vers VB-CABLE est choisie toute seule, et elle revient à chaque nouveau projet. Pas de câble installé ? INSTALL VB-CABLE le télécharge, vérifie sa signature et l'installe pour toi.",
+      "ECHO GUARD : si le son du stream revient dans le DAW, le stream se coupe avant que l'écho ne tourne en larsen. RE-ARM le relance."
+     ]
+    },
+    "en": {
+     "kicker": "Output and ECHO GUARD",
+     "title": "No feedback",
+     "text": [
+      "The VB-CABLE output is picked by itself and comes back in every new project. No cable installed? INSTALL VB-CABLE downloads it, checks its signature and installs it for you.",
+      "ECHO GUARD: if the stream's sound comes back into the DAW, the stream cuts before the echo turns into feedback. RE-ARM restarts it."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Gratuit, VST3 pour Windows.",
+   "en": "Free, VST3 for Windows."
+  }
+ },
+ "player-onirique": {
+  "replace": true,
+  "items": [
+   {
+    "src": "player-sync.mp4",
+    "fr": {
+     "kicker": "SYNC",
+     "title": "Calée sur ta lecture",
+     "text": [
+      "Player ouvre ta vidéo dans une fenêtre de ton DAW. Tu lances le projet, la vidéo part avec ; tu stoppes, elle s'arrête ; tu déplaces le curseur, l'image suit.",
+      "SYNC éteint, c'est un lecteur libre : lecture, pause, barre de position, boucle. Le son de ton projet n'est jamais touché."
+     ]
+    },
+    "en": {
+     "kicker": "SYNC",
+     "title": "Locked to your playback",
+     "text": [
+      "Player opens your video in a window inside your DAW. Start the project, the video goes with it; stop, it stops; move the cursor, the picture follows.",
+      "With SYNC off, it's a free player: play, pause, position bar, loop. Your project's sound is never touched."
+     ]
+    }
+   },
+   {
+    "src": "player-formats.mp4",
+    "fr": {
+     "kicker": "Tous les formats",
+     "title": "Un clip, un film, un TikTok",
+     "text": [
+      "La fenêtre prend tout de suite le format de la vidéo, 16:9, 9:16 ou carré, et se redimensionne sans la déformer : parfait pour composer sur une vidéo verticale.",
+      "La vidéo choisie revient toute seule à la réouverture du projet. Fichiers .mp4 et .mov."
+     ]
+    },
+    "en": {
+     "kicker": "Every format",
+     "title": "A clip, a film, a TikTok",
+     "text": [
+      "The window instantly takes the video's shape, 16:9, 9:16 or square, and resizes without stretching it: perfect for scoring a vertical video.",
+      "The chosen video comes back by itself when you reopen the project. .mp4 and .mov files."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "Gratuit, Windows et Mac.",
+   "en": "Free, Windows and Mac."
+  }
+ },
+ "bloom": {
+  "replace": true,
+  "items": [
+   {
+    "src": "bloom-mots.mp4",
+    "fr": {
+     "kicker": "Six mots",
+     "title": "Pas de fréquences, des mots",
+     "text": [
+      "WEIGHT pour un bas profond qui s'écarte quand le kick frappe, WARMTH pour une saturation douce, AIR pour un aigu soyeux qui calme les sifflantes, PRESENCE pour pousser les voix devant.",
+      "BLOOM réagit à ce que tu joues, moment par moment, et le monde réagit avec lui : la fleur s'ouvre, le feu brûle, le corbeau s'envole."
+     ]
+    },
+    "en": {
+     "kicker": "Six words",
+     "title": "No frequencies, just words",
+     "text": [
+      "WEIGHT for deep low end that steps aside when the kick hits, WARMTH for soft saturation, AIR for silky top end that tames sibilance, PRESENCE to push vocals to the front.",
+      "BLOOM reacts to what you play, moment by moment, and the world reacts with it: the flower blooms, the fire burns, the raven flies."
+     ]
+    }
+   },
+   {
+    "src": "bloom-enhance.mp4",
+    "fr": {
+     "kicker": "ENHANCE, SPACE, MIX",
+     "title": "Plus dense, plus large, sans rien casser",
+     "text": [
+      "ENHANCE ajoute compression et saturation pour un son plus fini, SPACE nettoie le bas-médium et élargit la stéréo sans danger pour le mono, MIX mêle l'original et BLOOM.",
+      "Volume compensé et limiteur intégré : la sortie ne dépasse jamais 0 dB. BYPASS compare à volume égal, DELTA fait entendre seulement ce que BLOOM ajoute."
+     ]
+    },
+    "en": {
+     "kicker": "ENHANCE, SPACE, MIX",
+     "title": "Denser, wider, impossible to break",
+     "text": [
+      "ENHANCE adds glue compression and saturation for a more finished sound, SPACE clears the low mids and widens the stereo image (mono-safe), MIX blends the original and BLOOM.",
+      "Volume-matched with a built-in limiter: the output never goes above 0 dB. BYPASS compares at equal volume, DELTA lets you hear only what BLOOM adds."
+     ]
+    }
+   }
+  ],
+  "foot": {
+   "fr": "ONIRIQUE x RELIC, Windows et Mac.",
+   "en": "ONIRIQUE x RELIC, Windows and Mac."
+  }
  }
 }

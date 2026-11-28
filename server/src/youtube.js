@@ -152,3 +152,19 @@ export async function publishDue() {
     busy = false;
   }
 }
+
+/** Les chiffres de la chaîne et de ses vidéos, pour le relevé du Cockpit : abonnés, et vues de chaque vidéo demandée.
+ *  null sans chaîne reliée. */
+export async function youtubeStats(userId, ids = []) {
+  const account = accountOf(userId);
+  if (!account) return null;
+  const headers = { Authorization: `Bearer ${await accessToken(account)}` };
+  const channel = (await google(`${API}/channels?part=statistics&mine=true`, { headers })).items?.[0]?.statistics || {};
+  const videos = {};
+  for (let i = 0; i < ids.length; i += 50) {
+    for (const v of (await google(`${API}/videos?part=statistics&id=${ids.slice(i, i + 50).join(',')}`, { headers })).items || []) {
+      videos[v.id] = { views: Number(v.statistics.viewCount) || 0, likes: Number(v.statistics.likeCount) || 0, comments: Number(v.statistics.commentCount) || 0 };
+    }
+  }
+  return { subscribers: channel.hiddenSubscriberCount ? null : Number(channel.subscriberCount) || 0, videos };
+}

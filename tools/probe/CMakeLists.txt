@@ -30,3 +30,21 @@ target_link_libraries(OniriqueProbe PRIVATE
 if(MSVC)
     target_compile_options(OniriqueProbe PRIVATE /utf-8)
 endif()
+
+# onirique-film : les vidéos des fiches de la boutique (voir Film.cpp)
+juce_add_console_app(OniriqueFilm PRODUCT_NAME "onirique-film")
+target_sources(OniriqueFilm PRIVATE Film.cpp)
+target_compile_definitions(OniriqueFilm PRIVATE
+    JUCE_PLUGINHOST_VST3=1
+    JUCE_MODAL_LOOPS_PERMITTED=1
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    NOMINMAX)
+target_link_libraries(OniriqueFilm PRIVATE
+    juce::juce_audio_processors
+    juce::juce_audio_formats
+    juce::juce_recommended_config_flags)
+
+if(MSVC)
+    target_compile_options(OniriqueFilm PRIVATE /utf-8)
+endif()

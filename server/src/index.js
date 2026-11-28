@@ -5,6 +5,8 @@ import { pollComments } from './social.js';
 import { remindReleases, purgeTrash } from './sounds.js';
 import { sweepMedia } from './sweep.js';
 import { remindCut, publishDueReels } from './cut.js';
+import { remindCockpit } from './cockpit.js';
+import { collectDue } from './cockpitauto.js';
 import { demarrerRelais } from './vpn.js';
 import { appliquerPrixApres } from './soldes.js';
 import { offrirNoel } from './noel.js';
@@ -36,6 +38,10 @@ setInterval(() => { try { purgeTrash(); } catch (error) { console.error('Corbeil
 
 // Le rappel quotidien « poste ton TikTok » des fondateurs (ONIRIQUE CUT), à leur heure, vérifié chaque minute.
 setInterval(() => { try { remindCut(); } catch (error) { console.error('Rappel CUT :', error.message); } }, 60_000);
+// Les rappels du Cockpit : à 13 h si rien n'est publié, à 21 h si le minimum n'est pas fait, le lundi à 10 h pour le bilan.
+setInterval(() => { try { remindCockpit(); } catch (error) { console.error('Rappel Cockpit :', error.message); } }, 60_000);
+// Le relevé du Cockpit (abonnés, vidéos, chiffres, radar des films) à 5 h et 17 h, heure de Paris.
+setInterval(() => collectDue().catch((error) => console.error('Relevé du Cockpit :', error.message)), 60_000);
 
 // Le ménage de media/ (images et démos que plus rien ne cite), une minute après le démarrage puis chaque jour.
 const sweep = () => { try { const r = sweepMedia(); if (r.files) console.log(`Ménage de media/ : ${r.files} fichiers, ${Math.round(r.bytes / 1048576)} Mo libérés`); } catch (error) { console.error('Ménage de media/ :', error.message); } };

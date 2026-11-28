@@ -38,6 +38,8 @@ import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
 import { mountCut, shortTitle } from './cut.js';
 import { mountCutBrain } from './cutbrain.js';
+import { mountCockpit } from './cockpit.js';
+import { mountCockpitAuto } from './cockpitauto.js';
 import { mountBeatStoreHooks } from './beatstore.js';
 import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
@@ -626,6 +628,8 @@ export function createApp() {
   mountRatings(app, { requireUser });
   mountCut(app, { requireUser, receiveFile, wrap });
   mountCutBrain(app, { requireUser, libDir: path.join(config.dataDir, 'cut-library') });   // l'arborescence de CUT : ce qu'il apprend des TikToks, et AUTOMATIQUE
+  mountCockpit(app, { requireUser });   // le Cockpit : journal des publications, chiffres à 48 h, banque de phrases, régularité
+  mountCockpitAuto(app, { requireUser, wrap });   // le relevé automatique du Cockpit (TikTok, Spotify, Instagram, YouTube, radar des films)
   // Envoi de fichiers : des fichiers lourds partagés par un lien qui expire.
   mountEnvoi(app, { requireVerified, receiveFile, wrap });
   // Les clips partagés depuis ONIRIQUE CENTRAL (page /clip, lue par Discord).

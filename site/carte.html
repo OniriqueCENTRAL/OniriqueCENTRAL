@@ -61,6 +61,8 @@ header > * { pointer-events: auto; }
 /* Fixes une fois allumées : une animation sans fin ferait repeindre tout le plan (2500 px, flou compris) à chaque image. */
 .star { fill: #ffe9ec; opacity: 0; animation: appear .6s forwards; }
 @keyframes appear { to { opacity: var(--o, .8); } }
+/* Une fois toutes allumées, leurs animations finies sont retirées : gardées, elles pesaient sur chaque image du zoom. */
+#stars.lit .star { animation: none; opacity: var(--o, .8); }
 .web { stroke: rgba(var(--acc-hi),.75); stroke-width: 1.2; stroke-dasharray: 4 12; filter: url(#glow); opacity: 0; }
 .web.on { opacity: 1; transition: opacity 1s; }
 /* Tout près, les pointillés agrandis deviendraient de grosses taches floues : ils s'effacent. */
@@ -375,7 +377,9 @@ let reliefKey = "";
 function relief() {
   const on = cam.z / fit() > 3;
   $("relief").classList.toggle("on", on); $("relief-credit").classList.toggle("on", on);
-  if (!on) return;
+  // Pendant un zoom, les tuiles en place s'étirent ; la finesse suivante arrive (en fondu) une fois le zoom posé : une
+  // tuile qui apparaît en fondu se compose à part, et des dizaines à la fois faisaient sauter des images.
+  if (!on || Math.abs(goal.z - cam.z) > cam.z * .01) return;
   const L = Math.min(15, Math.max(6, Math.round(Math.log2(360 * 0.687 * 88 * cam.z / 300)))), n = 2 ** L;
   const [lon, lat] = unproject(500 - cam.px / K, 500 - cam.py / K), r = Math.PI / 180 * lat;
   const tx = Math.floor((lon + 180) / 360 * n), ty = Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n);
@@ -443,7 +447,8 @@ function tick(t) {
       const label = n.cname + (k > 1 ? " +" + (k - 1) : "") + "|" + (total ? total + (total > 1 ? " membres" : " membre") : "");
       if (n.label !== label) { n.label = label; const [b, i] = label.split("|"); n.tag.querySelector("b").textContent = b; n.tag.querySelector("i").textContent = i; }
       n.pin.hidden = !!n.lead;
-      if (n.group) n.pin.style.setProperty("--s", (total ? 9 + Math.sqrt(total) * 4 : 5) + "px");
+      const s = (total ? 9 + Math.sqrt(total) * 4 : 5) + "px"; // posé seulement s'il change : sinon le point se recalcule à chaque image
+      if (n.group && n.pin.style.getPropertyValue("--s") !== s) n.pin.style.setProperty("--s", s);
     }
   }
   for (const node of nodes) {
@@ -707,6 +712,7 @@ async function drawCta() {
   if (innerWidth <= 860) $("filters").classList.add("min");
   $("filters").querySelector(".head").onclick = () => { if (innerWidth <= 860) $("filters").classList.toggle("min"); };
   drawShapes();
+  setTimeout(() => $("stars").classList.add("lit"), 4000); // la dernière étoile s'allume à 3,6 s
   requestAnimationFrame(tick);
   setTimeout(() => $("intro").remove(), reduced ? 0 : 2700); // l’animation suffit, mais un onglet en arrière-plan la fige
   setTimeout(home, reduced ? 0 : 500);
