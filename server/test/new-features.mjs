@@ -108,7 +108,9 @@ try {
     check((await api('PUT', '/admin/products/order', { ids: chosen }, admin)).status === 200, "l'équipe choisit un autre ordre");
     check(JSON.stringify(await adminOrder()) === JSON.stringify(chosen), 'le panel le suit');
     const shown = await shopOrder();
-    check(shown.length > 0 && JSON.stringify(shown) === JSON.stringify(chosen.filter((id) => shown.includes(id))), "la boutique et l'application aussi");
+    // La boutique et l'application ne suivent pas l'ordre du panel : le plugin le plus récent (créé ou mis à jour) d'abord.
+    const newest = [...ids].reverse();
+    check(shown.length > 0 && JSON.stringify(shown) === JSON.stringify(newest.filter((id) => shown.includes(id))), "la boutique et l'application montrent le plus récent d'abord");
     check((await api('PUT', '/admin/products/order', { ids: [tuner, tuner] }, admin)).status === 400
       && (await api('PUT', '/admin/products/order', { ids: [tuner, 99999] }, admin)).status === 400, 'une liste invalide est refusée');
     const extra = (await api('POST', '/admin/products', { name: 'ONIRIQUE EXTRA', priceCents: 0 }, admin)).data.id;
