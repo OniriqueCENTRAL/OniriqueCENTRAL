@@ -8,31 +8,38 @@
 <link rel="icon" type="image/png" href="assets/cut-icon-192.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
-/* Le Cockpit : le journal de ce qui est publié, les chiffres à 48 h, la banque de phrases et la régularité des membres
-   ONIRIQUE. Mêmes couleurs que l'appweb « Mes vidéos » (da.css, chargée après). */
+/* Le Cockpit : la régularité, le plan, l'analyse et la mémoire de la promo des membres ONIRIQUE.
+   Mêmes couleurs que l'appweb « Mes vidéos » (da.css, chargée après). */
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
 a { color: inherit; }
-button, input, select { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
-.wrap { width: 100%; max-width: 900px; margin-inline: auto; padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
-header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.92); padding-top: env(safe-area-inset-top); position: sticky; top: 0; z-index: 2; }
-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px; }
+.wrap { width: 100%; max-width: 960px; margin-inline: auto; padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.94); padding-top: env(safe-area-inset-top); position: sticky; top: 0; z-index: 3; }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 15px/1 var(--f-display); letter-spacing: .16em; }
 .brand img { width: 38px; height: auto; margin-block: -10px; }
 .brand span { color: var(--ember); }
-main { padding-block: 24px calc(60px + env(safe-area-inset-bottom)); display: grid; gap: 16px; }
-h1 { font: 800 clamp(26px, 7vw, 38px)/1.1 var(--f-display); margin: 8px 0 0; }
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.tabs button { flex: none; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); font: 600 13px/1 var(--f-body); cursor: pointer; white-space: nowrap; }
+.tabs button[aria-selected="true"] { background: var(--mist); color: var(--night); border-color: var(--mist); }
+.tabs .dot { display: inline-block; min-width: 18px; padding: 2px 5px; margin-left: 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; }
+main { padding-block: 20px calc(60px + env(safe-area-inset-bottom)); display: grid; gap: 16px; }
+main > *, .panel, .figure { min-width: 0; } /* un tableau large défile dans son cadre au lieu d'élargir la page */
+h1 { font: 800 clamp(24px, 6vw, 34px)/1.1 var(--f-display); margin: 0; }
 h2 { font: 700 18px/1.2 var(--f-display); margin: 0 0 12px; }
-.eyebrow { margin: 0; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+h3 { font: 700 15px/1.2 var(--f-body); margin: 16px 0 8px; }
 .muted { color: var(--haze); }
-.lead { margin: 0; font-size: 15px; max-width: 62ch; }
+.small { font-size: 13px; }
+.lead { margin: 4px 0 0; font-size: 15px; max-width: 64ch; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border-radius: var(--r-ctl); border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
 .btn-primary { background: var(--mist); color: var(--night); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
+.btn.on { border-color: var(--ember); background: rgba(var(--acc), .25); }
 .btn:disabled { opacity: .55; cursor: default; }
 .panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; }
 .check { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
@@ -41,36 +48,57 @@ h2 { font: 700 18px/1.2 var(--f-display); margin: 0 0 12px; }
 .done { color: var(--ok); }
 .warn { color: var(--danger); }
 input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--ember); }
-.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.alerts { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.alerts li { padding: 10px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); border-left-width: 4px; font-size: 14px; }
+.alerts .high { border-left-color: var(--danger); }
+.alerts .mid { border-left-color: rgb(var(--acc)); }
+.alerts .low { border-left-color: var(--haze); }
+.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
 .figure { padding: 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); }
-.figure strong { display: block; font: 700 24px/1.1 var(--f-display); }
+.figure strong { display: block; font: 700 22px/1.1 var(--f-display); }
 .figure small { color: var(--haze); font-size: 12px; }
+.bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ok); border-radius: 999px; }
+.bar.acc i { background: rgb(var(--acc)); }
 /* Le calendrier : 8 semaines, une ligne par semaine du lundi au dimanche. */
 .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 32px)); gap: 6px; }
 .cal span { aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--line); background: rgba(255,255,255,.03); }
 .cal .head { border: 0; background: none; aspect-ratio: auto; text-align: center; font: 500 11px/1 var(--f-mono); color: var(--haze); }
-.cal .ok { background: var(--ok); border-color: var(--ok); }
-.cal .part { background: rgba(var(--acc), .45); border-color: rgba(var(--acc), .7); }
+.cal .ok, .legend .ok { background: var(--ok); border-color: var(--ok); }
+.cal .part, .legend .part { background: rgba(var(--acc), .45); border-color: rgba(var(--acc), .7); }
+.cal .caught { background: repeating-linear-gradient(45deg, rgba(var(--acc), .45) 0 4px, transparent 4px 8px); }
+.cal .joker, .legend .joker { background: rgba(120,160,255,.45); border-color: rgba(120,160,255,.8); }
+.cal .pause, .legend .pause { background: rgba(255,255,255,.18); }
 .cal .future { opacity: .3; }
 .cal .today { outline: 2px solid var(--mist); outline-offset: 1px; }
 .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; font-size: 13px; color: var(--haze); }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid var(--line); }
 .list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .item { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); }
+.item.now { border-color: var(--ember); }
 .item .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .item small { color: var(--haze); font-size: 13px; }
-.tag { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; background: rgba(255,255,255,.06); }
+.tag { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; background: rgba(255,255,255,.06); white-space: nowrap; }
 .tag.new { background: rgba(var(--acc), .35); }
+.tag.good { background: var(--ok); color: #000; }
 .link { background: none; border: 0; padding: 0; color: var(--haze); text-decoration: underline; cursor: pointer; font-size: 13px; }
 .field { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
-.field input, .field select, .num { width: 100%; padding: 10px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist);
+.field input, .field select, .field textarea, .num, .sel { width: 100%; padding: 10px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist);
   font: 500 15px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color-scheme: dark; }
-.num { width: 120px; }
+.num { width: 110px; }
+.sel { width: auto; padding: 6px 8px; font-size: 13px; }
 .form { display: grid; gap: 10px; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11px/1.2 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+td.n, th.n { text-align: right; white-space: nowrap; }
+.scroll { overflow-x: auto; }
+.spark { width: 100%; height: 56px; display: block; }
 dialog { padding: 0; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--night); color: var(--mist); width: min(480px, calc(100vw - 24px)); }
 dialog form { padding: 16px; }
-@media (max-width: 520px) { .two { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .two, .four { grid-template-columns: 1fr 1fr; } .two.wide { grid-template-columns: 1fr; } }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
@@ -80,56 +108,130 @@ dialog form { padding: 16px; }
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE <span>COCKPIT</span></a>
     <a class="btn btn-ghost" href="mes-videos">Mes vidéos</a>
   </div>
+  <nav class="wrap tabs" role="tablist" aria-label="Rubriques du Cockpit" id="tabs" hidden></nav>
 </header>
 <main class="wrap">
-  <div>
-    <p class="eyebrow">Cockpit · membres ONIRIQUE</p>
-    <h1>Ma régularité</h1>
-    <p class="lead muted">Chaque jour, le minimum : 2 TikTok publiés, les réponses aux commentaires, les chiffres des vidéos d’avant-hier. On compte ce que tu fais, pas ce que l’algorithme décide.</p>
-  </div>
   <p class="panel" id="gate" hidden></p>
 
-  <section class="panel" id="today" hidden aria-labelledby="t-title">
-    <h2 id="t-title">Aujourd’hui</h2>
-    <div class="check"><span>TikTok publiés : <b id="t-tiktoks"></b></span><button class="btn btn-primary" type="button" id="t-post">J’ai posté</button></div>
-    <label class="check"><span>J’ai répondu aux commentaires (une vingtaine)</span><input type="checkbox" id="t-replies"></label>
-    <div class="check"><span>Chiffres à 48 h : <b id="t-stats"></b></span><a class="link" href="#fill">Les noter</a></div>
-    <div class="check"><span>Stock d’avance : <b id="t-stock"></b></span><a class="link" href="mes-videos">Mes vidéos</a></div>
+  <!-- ——— Aujourd'hui ——— -->
+  <section data-tab="today" hidden>
+    <div style="margin-bottom:16px"><h1>Aujourd’hui</h1><p class="lead muted" id="t-mode"></p></div>
+    <div style="display:grid;gap:16px">
+      <ul class="alerts" id="alerts"></ul>
+      <div class="panel">
+        <h2>Le minimum</h2>
+        <div class="check"><span>TikTok publiés : <b id="t-tiktoks"></b></span><button class="btn btn-primary" type="button" id="t-post">J’ai posté</button></div>
+        <label class="check"><span>J’ai répondu aux commentaires (une vingtaine)</span><input type="checkbox" id="t-replies"></label>
+        <div class="check"><span>Chiffres à 48 h : <b id="t-stats"></b></span><a class="link" href="#fill">Les noter</a></div>
+        <div class="check"><span>Stock d’avance : <b id="t-stock"></b></span><a class="link" href="mes-videos">Mes vidéos</a></div>
+      </div>
+      <div class="panel"><h2>Le plan du jour</h2><ul class="list" id="t-plan"></ul></div>
+      <div class="panel" id="fill" hidden><h2>Chiffres à noter</h2>
+        <p class="muted small" style="margin:0 0 12px">Deux jours après la publication : les vues et les enregistrements (le signet sur TikTok). Dix secondes par vidéo.</p>
+        <ul class="list" id="fill-list"></ul></div>
+      <form class="panel form" id="evening"><h2 style="margin:0">Bilan du soir</h2>
+        <label class="field">Quelle vidéo a le mieux marché, et pourquoi selon toi ?<input id="e-best" maxlength="500"></label>
+        <label class="field">Une leçon pour demain<input id="e-lesson" maxlength="500"></label>
+        <div class="row"><button class="btn btn-ghost" type="submit">Enregistrer le bilan</button><span class="muted small" id="e-note" aria-live="polite"></span></div></form>
+      <div class="panel"><h2>Niveau</h2><p style="margin:0 0 8px" id="lvl-text"></p><div class="bar acc"><i id="lvl-bar"></i></div></div>
+    </div>
   </section>
 
-  <section class="panel" id="week-box" hidden aria-labelledby="w-title">
-    <h2 id="w-title">Cette semaine</h2>
-    <div class="figures" id="week"></div>
+  <!-- ——— Semaine ——— -->
+  <section data-tab="week" hidden>
+    <div style="margin-bottom:16px"><h1>Cette semaine</h1><p class="lead muted">On compte ce que tu fais. Une semaine est tenue à 110 points sur 151.</p></div>
+    <div style="display:grid;gap:16px">
+      <div class="panel"><h2>Mode</h2><div class="row" id="w-modes"></div><p class="muted small" id="w-mode-note" style="margin:10px 0 0"></p>
+        <div class="row" style="margin-top:12px"><button class="btn btn-ghost" type="button" id="w-joker"></button><span class="muted small">Un joker par semaine : une journée excusée sans justification.</span></div></div>
+      <div class="panel"><h2 id="w-points"></h2><div class="bar"><i id="w-bar"></i></div><div class="figures" id="w-parts" style="margin-top:12px"></div></div>
+      <div class="panel"><h2>Le plan de la semaine</h2><p class="muted small" id="w-formats" style="margin:0 0 12px"></p><ul class="list" id="w-plan"></ul></div>
+      <div class="panel"><h2>Bilan du lundi</h2><ul class="list" id="w-review"></ul>
+        <div class="row" style="margin-top:12px"><button class="btn btn-primary" type="button" id="w-reviewed"></button></div></div>
+      <div class="panel"><h2>8 semaines</h2><div class="cal" id="cal"></div>
+        <div class="legend"><span><i class="ok"></i>minimum fait</span><span><i class="part"></i>en partie</span><span><i class="part" style="background:repeating-linear-gradient(45deg, rgba(var(--acc), .45) 0 3px, transparent 3px 6px)"></i>rattrapé</span><span><i class="joker"></i>joker</span><span><i class="pause"></i>pause</span><span><i></i>rien</span></div>
+        <p class="muted small" style="margin:12px 0 0">Une journée manquée n’efface rien : la règle est de ne jamais en manquer deux de suite.</p>
+        <h3>Points des 8 dernières semaines</h3><div id="w-history" style="display:grid;gap:6px"></div></div>
+    </div>
   </section>
 
-  <section class="panel" id="cal-box" hidden aria-labelledby="c-title">
-    <h2 id="c-title">8 semaines</h2>
-    <div class="cal" id="cal"></div>
-    <div class="legend"><span><i style="background:var(--ok);border-color:var(--ok)"></i>minimum fait</span><span><i style="background:rgba(var(--acc),.45)"></i>en partie</span><span><i></i>rien</span></div>
-    <p class="muted" style="margin:12px 0 0;font-size:13px">Une journée manquée n’efface rien : la règle est de ne jamais en manquer deux de suite.</p>
+  <!-- ——— Analyse ——— -->
+  <section data-tab="analysis" hidden>
+    <div style="margin-bottom:16px"><h1>Ce qui marche</h1><p class="lead muted">Médianes des vues et des enregistrements pour 1 000 vues (le signe qu’on veut retrouver le son). Un groupe devient fiable à partir de 5 vidéos mesurées.</p></div>
+    <div style="display:grid;gap:16px" id="an"></div>
   </section>
 
-  <section class="panel" id="fill" hidden aria-labelledby="f-title">
-    <h2 id="f-title">Chiffres à noter</h2>
-    <p class="muted" style="margin:0 0 12px;font-size:14px">Deux jours après la publication : les vues et les enregistrements (le signet sur TikTok). Dix secondes par vidéo.</p>
-    <ul class="list" id="fill-list"></ul>
+  <!-- ——— Phrases ——— -->
+  <section data-tab="phrases" hidden>
+    <div class="panel">
+      <h2>Banque de phrases</h2>
+      <p class="muted small" style="margin:0 0 12px">Les lignes de tes paroles qui se comprennent seules : chacune est une accroche à tester sur plusieurs images.</p>
+      <form class="form" id="b-form">
+        <div class="two wide"><label class="field">Titre<input id="b-title-in" list="titles" maxlength="100" required></label>
+          <label class="field">Phrase<input id="b-text" maxlength="300" required></label></div>
+        <div class="row"><button class="btn btn-ghost" type="submit">Ajouter la phrase</button><label class="row muted small"><input type="checkbox" id="b-unused"> Jamais utilisées seulement</label></div>
+      </form>
+      <datalist id="titles"></datalist>
+      <ul class="list" id="b-list" style="margin-top:12px"></ul>
+    </div>
   </section>
 
-  <section class="panel" id="bank" hidden aria-labelledby="b-title">
-    <h2 id="b-title">Banque de phrases</h2>
-    <p class="muted" style="margin:0 0 12px;font-size:14px">Les lignes de tes paroles qui se comprennent seules : chacune est une accroche à tester sur plusieurs images.</p>
-    <form class="form" id="b-form">
-      <div class="two"><label class="field">Titre<input id="b-title-in" list="titles" maxlength="100" required></label>
-        <label class="field">Phrase<input id="b-text" maxlength="300" required></label></div>
-      <div class="row"><button class="btn btn-ghost" type="submit">Ajouter la phrase</button><label class="row muted" style="font-size:14px"><input type="checkbox" id="b-unused"> Jamais utilisées seulement</label></div>
-    </form>
-    <datalist id="titles"></datalist>
-    <ul class="list" id="b-list" style="margin-top:12px"></ul>
+  <!-- ——— Journal ——— -->
+  <section data-tab="journal" hidden>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Journal des publications</h2>
+        <div class="row"><button class="btn btn-ghost" type="button" id="j-post">J’ai posté</button><button class="btn btn-ghost" type="button" id="j-csv">Exporter (CSV)</button></div></div>
+      <ul class="list" id="j-list"></ul>
+    </div>
   </section>
 
-  <section class="panel" id="journal" hidden aria-labelledby="j-title">
-    <h2 id="j-title">Journal des publications</h2>
-    <ul class="list" id="j-list"></ul>
+  <!-- ——— Sorties ——— -->
+  <section data-tab="releases" hidden>
+    <div class="panel">
+      <h2>Sorties</h2>
+      <p class="muted small" style="margin:0 0 12px">De S-3 à S0, la semaine passe en mode Sortie (3 TikTok par jour) et le plan pousse le titre. Les vidéos comptent quand leur phrase vient de ce titre.</p>
+      <form class="form" id="r-form"><div class="two"><label class="field">Titre (comme dans la banque)<input id="r-title" list="titles" maxlength="100" required></label>
+        <label class="field">Date de sortie<input id="r-day" type="date" required></label></div>
+        <div class="row"><button class="btn btn-ghost" type="submit">Ajouter la sortie</button></div></form>
+      <div id="r-list" style="display:grid;gap:16px;margin-top:16px"></div>
+    </div>
+  </section>
+
+  <!-- ——— Audience ——— -->
+  <section data-tab="audience" hidden>
+    <div class="panel">
+      <h2>Audience</h2>
+      <p class="muted small" style="margin:0 0 12px">Une fois par semaine, le lundi : auditeurs mensuels (Spotify for Artists) et abonnés. Les résultats arrivent en semaines ; les actions, elles, se comptent chaque jour.</p>
+      <form class="form" id="a-form"><div class="four"><label class="field">Jour<input id="a-day" type="date" required></label>
+        <label class="field">Spotify<input id="a-spotify" type="number" min="0" inputmode="numeric"></label>
+        <label class="field">TikTok<input id="a-tiktok" type="number" min="0" inputmode="numeric"></label>
+        <label class="field">Instagram<input id="a-instagram" type="number" min="0" inputmode="numeric"></label></div>
+        <div class="row"><label class="field" style="flex:1">YouTube<input id="a-youtube" type="number" min="0" inputmode="numeric"></label></div>
+        <div class="row"><button class="btn btn-ghost" type="submit">Enregistrer</button></div></form>
+      <div id="a-charts" class="figures" style="margin-top:16px"></div>
+      <div class="scroll" style="margin-top:12px"><table id="a-table"></table></div>
+    </div>
+  </section>
+
+  <!-- ——— Réseau : contacts et radar ——— -->
+  <section data-tab="network" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="panel">
+        <h2>Collaborations</h2>
+        <p class="muted small" style="margin:0 0 12px">Artistes, graphistes, monteurs : un message par semaine. Un contact sans nouvelles depuis 30 jours est signalé.</p>
+        <form class="form" id="c-form"><div class="two"><label class="field">Nom<input id="c-name" maxlength="100" required></label><label class="field">Rôle<input id="c-role" maxlength="100" placeholder="feat, graphiste 3D, monteur…"></label></div>
+          <label class="field">Prochaine action<input id="c-next" maxlength="300" placeholder="Lui envoyer la prod de DEAD"></label>
+          <div class="row"><button class="btn btn-ghost" type="submit">Ajouter le contact</button></div></form>
+        <ul class="list" id="c-list" style="margin-top:12px"></ul>
+      </div>
+      <div class="panel">
+        <h2>Radar</h2>
+        <p class="muted small" style="margin:0 0 12px">Les films, séries ou jeux qui sortent : prépare les répliques avant la vague (alerte 7 jours avant).</p>
+        <form class="form" id="v-form"><div class="two"><label class="field">Titre<input id="v-title" maxlength="120" required></label><label class="field">Date<input id="v-day" type="date" required></label></div>
+          <label class="field">Note<input id="v-note" maxlength="300" placeholder="Réplique à couper sur le refrain de MGL"></label>
+          <div class="row"><button class="btn btn-ghost" type="submit">Ajouter au radar</button></div></form>
+        <ul class="list" id="v-list" style="margin-top:12px"></ul>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -141,7 +243,7 @@ dialog form { padding: 16px; }
     <label class="field">Vidéo du cloud CUT<select id="p-video"><option value="">Aucune</option></select></label>
     <label class="field">Phrase des paroles<select id="p-phrase"><option value="">Aucune</option></select></label>
     <label class="field">Format<input id="p-format" list="formats" maxlength="60" placeholder="Réplique → drop"></label>
-    <label class="field">Accroche (les 2 premières secondes)<input id="p-hook" maxlength="200" placeholder="Spider-Man, « T’as une copine toi ? »"></label>
+    <label class="field">Accroche (les 2 premières secondes)<input id="p-hook" list="hooks" maxlength="200" placeholder="Spider-Man, « T’as une copine toi ? »"></label>
     <label class="field">Lien (facultatif)<input id="p-url" type="url" maxlength="500" placeholder="https://www.tiktok.com/@…"></label>
     <p class="warn" id="p-error" aria-live="polite" style="margin:0"></p>
     <div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button><button class="btn btn-primary" type="submit" id="p-save">Noter</button></div>
@@ -153,6 +255,7 @@ dialog form { padding: 16px; }
   <option value="Feat croisé"><option value="Réponse à un commentaire"><option value="Une prise, sans coupe"><option value="Remix d’un thème connu">
   <option value="Clip + paroles"><option value="Coupé → Spotify"><option value="Carrousel Instagram">
 </datalist>
+<datalist id="hooks"></datalist>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -161,7 +264,10 @@ const el = (tag, props = {}, ...children) => { const node = Object.assign(docume
 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const NETWORK = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" };
 const when = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-const n = (x) => (x == null ? "—" : Number(x).toLocaleString("fr-FR"));
+const dayText = (d) => new Date(d + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+const short = (d) => new Date(d + "T12:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const n = (x) => (x == null ? "—" : Math.round(Number(x)).toLocaleString("fr-FR"));
+const plural = (k, word) => k + " " + word + (k > 1 ? "s" : "");
 async function api(method, path, body) {
   const response = await fetch("/api" + path, { method, body: body && JSON.stringify(body),
     headers: { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : {}) } })
@@ -170,103 +276,268 @@ async function api(method, path, body) {
   if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
   return data;
 }
+/** Une action, puis la page relue ; une erreur s'affiche sans rien casser. */
+const act = (fn) => async (...args) => { try { await fn(...args); await load(); } catch (error) { alert(error.message); } };
 function gate(html) { $("gate").hidden = false; $("gate").innerHTML = html; }
+
+// ——— Les onglets ———
+const TABS = [["today", "Aujourd’hui"], ["week", "Semaine"], ["analysis", "Analyse"], ["phrases", "Phrases"], ["journal", "Journal"], ["releases", "Sorties"], ["audience", "Audience"], ["network", "Réseau"]];
+let tab = (() => { try { return localStorage.getItem("onirique.cockpit.tab") || "today"; } catch { return "today"; } })();
+function showTab(name) {
+  tab = TABS.some(([k]) => k === name) ? name : "today";
+  try { localStorage.setItem("onirique.cockpit.tab", tab); } catch { /* stockage indisponible */ }
+  for (const s of document.querySelectorAll("[data-tab]")) s.hidden = s.dataset.tab !== tab;
+  for (const b of $("tabs").children) { b.setAttribute("aria-selected", String(b.dataset.key === tab)); if (b.dataset.key === tab) b.scrollIntoView({ inline: "nearest", block: "nearest" }); }
+}
 
 let state = null, videos = [];
 async function load() {
   try {
     state = await api("GET", "/cockpit?tz=" + encodeURIComponent(tz));
-    $("gate").hidden = true;
+    $("gate").hidden = true; $("tabs").hidden = false;
     render();
-    api("GET", "/cut/library").then((lib) => { videos = lib.videos; render(); }).catch(() => {});
+    if (!videos.length) api("GET", "/cut/library").then((lib) => { videos = lib.videos; render(); }).catch(() => {});
   } catch (error) {
     if (error.status === 401) gate('Ta session a expiré. <a class="btn btn-primary" href="compte?next=cockpit">Se reconnecter</a>');
     else if (error.status === 403) gate("Le Cockpit est réservé aux membres ONIRIQUE.");
     else { gate(""); $("gate").textContent = error.message; }
   }
 }
-
 function render() {
-  const { today, week, targets, stock, calendar, toFill, posts, phrases } = state;
-  for (const id of ["today", "week-box", "cal-box", "bank", "journal"]) $(id).hidden = false;
-  $("t-tiktoks").textContent = today.tiktoks + " / " + targets.tiktoksPerDay;
-  $("t-tiktoks").className = today.tiktoks >= targets.tiktoksPerDay ? "done" : "";
-  $("t-replies").checked = today.replies;
-  $("t-stats").textContent = toFill.length ? toFill.length + " à noter" : "à jour";
-  $("t-stats").className = toFill.length ? "warn" : "done";
-  $("t-stock").textContent = stock + (stock > 1 ? " vidéos" : " vidéo");
-  $("t-stock").className = stock < targets.stockMin ? "warn" : "done";
-
-  const figure = (value, label) => el("div", { className: "figure" }, el("strong", { textContent: value }), el("small", { textContent: label }));
-  $("week").replaceChildren(figure(week.tiktoks + " / " + targets.tiktoksPerWeek, "TikTok publiés"),
-    figure(week.daysOk + " / " + week.days, "journées au minimum"), figure(week.produced + " / " + targets.producedPerWeek, "vidéos montées dans CUT"));
-
-  $("cal").replaceChildren(...["L", "M", "M", "J", "V", "S", "D"].map((d) => el("span", { className: "head", textContent: d })),
-    ...calendar.map((c) => el("span", { className: c.status + (c.day === today.day ? " today" : ""),
-      title: c.status === "future" ? c.day : c.day + " · " + c.tiktoks + " TikTok · réponses " + (c.replies ? "faites" : "non") + (c.missingStats ? " · " + c.missingStats + " chiffre(s) manquant(s)" : "") })));
-
-  $("fill").hidden = !toFill.length;
-  $("fill-list").replaceChildren(...toFill.map((p) => {
-    const views = el("input", { className: "num", type: "number", min: 0, inputMode: "numeric", placeholder: "Vues", ariaLabel: "Vues" });
-    const saves = el("input", { className: "num", type: "number", min: 0, inputMode: "numeric", placeholder: "Enreg.", ariaLabel: "Enregistrements" });
-    const save = el("button", { className: "btn btn-ghost", type: "button", textContent: "Enregistrer" });
-    save.onclick = async () => {
-      if (views.value === "") return views.focus();
-      save.disabled = true;
-      try { await api("PATCH", "/cockpit/posts/" + p.id, { views: views.value, saves: saves.value === "" ? null : saves.value }); await load(); }
-      catch (error) { save.disabled = false; alert(error.message); }
-    };
-    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), el("small", { textContent: when(p.postedAt) })),
-      el("div", { className: "row" }, views, saves, save));
+  const s = state;
+  $("tabs").replaceChildren(...TABS.map(([key, label]) => {
+    const badge = key === "today" ? s.alerts.filter((a) => a.level !== "low").length : key === "network" ? s.contacts.filter((c) => c.overdue).length : 0;
+    const b = el("button", { type: "button", role: "tab", textContent: label, onclick: () => showTab(key) }, badge ? el("span", { className: "dot", textContent: badge }) : null);
+    b.dataset.key = key;
+    return b;
   }));
-
-  const unused = $("b-unused").checked, titles = [...new Set(phrases.map((ph) => ph.title))];
-  $("titles").replaceChildren(...titles.map((t) => el("option", { value: t })));
-  const shown = phrases.filter((ph) => !unused || !ph.uses);
-  $("b-list").replaceChildren(...(shown.length ? shown.map((ph) => {
-    const remove = el("button", { className: "link", type: "button", textContent: "Retirer" });
-    remove.onclick = async () => { if (confirm("Retirer cette phrase ?")) { await api("DELETE", "/cockpit/phrases/" + ph.id).catch((e) => alert(e.message)); load(); } };
-    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: "« " + ph.text + " »" }), remove),
-      el("small", {}, ph.title + " · ", ph.uses ? ph.uses + " publication" + (ph.uses > 1 ? "s" : "") + " · dernière le " + new Date(ph.lastUsed).toLocaleDateString("fr-FR")
-        + (ph.best != null ? " · meilleur : " + ph.best + " enreg. pour 1 000 vues" : "") : el("span", { className: "tag new", textContent: "jamais utilisée" })));
-  }) : [el("li", { className: "muted", textContent: phrases.length ? "Toutes tes phrases ont déjà servi." : "Aucune phrase : ajoute 3 à 5 lignes par titre." })]));
-
-  $("j-list").replaceChildren(...(posts.length ? posts.map((p) => {
-    const remove = el("button", { className: "link", type: "button", textContent: "Retirer" });
-    remove.onclick = async () => { if (confirm("Retirer cette publication du journal ?")) { await api("DELETE", "/cockpit/posts/" + p.id).catch((e) => alert(e.message)); load(); } };
-    const stats = p.views == null ? "chiffres pas encore notés" : n(p.views) + " vues · " + n(p.saves) + " enreg." + (p.rate != null ? " · " + p.rate + " pour 1 000" : "");
-    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), remove),
-      el("small", {}, when(p.postedAt) + " · " + stats, p.url ? el("span", {}, " · ", el("a", { href: p.url, target: "_blank", rel: "noopener", textContent: "voir" })) : null));
-  }) : [el("li", { className: "muted", textContent: "Rien de noté : touche « J’ai posté » après chaque publication." })]));
+  renderToday(s); renderWeek(s); renderAnalysis(s); renderPhrases(s); renderJournal(s); renderReleases(s); renderAudience(s); renderNetwork(s);
+  showTab(tab);
 }
 /** Le nom d'une publication : réseau, format, phrase ou vidéo. */
 function label(p) {
   const phrase = p.phraseId && state.phrases.find((ph) => ph.id === p.phraseId), video = p.cutVideoId && videos.find((v) => v.id === p.cutVideoId);
   return [NETWORK[p.network], p.format, phrase ? "« " + phrase.text + " »" : video ? video.name : p.hook].filter(Boolean).join(" · ");
 }
-
-$("t-replies").onchange = async () => {
-  try { await api("PUT", "/cockpit/days/" + state.today.day, { replies: $("t-replies").checked }); await load(); }
-  catch (error) { $("t-replies").checked = !$("t-replies").checked; alert(error.message); }
+const planItem = (i, withDay) => {
+  const go = el("button", { className: "link", type: "button", textContent: "Posté", onclick: () => openPost({ phraseId: i.phraseId, format: i.format }) });
+  return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: i.text ? "« " + i.text + " »" : "Phrase libre" }), go),
+    el("small", { textContent: [withDay && dayText(i.day), i.title, i.format, i.why].filter(Boolean).join(" · ") }));
 };
-$("b-unused").onchange = render;
-$("b-form").onsubmit = async (event) => {
+
+// ——— Aujourd'hui ———
+function renderToday(s) {
+  const t = s.today;
+  $("t-mode").textContent = "Mode " + s.mode.label + (s.mode.auto ? " (automatique)" : "") + " : " + plural(s.mode.perDay, "TikTok") + " par jour." + (s.release ? " Sortie de « " + s.release.title + " » : semaine S" + (s.release.s >= 0 ? "+" : "") + s.release.s + "." : "");
+  $("alerts").replaceChildren(...s.alerts.map((a) => el("li", { className: a.level, textContent: a.text })));
+  $("t-tiktoks").textContent = t.status === "pause" ? "pause" : t.tiktoks + " / " + t.perDay;
+  $("t-tiktoks").className = t.tiktoks >= t.perDay ? "done" : "";
+  $("t-replies").checked = t.replies;
+  $("t-stats").textContent = s.toFill.length ? s.toFill.length + " à noter" : "à jour";
+  $("t-stats").className = s.toFill.length ? "warn" : "done";
+  $("t-stock").textContent = plural(s.stock, "vidéo");
+  $("t-stock").className = s.stock < s.targets.stockMin ? "warn" : "done";
+  const todays = s.plan.items.filter((i) => i.day === t.day);
+  $("t-plan").replaceChildren(...(todays.length ? todays.map((i) => planItem(i, false)) : [el("li", { className: "muted", textContent: t.status === "pause" ? "Pause annoncée : rien à publier." : "Le minimum du jour est publié. Le reste est du bonus." })]));
+  $("fill").hidden = !s.toFill.length;
+  $("fill-list").replaceChildren(...s.toFill.map((p) => {
+    const views = el("input", { className: "num", type: "number", min: 0, inputMode: "numeric", placeholder: "Vues", ariaLabel: "Vues" });
+    const saves = el("input", { className: "num", type: "number", min: 0, inputMode: "numeric", placeholder: "Enreg.", ariaLabel: "Enregistrements" });
+    const save = el("button", { className: "btn btn-ghost", type: "button", textContent: "Enregistrer" });
+    save.onclick = act(async () => { if (views.value === "") throw new Error("Note au moins les vues."); await api("PATCH", "/cockpit/posts/" + p.id, { views: views.value, saves: saves.value === "" ? null : saves.value }); });
+    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), el("small", { textContent: when(p.postedAt) })), el("div", { className: "row" }, views, saves, save));
+  }));
+  const evening = s.evenings.find((e) => e.day === t.day);
+  if (document.activeElement !== $("e-best") && document.activeElement !== $("e-lesson")) { $("e-best").value = evening ? evening.best : ""; $("e-lesson").value = evening ? evening.lesson : ""; }
+  const lv = s.level, prev = [...lv.levels].reverse().find((l) => l <= lv.count) || 0;
+  $("lvl-text").textContent = plural(lv.count, "TikTok") + " noté" + (lv.count > 1 ? "s" : "") + (lv.next ? " · prochain palier : " + lv.next + (lv.next === 374 ? " (le rythme de Priilick en 10 mois)" : "") : " · tous les paliers sont passés");
+  $("lvl-bar").style.width = (lv.next ? Math.round(((lv.count - prev) / (lv.next - prev)) * 100) : 100) + "%";
+}
+$("t-replies").onchange = act(() => api("PUT", "/cockpit/days/" + state.today.day, { replies: $("t-replies").checked }));
+$("evening").onsubmit = async (event) => {
   event.preventDefault();
-  try { await api("POST", "/cockpit/phrases", { title: $("b-title-in").value, text: $("b-text").value }); $("b-text").value = ""; await load(); $("b-text").focus(); }
-  catch (error) { alert(error.message); }
+  try { await api("PUT", "/cockpit/evenings/" + state.today.day, { best: $("e-best").value, lesson: $("e-lesson").value }); $("e-note").textContent = "Bilan gardé."; await load(); }
+  catch (error) { $("e-note").textContent = error.message; }
 };
 
-// « J'ai posté » : la publication entre au journal, avec sa vidéo, sa phrase, son format et son accroche.
-const local = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-$("t-post").onclick = () => {
+// ——— Semaine ———
+function renderWeek(s) {
+  const w = s.week;
+  $("w-modes").replaceChildren(...Object.entries(s.modes).map(([key, m]) => el("button", { type: "button", className: "btn btn-ghost" + (s.mode.key === key ? " on" : ""),
+    textContent: m.label + " · " + m.perWeek, onclick: act(() => api("PUT", "/cockpit/weeks/" + w.week, { mode: key })) })));
+  $("w-mode-note").textContent = s.mode.auto ? "Choisi automatiquement : deux semaines sous 110 points. Il repasse en Normal la semaine prochaine." : s.release && w.mode === "sortie" ? "Mode Sortie par défaut (S-3 à S0 de « " + s.release.title + " »)." : "Pause annoncée : 7 jours par trimestre au plus, décidés à l’avance.";
+  $("w-joker").textContent = w.joker ? "Joker posé le " + short(w.joker) + " · le retirer" : "Poser le joker aujourd’hui";
+  $("w-joker").onclick = act(() => api("PUT", "/cockpit/weeks/" + w.week, { joker: w.joker ? null : s.today.day }));
+  $("w-points").textContent = w.points + " / " + s.targets.weekMax + " points" + (w.points >= s.targets.weekKept ? " · semaine tenue" : " · tenue à " + s.targets.weekKept);
+  $("w-bar").style.width = Math.round((w.points / s.targets.weekMax) * 100) + "%";
+  const f = (value, text) => el("div", { className: "figure" }, el("strong", { textContent: value }), el("small", { textContent: text }));
+  $("w-parts").replaceChildren(f(w.tiktoks + " / " + w.perWeek, "TikTok publiés"), f(w.daysOk + " / " + w.daysPast, "journées tenues (" + w.parts.days + " pts)"),
+    f(w.produced + " / " + s.targets.producedPerWeek, "vidéos montées (" + w.parts.produced + " pts)"), f(w.newHooks + " / " + s.targets.hooksPerWeek, "accroches nouvelles (" + w.parts.hooks + " pts)"),
+    f(w.spoke ? "oui" : "non", "prise de parole (" + w.parts.spoke + " pts)"), f(w.reviewed ? "fait" : "à faire", "bilan du lundi (" + w.parts.reviewed + " pts)"), f(s.stock, "stock, 10 pts si ≥ 2 (" + w.parts.stock + " pts)"));
+  $("w-formats").textContent = s.plan.formats.length ? "Répartition : " + s.plan.formats.map((x) => x.format + " × " + x.count).join(", ") + "." : "";
+  $("w-plan").replaceChildren(...(s.plan.items.length ? s.plan.items.map((i) => planItem(i, true)) : [el("li", { className: "muted", textContent: "Rien de prévu d’ici dimanche." })]));
+  const last = s.weeks.at(-2), winners = s.analysis.byFormat.filter((x) => x.reliable).slice(0, 2);
+  $("w-review").replaceChildren(...[
+    "Semaine dernière : " + (last ? last.points : 0) + " points" + (last && last.points >= s.targets.weekKept ? " (tenue)." : " (non tenue)."),
+    winners.length ? "Formats en tête : " + winners.map((x) => x.key + " (" + n(x.views) + " vues médianes)").join(", ") + "." : "Pas encore 5 vidéos mesurées par format : continue de tester les 3 formats-candidats.",
+    s.wear.length ? "Usure : " + s.wear.map((x) => x.format).join(", ") + "." : "Aucun format usé.",
+    "Choisis les 3 accroches à tester cette semaine et le mode (en haut).",
+    "Note l’audience de la semaine (onglet Audience).",
+  ].map((t) => el("li", { className: "item", textContent: t })));
+  $("w-reviewed").textContent = w.reviewed ? "Bilan fait ✓ · annuler" : "Bilan fait";
+  $("w-reviewed").onclick = act(() => api("PUT", "/cockpit/weeks/" + w.week, { reviewed: !w.reviewed }));
+  $("cal").replaceChildren(...["L", "M", "M", "J", "V", "S", "D"].map((d) => el("span", { className: "head", textContent: d })),
+    ...s.calendar.map((c) => el("span", { className: c.status + (c.caught ? " caught" : "") + (c.day === s.today.day ? " today" : ""),
+      title: c.status === "future" ? short(c.day) : short(c.day) + " · " + c.tiktoks + " / " + c.perDay + " TikTok · réponses " + (c.replies ? "faites" : "non") + (c.missingStats ? " · " + c.missingStats + " chiffre(s) manquant(s)" : "") + (c.caught ? " · rattrapé" : "") })));
+  $("w-history").replaceChildren(...s.weeks.map((x) => el("div", { className: "row", style: "flex-wrap:nowrap" },
+    el("small", { className: "muted", style: "width:84px;flex:none", textContent: short(x.week) }),
+    el("div", { className: "bar" + (x.points >= s.targets.weekKept ? "" : " acc"), style: "flex:1" }, el("i", { style: "width:" + Math.round((x.points / s.targets.weekMax) * 100) + "%" })),
+    el("small", { style: "width:72px;flex:none;text-align:right", textContent: x.points + " pts" }))));
+}
+
+// ——— Analyse ———
+function table(title, rows, keyLabel) {
+  if (!rows.length) return null;
+  const head = el("tr", {}, el("th", { textContent: keyLabel }), el("th", { className: "n", textContent: "Vidéos" }), el("th", { className: "n", textContent: "Vues méd." }), el("th", { className: "n", textContent: "Enreg./1 000" }));
+  return el("div", { className: "panel" }, el("h2", { textContent: title }), el("div", { className: "scroll" }, el("table", {}, el("thead", {}, head),
+    el("tbody", {}, ...rows.map((r) => el("tr", {}, el("td", {}, r.key + " ", r.reliable ? null : el("span", { className: "tag", textContent: "peu de données" })),
+      el("td", { className: "n", textContent: r.n }), el("td", { className: "n", textContent: n(r.views) }), el("td", { className: "n", textContent: r.rate == null ? "—" : n(r.rate) })))))));
+}
+function renderAnalysis(s) {
+  const a = s.analysis;
+  if (!a.baseline.n) { $("an").replaceChildren(el("p", { className: "panel muted", textContent: "Aucune vidéo mesurée : note les vues et les enregistrements à 48 h (onglet Aujourd’hui), l’analyse se remplit toute seule." })); return; }
+  const base = el("div", { className: "panel" }, el("h2", { textContent: "Ta base" }), el("div", { className: "figures" },
+    el("div", { className: "figure" }, el("strong", { textContent: n(a.baseline.views) }), el("small", { textContent: "vues médianes" })),
+    el("div", { className: "figure" }, el("strong", { textContent: a.baseline.rate == null ? "—" : n(a.baseline.rate) }), el("small", { textContent: "enregistrements pour 1 000 vues" })),
+    el("div", { className: "figure" }, el("strong", { textContent: a.baseline.n }), el("small", { textContent: "vidéos mesurées" }))));
+  const wear = s.wear.length ? el("div", { className: "panel" }, el("h2", { textContent: "Formats qui s’usent" }), el("ul", { className: "list" },
+    ...s.wear.map((w) => el("li", { className: "item", textContent: w.format + " : de " + n(w.best) + " à " + n(w.now) + " vues médianes (" + w.n + " vidéos). Garde-le en appoint (une vidéo sur cinq) et relance deux formats-candidats." })))) : null;
+  const hooks = a.hooks.length ? el("div", { className: "panel" }, el("h2", { textContent: "Tests d’accroches" }), el("p", { className: "muted small", style: "margin:0 0 12px", textContent: "Même phrase, accroches différentes : la gagnante est celle qui fait le plus d’enregistrements pour 1 000 vues." }),
+    ...a.hooks.map((h) => el("div", {}, el("h3", { textContent: "« " + h.text + " » · " + h.title }), el("ul", { className: "list" },
+      ...h.tests.map((x, i) => el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: x.hook }), i === 0 ? el("span", { className: "tag good", textContent: "gagnante" }) : null),
+        el("small", { textContent: plural(x.n, "vidéo") + " · " + n(x.views) + " vues méd. · " + (x.rate == null ? "—" : n(x.rate)) + " enreg./1 000" }))))))) : null;
+  const maxViews = Math.max(1, ...a.months.map((m) => m.views || 0));
+  const months = a.months.length > 1 ? el("div", { className: "panel" }, el("h2", { textContent: "Tendance par mois (vues médianes)" }), el("div", { style: "display:grid;gap:6px" },
+    ...a.months.map((m) => el("div", { className: "row", style: "flex-wrap:nowrap" }, el("small", { className: "muted", style: "width:70px;flex:none", textContent: m.key }),
+      el("div", { className: "bar acc", style: "flex:1" }, el("i", { style: "width:" + Math.round(((m.views || 0) / maxViews) * 100) + "%" })), el("small", { style: "width:110px;flex:none;text-align:right", textContent: n(m.views) + " · " + m.n + " vid." }))))) : null;
+  $("an").replaceChildren(...[base, wear, table("Par format", a.byFormat, "Format"), hooks, table("Par titre", a.byTitle, "Titre"), table("Par heure de publication", a.byHour, "Moment"),
+    table("Par jour", a.byWeekday, "Jour"), table("Par réseau", a.byNetwork.map((r) => ({ ...r, key: NETWORK[r.key] || r.key })), "Réseau"), months].filter(Boolean));
+}
+
+// ——— Phrases ———
+function renderPhrases(s) {
+  const unused = $("b-unused").checked, titles = [...new Set(s.phrases.map((ph) => ph.title))];
+  $("titles").replaceChildren(...titles.map((t) => el("option", { value: t })));
+  $("hooks").replaceChildren(...[...new Set(s.posts.map((p) => p.hook).filter(Boolean))].slice(0, 50).map((h) => el("option", { value: h })));
+  const shown = s.phrases.filter((ph) => !unused || !ph.uses);
+  $("b-list").replaceChildren(...(shown.length ? shown.map((ph) => el("li", { className: "item" },
+    el("div", { className: "top" }, el("b", { textContent: "« " + ph.text + " »" }), el("span", { className: "row" },
+      el("button", { className: "link", type: "button", textContent: "Posté", onclick: () => openPost({ phraseId: ph.id }) }),
+      el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer cette phrase ?")) await api("DELETE", "/cockpit/phrases/" + ph.id); }) }))),
+    el("small", {}, ph.title + " · ", ph.uses ? plural(ph.uses, "publication") + " · dernière le " + new Date(ph.lastUsed).toLocaleDateString("fr-FR")
+      + (ph.best != null ? " · meilleur : " + n(ph.best) + " enreg. pour 1 000 vues" : "") : el("span", { className: "tag new", textContent: "jamais utilisée" }))))
+    : [el("li", { className: "muted", textContent: s.phrases.length ? "Toutes tes phrases ont déjà servi." : "Aucune phrase : ajoute 3 à 5 lignes par titre." })]));
+}
+$("b-unused").onchange = () => renderPhrases(state);
+$("b-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/phrases", { title: $("b-title-in").value, text: $("b-text").value }); $("b-text").value = ""; });
+
+// ——— Journal ———
+function renderJournal(s) {
+  $("j-list").replaceChildren(...(s.posts.length ? s.posts.map((p) => {
+    const stats = p.views == null ? "chiffres pas encore notés" : n(p.views) + " vues · " + n(p.saves) + " enreg." + (p.rate != null ? " · " + p.rate + " pour 1 000" : "");
+    const edit = el("button", { className: "link", type: "button", textContent: "Chiffres", onclick: act(async () => {
+      const views = prompt("Vues :", p.views ?? ""); if (views === null) return;
+      const saves = prompt("Enregistrements :", p.saves ?? ""); if (saves === null) return;
+      await api("PATCH", "/cockpit/posts/" + p.id, { views: views.trim() === "" ? null : views.trim(), saves: saves.trim() === "" ? null : saves.trim() });
+    }) });
+    const remove = el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer cette publication du journal ?")) await api("DELETE", "/cockpit/posts/" + p.id); }) });
+    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), el("span", { className: "row" }, edit, remove)),
+      el("small", {}, when(p.postedAt) + (p.hook ? " · " + p.hook : "") + " · " + stats, p.url ? el("span", {}, " · ", el("a", { href: p.url, target: "_blank", rel: "noopener", textContent: "voir" })) : null));
+  }) : [el("li", { className: "muted", textContent: "Rien de noté : touche « J’ai posté » après chaque publication." })]));
+}
+$("j-post").onclick = () => openPost();
+$("j-csv").onclick = async () => {
+  try {
+    const response = await fetch("/api/cockpit/export.csv", { headers: { Authorization: "Bearer " + token } });
+    if (!response.ok) throw new Error("Export impossible.");
+    const url = URL.createObjectURL(await response.blob()), a = el("a", { href: url, download: "cockpit-journal.csv" });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (error) { alert(error.message); }
+};
+
+// ——— Sorties ———
+function renderReleases(s) {
+  $("r-list").replaceChildren(...(s.releases.length ? [...s.releases].reverse().map((r) => el("div", { className: "item" },
+    el("div", { className: "top" }, el("b", { textContent: r.title + " · sortie le " + dayText(r.day) }),
+      el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer cette sortie ?")) await api("DELETE", "/cockpit/releases/" + r.id); }) })),
+    el("ul", { className: "list" }, ...r.weeks.map((w) => el("li", { className: "item" + (w.current ? " now" : "") },
+      el("div", { className: "top" }, el("b", { textContent: "S" + (w.s > 0 ? "+" : "") + w.s + " · semaine du " + short(w.week) }), el("span", { className: "tag" + (w.done >= w.target ? " good" : ""), textContent: w.done + " / " + w.target })),
+      el("small", { textContent: w.todo }), el("div", { className: "bar" + (w.done >= w.target ? "" : " acc") }, el("i", { style: "width:" + Math.min(100, Math.round((w.done / w.target) * 100)) + "%" })))))))
+    : [el("p", { className: "muted", style: "margin:0", textContent: "Aucune sortie prévue. Ajoute la prochaine : le plan s’organise trois semaines avant." })]));
+}
+$("r-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/releases", { title: $("r-title").value, day: $("r-day").value }); $("r-title").value = ""; });
+
+// ——— Audience ———
+const METRICS = [["spotify", "Auditeurs Spotify"], ["tiktok", "Abonnés TikTok"], ["instagram", "Abonnés Instagram"], ["youtube", "Abonnés YouTube"]];
+function spark(points) {
+  const w = 240, h = 56, xs = points.map((_, i) => (points.length > 1 ? (i / (points.length - 1)) * (w - 8) + 4 : w / 2));
+  const lo = Math.min(...points), hi = Math.max(...points), y = (v) => (hi === lo ? h / 2 : h - 6 - ((v - lo) / (hi - lo)) * (h - 12));
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`); svg.setAttribute("class", "spark"); svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = `<polyline fill="none" stroke="rgb(var(--acc))" stroke-width="2" points="${points.map((v, i) => xs[i].toFixed(1) + "," + y(v).toFixed(1)).join(" ")}"/>`;
+  return svg;
+}
+function renderAudience(s) {
+  if (!$("a-day").value) $("a-day").value = s.today.day;
+  $("a-charts").replaceChildren(...METRICS.map(([key, labelText]) => {
+    const pts = s.audience.filter((a) => a[key] != null);
+    if (!pts.length) return null;
+    const last = pts.at(-1)[key], first = pts[0][key], delta = last - first;
+    return el("div", { className: "figure" }, el("strong", { textContent: n(last) }), el("small", { textContent: labelText + (pts.length > 1 ? " · " + (delta >= 0 ? "+" : "") + n(delta) + " depuis le " + short(pts[0].day) : "") }), pts.length > 1 ? spark(pts.map((a) => a[key])) : null);
+  }).filter(Boolean));
+  $("a-table").replaceChildren(el("thead", {}, el("tr", {}, el("th", { textContent: "Jour" }), ...METRICS.map(([, t]) => el("th", { className: "n", textContent: t.split(" ").pop() })), el("th"))),
+    el("tbody", {}, ...[...s.audience].reverse().map((a) => el("tr", {}, el("td", { textContent: short(a.day) }), ...METRICS.map(([k]) => el("td", { className: "n", textContent: n(a[k]) })),
+      el("td", { className: "n" }, el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(() => api("DELETE", "/cockpit/audience/" + a.day)) }))))));
+}
+$("a-form").onsubmit = act(async (event) => {
+  event.preventDefault();
+  const v = (id) => ($(id).value === "" ? null : $(id).value);
+  await api("PUT", "/cockpit/audience/" + $("a-day").value, { spotify: v("a-spotify"), tiktok: v("a-tiktok"), instagram: v("a-instagram"), youtube: v("a-youtube") });
+  for (const id of ["a-spotify", "a-tiktok", "a-instagram", "a-youtube"]) $(id).value = "";
+});
+
+// ——— Réseau ———
+function renderNetwork(s) {
+  $("c-list").replaceChildren(...(s.contacts.length ? s.contacts.map((c) => {
+    const status = el("select", { className: "sel", ariaLabel: "Statut" }, ...s.contactStatuses.map((x) => el("option", { value: x, textContent: x, selected: x === c.status })));
+    status.onchange = act(() => api("PATCH", "/cockpit/contacts/" + c.id, { status: status.value }));
+    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", {}, c.name + (c.role ? " · " + c.role : "") + " ", c.overdue ? el("span", { className: "tag new", textContent: "à relancer" }) : null), status),
+      el("small", { textContent: (c.nextAction ? "Prochaine action : " + c.nextAction + " · " : "") + (c.lastContact ? "dernier contact le " + short(c.lastContact) : "jamais contacté") }),
+      el("div", { className: "row" }, el("button", { className: "link", type: "button", textContent: "Contacté aujourd’hui", onclick: act(() => api("PATCH", "/cockpit/contacts/" + c.id, { lastContact: s.today.day, status: c.status === "à contacter" ? "en discussion" : c.status })) }),
+        el("button", { className: "link", type: "button", textContent: "Prochaine action", onclick: act(async () => { const x = prompt("Prochaine action :", c.nextAction); if (x !== null) await api("PATCH", "/cockpit/contacts/" + c.id, { nextAction: x }); }) }),
+        el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer " + c.name + " ?")) await api("DELETE", "/cockpit/contacts/" + c.id); }) })));
+  }) : [el("li", { className: "muted", textContent: "Aucun contact : un feat ou un graphiste par mois change la portée." })]));
+  $("v-list").replaceChildren(...(s.events.length ? s.events.map((e) => el("li", { className: "item" + (e.inDays >= 0 && e.inDays <= 7 ? " now" : "") },
+    el("div", { className: "top" }, el("b", { textContent: e.title }), el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(() => api("DELETE", "/cockpit/events/" + e.id)) })),
+    el("small", { textContent: dayText(e.day) + (e.inDays > 0 ? " · dans " + plural(e.inDays, "jour") : e.inDays === 0 ? " · aujourd’hui" : " · passé") + (e.note ? " · " + e.note : "") })))
+    : [el("li", { className: "muted", textContent: "Rien sur le radar." })]));
+}
+$("c-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/contacts", { name: $("c-name").value, role: $("c-role").value, nextAction: $("c-next").value }); $("c-form").reset(); });
+$("v-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/events", { title: $("v-title").value, day: $("v-day").value, note: $("v-note").value }); $("v-form").reset(); });
+
+// ——— « J'ai posté » : la publication entre au journal, avec sa vidéo, sa phrase, son format et son accroche ———
+const localInput = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+function openPost(prefill = {}) {
   const posted = new Set(state.posts.filter((p) => p.network === "tiktok").map((p) => p.cutVideoId));
   $("p-video").replaceChildren(el("option", { value: "", textContent: "Aucune" }),
     ...[...videos].sort((a, b) => posted.has(a.id) - posted.has(b.id)).map((v) => el("option", { value: v.id, textContent: (posted.has(v.id) ? "(déjà sur TikTok) " : "") + v.name })));
   $("p-phrase").replaceChildren(el("option", { value: "", textContent: "Aucune" }),
-    ...state.phrases.map((ph) => el("option", { value: ph.id, textContent: ph.title + " · « " + ph.text + " »" })));
-  $("p-at").value = local(new Date()); $("p-error").textContent = "";
+    ...state.phrases.map((ph) => el("option", { value: ph.id, textContent: ph.title + " · « " + ph.text + " »", selected: ph.id === prefill.phraseId })));
+  $("p-format").value = prefill.format || "";
+  $("p-at").value = localInput(new Date()); $("p-error").textContent = "";
   $("post-dlg").showModal();
-};
+}
+$("t-post").onclick = () => openPost();
 $("p-form").onsubmit = async (event) => {
   event.preventDefault();
   $("p-save").disabled = true;
@@ -278,6 +549,8 @@ $("p-form").onsubmit = async (event) => {
   } catch (error) { $("p-error").textContent = error.message; }
   finally { $("p-save").disabled = false; }
 };
+// Toucher à côté de la fenêtre la ferme.
+$("post-dlg").addEventListener("click", (event) => { if (event.target === $("post-dlg")) $("post-dlg").close(); });
 
 if (!token) gate('Connecte-toi d’abord à ton compte. <a class="btn btn-primary" href="compte?next=cockpit">Se connecter</a>');
 else load();
