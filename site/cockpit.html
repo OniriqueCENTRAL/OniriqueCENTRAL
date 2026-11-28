@@ -5,264 +5,395 @@
 <title>Cockpit — ONIRIQUE</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#09080A">
+<link rel="manifest" href="assets/cockpit.json">
+<link rel="apple-touch-icon" href="assets/cut-icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="COCKPIT">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="assets/cut-icon-192.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
-/* Le Cockpit : la régularité, le plan, l'analyse et la mémoire de la promo des membres ONIRIQUE.
-   Mêmes couleurs que l'appweb « Mes vidéos » (da.css, chargée après). */
+/* Le Cockpit : la régularité, le plan, les chiffres et la mémoire de la promo des membres ONIRIQUE. Pensé pour le pouce :
+   5 rubriques en bas de l'écran (une colonne à gauche sur ordinateur), « Posté » toujours sous la main, des cibles de 44 px
+   au moins, des chiffres en grand et l'état de chaque chose en couleur ET en mots. Couleurs et polices : da.css. */
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; min-height: 100dvh; color: var(--mist); font: 400 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
 a { color: inherit; }
 button, input, select, textarea { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
-.wrap { width: 100%; max-width: 960px; margin-inline: auto; padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
-header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.94); padding-top: env(safe-area-inset-top); position: sticky; top: 0; z-index: 3; }
-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 15px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 38px; height: auto; margin-block: -10px; }
-.brand span { color: var(--ember); }
-.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
-.tabs button { flex: none; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); font: 600 13px/1 var(--f-body); cursor: pointer; white-space: nowrap; }
-.tabs button[aria-selected="true"] { background: var(--mist); color: var(--night); border-color: var(--mist); }
-.tabs .dot { display: inline-block; min-width: 18px; padding: 2px 5px; margin-left: 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; }
-main { padding-block: 20px calc(60px + env(safe-area-inset-bottom)); display: grid; gap: 16px; }
-main > *, .panel, .figure { min-width: 0; } /* un tableau large défile dans son cadre au lieu d'élargir la page */
-h1 { font: 800 clamp(24px, 6vw, 34px)/1.1 var(--f-display); margin: 0; }
-h2 { font: 700 18px/1.2 var(--f-display); margin: 0 0 12px; }
-h3 { font: 700 15px/1.2 var(--f-body); margin: 16px 0 8px; }
-.muted { color: var(--haze); }
-.small { font-size: 13px; }
-.lead { margin: 4px 0 0; font-size: 15px; max-width: 64ch; }
-.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border-radius: var(--r-ctl); border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
-.btn-primary { background: var(--mist); color: var(--night); }
-.btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
-.btn-ghost:hover { border-color: var(--ember); }
-.btn.on { border-color: var(--ember); background: rgba(var(--acc), .25); }
-.btn:disabled { opacity: .55; cursor: default; }
-.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: var(--r-card); padding: 16px; }
-.check { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
-.check:first-of-type { border-top: 0; padding-top: 0; }
-.check b { font-weight: 600; }
-.done { color: var(--ok); }
-.warn { color: var(--danger); }
-input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--ember); }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 8px; }
+.wrap { width: 100%; max-width: 820px; margin-inline: auto; padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+.ic { display: inline-grid; place-items: center; flex: none; }
+.ic svg { width: 1.25em; height: 1.25em; }
+
+/* En-tête : la marque, le minimum du jour toujours visible, actualiser, les vidéos */
+header.top { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top); }
+header.top .wrap { display: flex; align-items: center; gap: 10px; height: 60px; max-width: none; }
+.brand { display: inline-flex; align-items: center; gap: 8px; margin-right: auto; text-decoration: none; font: 800 14px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 32px; height: auto; }
+.brand b { color: var(--ember); font-weight: 800; }
+@media (max-width: 480px) { .brand .long { display: none; } }
+.pill { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.05); color: var(--mist); font: 700 15px/1 var(--f-body); }
+.pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--ember); }
+.pill.ok { border-color: rgba(155,227,176,.5); } .pill.ok i { background: var(--ok); }
+.icon-btn { width: 44px; height: 44px; display: grid; place-items: center; flex: none; border: 0; border-radius: 12px; background: rgba(255,255,255,.05); color: var(--mist); text-decoration: none; }
+.icon-btn svg { width: 22px; height: 22px; }
+.spin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { rotate: 360deg; } }
+
+/* Les 5 rubriques, en bas sous le pouce */
+nav.tabbar { position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
+  padding: 6px max(6px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-right));
+  background: rgba(12,9,11,.97); border-top: 1px solid var(--line); }
+nav.tabbar button { position: relative; display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 58px; padding: 6px 2px; border: 0; border-radius: 14px;
+  background: none; color: var(--haze); font: 600 12px/1 var(--f-body); }
+nav.tabbar button svg { width: 24px; height: 24px; }
+nav.tabbar button[aria-current="page"] { color: #fff; background: rgba(var(--acc), .2); }
+nav.tabbar button[aria-current="page"] .ic { color: var(--ember-text); }
+.badge { position: absolute; top: 4px; left: calc(50% + 8px); min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--ember); color: #fff; font: 800 12px/20px var(--f-body); }
+
+/* « Posté » : toujours là */
+.fab { position: fixed; z-index: 31; right: max(16px, env(safe-area-inset-right)); bottom: calc(86px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 8px;
+  height: 58px; padding: 0 24px 0 18px; border: 0; border-radius: 999px; background: var(--lit); box-shadow: var(--lit-shadow), 0 12px 34px rgba(0,0,0,.55); color: #fff; font: 800 17px/1 var(--f-body); }
+.fab svg { width: 24px; height: 24px; }
+.fab:active, .tile:active, .b:active { transform: scale(.97); }
+
+main { padding-block: 16px calc(180px + env(safe-area-inset-bottom)); }
+.view, .sub { display: grid; gap: 14px; }
+.card { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: var(--r-card); background: rgba(255,255,255,.035); }
+.hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
+h1 { margin: 0; font: 800 26px/1.1 var(--f-display); }
+h2 { margin: 0; font: 700 18px/1.2 var(--f-display); }
+h3 { margin: 18px 0 8px; font: 700 15px/1.2 var(--f-body); color: var(--label); }
+p { margin: 0; }
+.kicker { font: 500 11px/1.2 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.muted { color: var(--haze); } .small { font-size: 14px; } .lead { margin-bottom: 12px; }
+.ok { color: var(--ok); } .bad { color: var(--danger); } .accent { color: var(--ember-text); }
+
+/* Puces */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.07); font: 600 13px/1.15 var(--f-body); }
+.chip.ok { background: rgba(155,227,176,.16); color: var(--ok); }
+.chip.bad { background: rgba(255,122,133,.15); color: var(--danger); }
+.chip.acc { background: rgba(var(--acc), .22); color: var(--ember-text); }
+
+/* Boutons */
+.b { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px;
+  background: rgba(255,255,255,.05); color: var(--mist); font: 600 15px/1.1 var(--f-body); text-decoration: none; text-align: center; }
+.b:hover { border-color: rgba(var(--acc-hi), .5); }
+.b.main { border-color: transparent; background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; }
+.b.big { min-height: 54px; padding: 0 22px; font-size: 16px; font-weight: 700; }
+.b.small { min-height: 38px; padding: 0 12px; font-size: 14px; }
+.b.wide { width: 100%; }
+.b.danger { color: var(--danger); }
+.b.on { border-color: rgba(var(--acc-hi), .7); background: rgba(var(--acc), .28); color: #fff; }
+.b:disabled { opacity: .5; cursor: default; }
+.b svg { width: 18px; height: 18px; }
+.actions, .choice { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(255,255,255,.06); }
+.seg button { min-height: 44px; padding: 6px 8px; border: 0; border-radius: 10px; background: none; color: var(--label); font: 600 14px/1.15 var(--f-body); }
+.seg button[aria-pressed="true"] { background: var(--mist); color: var(--night); }
+.seg.wrapy { grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+
+/* Le grand cadran du jour */
+.hero { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+.ring { position: relative; width: 116px; height: 116px; }
+.ring svg { width: 100%; height: 100%; rotate: -90deg; }
+.ring .track { stroke: rgba(255,255,255,.08); }
+.ring .fill { stroke: var(--ember); transition: stroke-dashoffset .7s var(--ease); }
+.ring.done .fill { stroke: var(--ok); }
+.ring b { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font: 800 32px/1 var(--f-display); }
+.ring b small { display: block; margin-top: 6px; font: 500 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.status-line { margin-top: 10px; font: 700 17px/1.35 var(--f-body); }
+@media (max-width: 420px) { .ring { width: 96px; height: 96px; } .ring b { font-size: 26px; } h1 { font-size: 22px; } }
+
+/* Les tuiles à toucher */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.tile { display: grid; align-content: start; gap: 6px; min-height: 100px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.04);
+  color: var(--mist); text-align: left; text-decoration: none; }
+.tile .k { display: flex; align-items: center; gap: 8px; font: 600 14px/1.2 var(--f-body); color: var(--label); }
+.tile strong { font: 800 clamp(21px, 6.4vw, 28px)/1.05 var(--f-display); white-space: nowrap; }
+.tile small { color: var(--haze); font-size: 13px; line-height: 1.3; }
+.tile.ok { border-color: rgba(155,227,176,.5); background: rgba(155,227,176,.08); } .tile.ok strong { color: var(--ok); }
+.tile.bad { border-color: rgba(255,122,133,.55); background: rgba(255,122,133,.08); } .tile.bad strong { color: var(--danger); }
+@media (min-width: 680px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
+
+/* Alertes */
 .alerts { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.alerts li { padding: 10px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); border-left-width: 4px; font-size: 14px; }
-.alerts .high { border-left-color: var(--danger); }
-.alerts .mid { border-left-color: rgb(var(--acc)); }
-.alerts .low { border-left-color: var(--haze); }
-.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
-.figure { padding: 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); }
-.figure strong { display: block; font: 700 22px/1.1 var(--f-display); }
-.figure small { color: var(--haze); font-size: 12px; }
-.bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
-.bar i { display: block; height: 100%; background: var(--ok); border-radius: 999px; }
-.bar.acc i { background: rgb(var(--acc)); }
-/* Le calendrier : 8 semaines, une ligne par semaine du lundi au dimanche. */
-.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 32px)); gap: 6px; }
-.cal span { aspect-ratio: 1; border-radius: 6px; border: 1px solid var(--line); background: rgba(255,255,255,.03); }
-.cal .head { border: 0; background: none; aspect-ratio: auto; text-align: center; font: 500 11px/1 var(--f-mono); color: var(--haze); }
-.cal .ok, .legend .ok { background: var(--ok); border-color: var(--ok); }
-.cal .part, .legend .part { background: rgba(var(--acc), .45); border-color: rgba(var(--acc), .7); }
-.cal .caught { background: repeating-linear-gradient(45deg, rgba(var(--acc), .45) 0 4px, transparent 4px 8px); }
-.cal .joker, .legend .joker { background: rgba(120,160,255,.45); border-color: rgba(120,160,255,.8); }
-.cal .pause, .legend .pause { background: rgba(255,255,255,.18); }
-.cal .future { opacity: .3; }
-.cal .today { outline: 2px solid var(--mist); outline-offset: 1px; }
-.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; font-size: 13px; color: var(--haze); }
-.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid var(--line); }
-.list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.item { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); }
-.item.now { border-color: var(--ember); }
-.item .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-.item small { color: var(--haze); font-size: 13px; }
-.tag { font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; background: rgba(255,255,255,.06); white-space: nowrap; }
-.tag.new { background: rgba(var(--acc), .35); }
-.tag.good { background: var(--ok); color: #000; }
-.link { background: none; border: 0; padding: 0; color: var(--haze); text-decoration: underline; cursor: pointer; font-size: 13px; }
-.field { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
-.field input, .field select, .field textarea, .num, .sel { width: 100%; padding: 10px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist);
-  font: 500 15px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color-scheme: dark; }
-.num { width: 110px; }
-.sel { width: auto; padding: 6px 8px; font-size: 13px; }
-.form { display: grid; gap: 10px; }
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font: 500 11px/1.2 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
-td.n, th.n { text-align: right; white-space: nowrap; }
+.alerts li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-left: 4px solid var(--haze); border-radius: 12px; background: rgba(255,255,255,.04); font-size: 15px; line-height: 1.4; }
+.alerts li.high { border-left-color: var(--danger); background: rgba(255,122,133,.09); }
+.alerts li.mid { border-left-color: var(--ember); background: rgba(var(--acc), .08); }
+.alerts .ic { margin-top: 1px; }
+
+/* Cartes de publication et lignes */
+.rows { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.todo { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(0,0,0,.25); }
+.todo.compact { gap: 8px; padding: 12px 14px; }
+.quote { font: 700 19px/1.35 var(--f-body); overflow-wrap: anywhere; }
+.todo.compact .quote { font-size: 16px; }
+.item { display: grid; gap: 6px; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.035); }
+.item.now { border-color: rgba(var(--acc-hi), .6); background: rgba(var(--acc), .08); }
+.item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.item-top b { font-weight: 700; overflow-wrap: anywhere; }
+.meta { color: var(--haze); font-size: 13.5px; line-height: 1.4; }
+.net { flex: none; padding: 5px 7px; border-radius: 6px; font: 700 10.5px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; background: rgba(255,255,255,.1); }
+.net.instagram { background: rgba(225,48,108,.3); } .net.youtube { background: rgba(255,40,40,.28); }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.tools .b { min-height: 38px; padding: 0 10px; font-size: 13.5px; }
+.dayblock + .dayblock { margin-top: 6px; }
+
+/* Chiffres */
+.big-num { font: 800 46px/1 var(--f-display); }
+.big-num small { font-size: 20px; color: var(--haze); }
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 680px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.kpi { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.04); }
+.kpi > span { display: block; color: var(--haze); font-size: 13px; }
+.kpi strong { display: block; margin: 4px 0; font: 800 24px/1.1 var(--f-display); overflow-wrap: anywhere; }
+.kpi.win strong { font-size: 17px; line-height: 1.25; }
+.kpi em { font-style: normal; font-size: 13px; font-weight: 600; }
+.spark { display: block; width: 100%; height: 40px; margin-top: 8px; }
+.barwrap { position: relative; margin: 14px 0 6px; }
+.bar { height: 14px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 999px; background: var(--ember); transition: width .7s var(--ease); }
+.bar.ok > i { background: var(--ok); }
+.bar.thin { height: 8px; }
+.mark { position: absolute; top: -4px; bottom: -4px; width: 3px; border-radius: 2px; background: var(--mist); }
+.histo { display: grid; grid-template-columns: 74px 1fr 64px; align-items: center; gap: 10px; font-size: 13.5px; }
+.tips { display: grid; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
+.tips li { display: flex; gap: 10px; align-items: baseline; font-size: 15px; }
+.tips b { flex: none; min-width: 44px; color: var(--ok); font: 800 15px/1 var(--f-display); }
+
+/* Calendrier */
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; max-width: 440px; }
+.cal button, .cal span { aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.05); color: var(--haze); font: 600 12px/1 var(--f-body); padding: 0; }
+.cal span { aspect-ratio: auto; border: 0; background: none; font: 500 11px/1 var(--f-mono); }
+.cal .ok { background: var(--ok); border-color: var(--ok); color: #0b2a15; }
+.cal .part { background: rgba(var(--acc), .55); border-color: rgba(var(--acc-hi), .6); color: #fff; }
+.cal .caught { background: repeating-linear-gradient(45deg, rgba(var(--acc), .6) 0 5px, rgba(var(--acc), .22) 5px 10px); color: #fff; }
+.cal .joker { background: rgba(120,160,255,.55); border-color: rgba(150,180,255,.8); color: #fff; }
+.cal .pause { background: rgba(255,255,255,.2); color: #fff; }
+.cal .future { opacity: .35; }
+.cal .today { outline: 3px solid var(--mist); outline-offset: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; color: var(--haze); font-size: 13px; }
+.legend i { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; border: 1px solid var(--line); border-radius: 4px; }
+
+/* Tableaux */
 .scroll { overflow-x: auto; }
-.spark { width: 100%; height: 56px; display: block; }
-dialog { padding: 0; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--night); color: var(--mist); width: min(480px, calc(100vw - 24px)); }
-dialog form { padding: 16px; }
-@media (max-width: 560px) { .two, .four { grid-template-columns: 1fr 1fr; } .two.wide { grid-template-columns: 1fr; } }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+th { font: 500 11px/1.2 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cellbar { display: block; height: 6px; margin-top: 6px; border-radius: 999px; background: rgba(var(--acc), .75); }
+
+/* Formulaires et dépliants */
+.form { display: grid; gap: 12px; }
+.field { display: grid; gap: 6px; font: 600 14px/1.2 var(--f-body); color: var(--label); }
+.field > input, .field > select, .field > textarea, .search, .num-in { width: 100%; min-height: 48px; padding: 10px 14px; border-radius: 12px; font-size: 16px; }
+.line { display: block; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 520px) { .grid2.stack { grid-template-columns: 1fr; } }
+.toolbar { display: grid; gap: 10px; }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; font-weight: 600; }
+.switch input { width: 26px; height: 26px; }
+details.fold > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 30px; list-style: none; cursor: pointer; font: 700 17px/1.2 var(--f-display); }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: "+"; flex: none; color: var(--haze); font: 400 26px/1 var(--f-body); }
+details.fold[open] > summary::after { content: "–"; }
+details.fold[open] > summary { margin-bottom: 14px; }
+details.fold.flat { padding: 0; border: 0; background: none; }
+
+/* La feuille « Posté » : en bas de l'écran sur téléphone */
+dialog.sheet { width: min(560px, calc(100vw - 24px)); max-width: none; max-height: 92dvh; margin: auto; padding: 0; overflow: auto; color: var(--mist); }
+.sheet form { display: grid; gap: 14px; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); }
+.sheet .sheet-actions { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom)); margin: 0 -18px calc(-18px - env(safe-area-inset-bottom)); padding: 14px 18px calc(18px + env(safe-area-inset-bottom)); background: #171113; border-top: 1px solid var(--line); }
+.sheet .grab { justify-self: center; width: 44px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.2); }
+@media (max-width: 640px) { dialog.sheet { width: 100vw; margin: auto 0 0; border-radius: 26px 26px 0 0; } }
+
+/* Messages */
+.toasts { position: fixed; z-index: 60; left: 50%; bottom: calc(160px + env(safe-area-inset-bottom)); display: grid; gap: 8px; width: min(92vw, 440px); translate: -50% 0; pointer-events: none; }
+.toast { padding: 13px 16px; border: 1px solid var(--line); border-radius: 14px; background: #1f181a; box-shadow: 0 12px 34px rgba(0,0,0,.55); font-weight: 600; animation: toast .25s var(--ease); }
+.toast.err { border-color: rgba(255,122,133,.6); color: #ffd6da; }
+@keyframes toast { from { opacity: 0; translate: 0 10px; } }
+@media (prefers-reduced-motion: reduce) { .toast, .spin svg { animation: none; } .bar > i, .ring .fill { transition: none; } }
+
+/* Ordinateur : les rubriques passent dans une colonne à gauche */
+@media (min-width: 1000px) {
+  nav.tabbar { top: 61px; right: auto; width: 230px; grid-template-columns: 1fr; align-content: start; gap: 6px; padding: 20px 14px; border-top: 0; border-right: 1px solid var(--line); }
+  nav.tabbar button { display: flex; justify-content: flex-start; gap: 12px; min-height: 50px; padding: 0 16px; font-size: 15px; }
+  .badge { position: static; margin-left: auto; }
+  main { padding: 24px 0 120px 230px; }
+  .fab { right: 32px; bottom: 32px; }
+  .toasts { bottom: 110px; }
+}
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 <body>
-<header>
+<header class="top">
   <div class="wrap">
-    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE <span>COCKPIT</span></a>
-    <a class="btn btn-ghost" href="mes-videos">Mes vidéos</a>
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145"><span class="long">ONIRIQUE </span><b>COCKPIT</b></a>
+    <button class="pill" id="h-progress" type="button" hidden></button>
+    <button class="icon-btn" id="h-refresh" type="button" aria-label="Actualiser" title="Actualiser (R)"></button>
+    <a class="icon-btn" id="h-videos" href="mes-videos" aria-label="Mes vidéos CUT" title="Mes vidéos CUT"></a>
   </div>
-  <nav class="wrap tabs" role="tablist" aria-label="Rubriques du Cockpit" id="tabs" hidden></nav>
 </header>
-<main class="wrap">
-  <p class="panel" id="gate" hidden></p>
+<nav class="tabbar" id="tabbar" aria-label="Rubriques du Cockpit" hidden></nav>
+
+<main>
+<div class="wrap">
+  <div class="card" id="gate" hidden></div>
 
   <!-- ——— Aujourd'hui ——— -->
-  <section data-tab="today" hidden>
-    <div style="margin-bottom:16px"><h1>Aujourd’hui</h1><p class="lead muted" id="t-mode"></p></div>
-    <div style="display:grid;gap:16px">
-      <ul class="alerts" id="alerts"></ul>
-      <div class="panel">
-        <h2>Le minimum</h2>
-        <div class="check"><span>TikTok publiés : <b id="t-tiktoks"></b></span><button class="btn btn-primary" type="button" id="t-post">J’ai posté</button></div>
-        <label class="check"><span>J’ai répondu aux commentaires (une vingtaine)</span><input type="checkbox" id="t-replies"></label>
-        <div class="check"><span>Chiffres à 48 h : <b id="t-stats"></b></span><a class="link" href="#fill">Les noter</a></div>
-        <div class="check"><span>Stock d’avance : <b id="t-stock"></b></span><a class="link" href="mes-videos">Mes vidéos</a></div>
-      </div>
-      <div class="panel"><h2>Le plan du jour</h2><ul class="list" id="t-plan"></ul></div>
-      <div class="panel" id="tag-box" hidden><h2>À étiqueter</h2>
-        <p class="muted small" style="margin:0 0 12px">Ces vidéos sont arrivées seules. Donne-leur un format (et une phrase si elle n’a pas été reconnue) : c’est ce qui permet à l’analyse de comparer.</p>
-        <ul class="list" id="tag-list"></ul></div>
-      <div class="panel" id="fill" hidden><h2>Chiffres à noter</h2>
-        <p class="muted small" style="margin:0 0 12px">Deux jours après la publication : les vues et les enregistrements (le signet sur TikTok). Dix secondes par vidéo.</p>
-        <ul class="list" id="fill-list"></ul></div>
-      <form class="panel form" id="evening"><h2 style="margin:0">Bilan du soir</h2>
-        <label class="field">Quelle vidéo a le mieux marché, et pourquoi selon toi ?<input id="e-best" maxlength="500"></label>
-        <label class="field">Une leçon pour demain<input id="e-lesson" maxlength="500"></label>
-        <div class="row"><button class="btn btn-ghost" type="submit">Enregistrer le bilan</button><span class="muted small" id="e-note" aria-live="polite"></span></div></form>
-      <div class="panel"><h2>Niveau</h2><p style="margin:0 0 8px" id="lvl-text"></p><div class="bar acc"><i id="lvl-bar"></i></div></div>
-    </div>
+  <section class="view" id="v-jour" hidden>
+    <div class="card" id="j-hero"></div>
+    <div class="card" id="j-alerts-card"><div class="hd"><h2>À savoir</h2><span class="kicker" id="j-alerts-count"></span></div><ul class="alerts" id="j-alerts"></ul></div>
+    <div class="card"><div class="hd"><h2>À publier aujourd’hui</h2><span class="kicker" id="j-plan-count"></span></div><div class="rows" id="j-plan"></div></div>
+    <div class="card" id="j-tag-card" hidden><div class="hd"><h2>À étiqueter</h2><span class="kicker" id="j-tag-count"></span></div>
+      <p class="muted small lead">Ces vidéos sont arrivées seules. Un format en une touche : c’est ce qui permet à l’analyse de comparer.</p><div class="rows" id="j-tag"></div></div>
+    <div class="card" id="fill-card" hidden><div class="hd"><h2>Chiffres à noter</h2></div>
+      <p class="muted small lead">Deux jours après la publication : vues et enregistrements (le signet sur TikTok). Dix secondes par vidéo.</p><div class="rows" id="j-fill"></div></div>
+    <details class="card fold" id="j-evening"><summary>Bilan du soir <span class="chip ok" id="e-state" hidden>Fait</span></summary>
+      <div class="form">
+        <label class="field">Quelle vidéo a le mieux marché, et pourquoi selon toi ?<input id="e-best" maxlength="500" placeholder="La réplique Spider-Man : question courte au début"></label>
+        <label class="field">Une leçon pour demain<input id="e-lesson" maxlength="500" placeholder="Couper plus tôt avant le drop"></label>
+        <p class="muted small">Gardé tout seul quand tu quittes un champ.</p>
+      </div></details>
+    <div class="card" id="j-level"></div>
   </section>
 
   <!-- ——— Semaine ——— -->
-  <section data-tab="week" hidden>
-    <div style="margin-bottom:16px"><h1>Cette semaine</h1><p class="lead muted">On compte ce que tu fais. Une semaine est tenue à 110 points sur 151.</p></div>
-    <div style="display:grid;gap:16px">
-      <div class="panel"><h2>Mode</h2><div class="row" id="w-modes"></div><p class="muted small" id="w-mode-note" style="margin:10px 0 0"></p>
-        <div class="row" style="margin-top:12px"><button class="btn btn-ghost" type="button" id="w-joker"></button><span class="muted small">Un joker par semaine : une journée excusée sans justification.</span></div></div>
-      <div class="panel"><h2 id="w-points"></h2><div class="bar"><i id="w-bar"></i></div><div class="figures" id="w-parts" style="margin-top:12px"></div></div>
-      <div class="panel"><h2>Le plan de la semaine</h2><p class="muted small" id="w-formats" style="margin:0 0 12px"></p><ul class="list" id="w-plan"></ul></div>
-      <div class="panel"><h2>Bilan du lundi</h2><ul class="list" id="w-review"></ul>
-        <div class="row" style="margin-top:12px"><button class="btn btn-primary" type="button" id="w-reviewed"></button></div></div>
-      <div class="panel"><h2>8 semaines</h2><div class="cal" id="cal"></div>
-        <div class="legend"><span><i class="ok"></i>minimum fait</span><span><i class="part"></i>en partie</span><span><i class="part" style="background:repeating-linear-gradient(45deg, rgba(var(--acc), .45) 0 3px, transparent 3px 6px)"></i>rattrapé</span><span><i class="joker"></i>joker</span><span><i class="pause"></i>pause</span><span><i></i>rien</span></div>
-        <p class="muted small" style="margin:12px 0 0">Une journée manquée n’efface rien : la règle est de ne jamais en manquer deux de suite.</p>
-        <h3>Points des 8 dernières semaines</h3><div id="w-history" style="display:grid;gap:6px"></div></div>
+  <section class="view" id="v-semaine" hidden>
+    <div class="card" id="w-hero"></div>
+    <div class="card"><div class="hd"><h2>Mode de la semaine</h2></div><div id="w-modes"></div>
+      <p class="muted small" id="w-mode-note" style="margin-top:10px"></p>
+      <div class="actions" style="margin-top:12px"><button class="b" type="button" id="w-joker"></button></div>
+      <p class="muted small" style="margin-top:8px">Un joker par semaine : une journée excusée, sans justification.</p></div>
+    <div class="card"><div class="hd"><h2>Le plan</h2><span class="kicker" id="w-plan-count"></span></div><p class="muted small lead" id="w-formats"></p><div id="w-plan"></div></div>
+    <div class="card"><div class="hd"><h2>8 semaines</h2><span class="chip" id="w-streak"></span></div><div class="cal" id="cal"></div>
+      <div class="legend"><span><i style="background:var(--ok)"></i>minimum fait</span><span><i style="background:rgba(var(--acc),.55)"></i>en partie</span>
+        <span><i style="background:repeating-linear-gradient(45deg,rgba(var(--acc),.6) 0 3px,rgba(var(--acc),.2) 3px 6px)"></i>rattrapé</span><span><i style="background:rgba(120,160,255,.55)"></i>joker</span><span><i style="background:rgba(255,255,255,.2)"></i>pause</span><span><i></i>rien</span></div>
+      <p class="muted small" style="margin-top:10px">Touche une case pour voir le détail du jour. La règle : jamais deux jours manqués de suite.</p></div>
+    <div class="card"><div class="hd"><h2>Bilan du lundi</h2><span class="chip" id="w-review-state"></span></div><ul class="rows" id="w-review"></ul>
+      <button class="b big wide" type="button" id="w-reviewed" style="margin-top:12px"></button></div>
+    <div class="card"><div class="hd"><h2>Points, semaine après semaine</h2></div><div class="rows" id="w-history"></div></div>
+  </section>
+
+  <!-- ——— Stats ——— -->
+  <section class="view" id="v-stats" hidden>
+    <div id="st-seg"></div>
+    <div class="sub" id="st-marche"></div>
+    <div class="sub" id="st-audience">
+      <div class="card" id="au-run"></div>
+      <div class="kpis" id="au-kpis"></div>
+      <div class="card" id="au-tracks-card" hidden><div class="hd"><h2>Tes titres sur Spotify</h2></div>
+        <p class="muted small lead">La popularité (0 à 100) suit les écoutes récentes. Un titre poussé en vidéo qui monte : la promo convertit. Qui ne bouge pas : la vidéo plaît, pas encore le son.</p>
+        <div class="scroll"><table id="au-tracks"></table></div></div>
+      <details class="card fold"><summary>Noter à la main</summary>
+        <form class="form" id="a-form">
+          <p class="muted small">Une fois par semaine : les auditeurs mensuels (Spotify for Artists). Le reste se remplit seul si le relevé est branché.</p>
+          <div class="grid2"><label class="field">Jour<input id="a-day" type="date" required></label><label class="field">Auditeurs Spotify<input id="a-spotify" type="number" min="0" inputmode="numeric"></label></div>
+          <div class="grid2"><label class="field">Abonnés TikTok<input id="a-tiktok" type="number" min="0" inputmode="numeric"></label><label class="field">Abonnés Instagram<input id="a-instagram" type="number" min="0" inputmode="numeric"></label></div>
+          <label class="field">Abonnés YouTube<input id="a-youtube" type="number" min="0" inputmode="numeric"></label>
+          <button class="b main big" type="submit">Enregistrer</button>
+        </form></details>
+      <details class="card fold"><summary>Historique</summary><div class="scroll"><table id="a-table"></table></div></details>
     </div>
   </section>
 
-  <!-- ——— Analyse ——— -->
-  <section data-tab="analysis" hidden>
-    <div style="margin-bottom:16px"><h1>Ce qui marche</h1><p class="lead muted">Médianes des vues et des enregistrements pour 1 000 vues (le signe qu’on veut retrouver le son). Un groupe devient fiable à partir de 5 vidéos mesurées.</p></div>
-    <div style="display:grid;gap:16px" id="an"></div>
-  </section>
-
-  <!-- ——— Phrases ——— -->
-  <section data-tab="phrases" hidden>
-    <div class="panel">
-      <h2>Banque de phrases</h2>
-      <p class="muted small" style="margin:0 0 12px">Les lignes de tes paroles qui se comprennent seules : chacune est une accroche à tester sur plusieurs images.</p>
-      <form class="form" id="b-form">
-        <div class="two wide"><label class="field">Titre<input id="b-title-in" list="titles" maxlength="100" required></label>
-          <label class="field">Phrase<input id="b-text" maxlength="300" required></label></div>
-        <div class="row"><button class="btn btn-ghost" type="submit">Ajouter la phrase</button><label class="row muted small"><input type="checkbox" id="b-unused"> Jamais utilisées seulement</label></div>
-      </form>
-      <datalist id="titles"></datalist>
-      <ul class="list" id="b-list" style="margin-top:12px"></ul>
+  <!-- ——— Contenu ——— -->
+  <section class="view" id="v-contenu" hidden>
+    <div id="co-seg"></div>
+    <div class="sub" id="co-phrases">
+      <details class="card fold" id="b-add"><summary>Ajouter des phrases</summary>
+        <form class="form" id="b-form">
+          <label class="field">Titre<input id="b-title" list="titles" maxlength="100" required placeholder="MGL"></label>
+          <label class="field">Les phrases, une par ligne<textarea id="b-texts" rows="4" required placeholder="Les lignes de tes paroles qui se comprennent seules"></textarea></label>
+          <button class="b main big" type="submit">Ajouter</button>
+        </form></details>
+      <div class="toolbar"><input class="search" id="b-search" type="search" placeholder="Chercher une phrase ou un titre" aria-label="Chercher une phrase"><div id="b-filter"></div></div>
+      <div class="view" id="b-list"></div>
+    </div>
+    <div class="sub" id="co-journal">
+      <div class="toolbar"><input class="search" id="jr-search" type="search" placeholder="Chercher (phrase, format, accroche, légende)" aria-label="Chercher une publication"><div id="jr-filter"></div></div>
+      <div class="hd" style="margin:0"><span class="kicker" id="jr-count"></span><button class="b small" type="button" id="jr-csv"></button></div>
+      <div class="rows" id="jr-list"></div>
     </div>
   </section>
 
-  <!-- ——— Journal ——— -->
-  <section data-tab="journal" hidden>
-    <div class="panel">
-      <div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Journal des publications</h2>
-        <div class="row"><button class="btn btn-ghost" type="button" id="j-post">J’ai posté</button><button class="btn btn-ghost" type="button" id="j-csv">Exporter (CSV)</button></div></div>
-      <ul class="list" id="j-list"></ul>
+  <!-- ——— Plus ——— -->
+  <section class="view" id="v-plus" hidden>
+    <div id="pl-seg"></div>
+    <div class="sub" id="pl-sorties">
+      <details class="card fold" id="r-add"><summary>Ajouter une sortie</summary>
+        <form class="form" id="r-form">
+          <p class="muted small">De S-3 à S0, la semaine passe en mode Sortie (3 TikTok par jour) et le plan pousse le titre. Les vidéos comptent quand leur phrase vient de ce titre.</p>
+          <div class="grid2 stack"><label class="field">Titre (comme dans la banque)<input id="r-title" list="titles" maxlength="100" required></label><label class="field">Date de sortie<input id="r-day" type="date" required></label></div>
+          <button class="b main big" type="submit">Ajouter la sortie</button>
+        </form></details>
+      <div class="view" id="r-list"></div>
     </div>
-  </section>
-
-  <!-- ——— Sorties ——— -->
-  <section data-tab="releases" hidden>
-    <div class="panel">
-      <h2>Sorties</h2>
-      <p class="muted small" style="margin:0 0 12px">De S-3 à S0, la semaine passe en mode Sortie (3 TikTok par jour) et le plan pousse le titre. Les vidéos comptent quand leur phrase vient de ce titre.</p>
-      <form class="form" id="r-form"><div class="two"><label class="field">Titre (comme dans la banque)<input id="r-title" list="titles" maxlength="100" required></label>
-        <label class="field">Date de sortie<input id="r-day" type="date" required></label></div>
-        <div class="row"><button class="btn btn-ghost" type="submit">Ajouter la sortie</button></div></form>
-      <div id="r-list" style="display:grid;gap:16px;margin-top:16px"></div>
+    <div class="sub" id="pl-radar">
+      <div class="card"><div class="hd"><h2>À venir</h2><span class="kicker" id="f-at"></span></div>
+        <p class="muted small lead">Films et séries des 60 prochains jours, notés sur 100 : attente du moment, suite d’une saga, genre qui donne de bonnes répliques, date proche. Une estimation de l’attente, pas une prévision de succès.</p>
+        <div class="rows" id="films"></div></div>
+      <div class="card"><div class="hd"><h2>Mon radar</h2></div><div class="rows" id="ev-list"></div>
+        <details class="fold flat" style="margin-top:14px"><summary>Ajouter à la main</summary>
+          <form class="form" id="ev-form"><div class="grid2 stack"><label class="field">Titre<input id="ev-title" maxlength="120" required></label><label class="field">Date<input id="ev-day" type="date" required></label></div>
+            <label class="field">Note<input id="ev-note" maxlength="300" placeholder="Réplique à couper sur le refrain de MGL"></label>
+            <button class="b main big" type="submit">Ajouter au radar</button></form></details></div>
     </div>
-  </section>
-
-  <!-- ——— Audience ——— -->
-  <section data-tab="audience" hidden>
-    <div style="display:grid;gap:16px">
-    <div class="panel"><h2>Relevé automatique</h2>
-      <p class="muted small" style="margin:0 0 12px">Chaque jour à 5 h et 17 h, le Cockpit va lire tes pages lui-même : TikTok (abonnés, tes vidéos, leurs vues, enregistrements et partages), Spotify (abonnés, popularité de l’artiste et de chaque titre), et, s’ils sont reliés dans ton compte, Instagram et YouTube (abonnés, Reels et Shorts publiés par CUT). Les auditeurs mensuels Spotify ne se lisent que dans Spotify for Artists : eux restent à noter à la main.</p>
-      <form class="form" id="s-form"><div class="two wide"><label class="field">Page artiste Spotify<input id="s-spotify" maxlength="200" placeholder="https://open.spotify.com/artist/…"></label>
-        <label class="field">Pseudo TikTok<input id="s-tiktok" maxlength="80" placeholder="@tjrseuhz"></label></div>
-        <div class="row"><button class="btn btn-ghost" type="submit">Enregistrer</button><button class="btn btn-primary" type="button" id="s-refresh">Actualiser maintenant</button></div></form>
-      <ul class="list" id="s-report" style="margin-top:12px"></ul></div>
-    <div class="panel" id="tracks-box" hidden><h2>Tes titres sur Spotify</h2>
-      <p class="muted small" style="margin:0 0 12px">La popularité Spotify (0 à 100) suit les écoutes récentes. Un titre poussé en vidéo qui monte : la promo convertit. Un titre poussé qui ne bouge pas : la vidéo plaît, pas encore le son.</p>
-      <div class="scroll"><table id="tracks"></table></div></div>
-    <div class="panel">
-      <h2>Audience</h2>
-      <p class="muted small" style="margin:0 0 12px">À la main, une fois par semaine : les auditeurs mensuels (Spotify for Artists). Le reste se remplit seul. Les résultats arrivent en semaines ; les actions, elles, se comptent chaque jour.</p>
-      <form class="form" id="a-form"><div class="four"><label class="field">Jour<input id="a-day" type="date" required></label>
-        <label class="field">Spotify<input id="a-spotify" type="number" min="0" inputmode="numeric"></label>
-        <label class="field">TikTok<input id="a-tiktok" type="number" min="0" inputmode="numeric"></label>
-        <label class="field">Instagram<input id="a-instagram" type="number" min="0" inputmode="numeric"></label></div>
-        <div class="row"><label class="field" style="flex:1">YouTube<input id="a-youtube" type="number" min="0" inputmode="numeric"></label></div>
-        <div class="row"><button class="btn btn-ghost" type="submit">Enregistrer</button></div></form>
-      <div id="a-charts" class="figures" style="margin-top:16px"></div>
-      <div class="scroll" style="margin-top:12px"><table id="a-table"></table></div>
-    </div>
-    </div>
-  </section>
-
-  <!-- ——— Réseau : contacts et radar ——— -->
-  <section data-tab="network" hidden>
-    <div style="display:grid;gap:16px">
-      <div class="panel">
-        <h2>Collaborations</h2>
-        <p class="muted small" style="margin:0 0 12px">Artistes, graphistes, monteurs : un message par semaine. Un contact sans nouvelles depuis 30 jours est signalé.</p>
-        <form class="form" id="c-form"><div class="two"><label class="field">Nom<input id="c-name" maxlength="100" required></label><label class="field">Rôle<input id="c-role" maxlength="100" placeholder="feat, graphiste 3D, monteur…"></label></div>
+    <div class="sub" id="pl-contacts">
+      <details class="card fold" id="c-add"><summary>Ajouter un contact</summary>
+        <form class="form" id="c-form"><div class="grid2 stack"><label class="field">Nom<input id="c-name" maxlength="100" required></label><label class="field">Rôle<input id="c-role" maxlength="100" placeholder="feat, graphiste 3D, monteur…"></label></div>
           <label class="field">Prochaine action<input id="c-next" maxlength="300" placeholder="Lui envoyer la prod de DEAD"></label>
-          <div class="row"><button class="btn btn-ghost" type="submit">Ajouter le contact</button></div></form>
-        <ul class="list" id="c-list" style="margin-top:12px"></ul>
-      </div>
-      <div class="panel">
-        <h2>Radar</h2>
-        <p class="muted small" style="margin:0 0 12px">Les films et séries des 60 prochains jours, notés sur 100 : intérêt du moment sur TMDB, suite d’une saga, genre qui donne de bonnes répliques, date proche. C’est une estimation de l’attente, pas une prévision de succès. « Suivre » le met dans ton radar (alerte 7 jours avant).</p>
-        <ul class="list" id="films" style="margin-bottom:16px"></ul>
-        <h3>Mon radar</h3>
-        <form class="form" id="v-form"><div class="two"><label class="field">Titre<input id="v-title" maxlength="120" required></label><label class="field">Date<input id="v-day" type="date" required></label></div>
-          <label class="field">Note<input id="v-note" maxlength="300" placeholder="Réplique à couper sur le refrain de MGL"></label>
-          <div class="row"><button class="btn btn-ghost" type="submit">Ajouter au radar</button></div></form>
-        <ul class="list" id="v-list" style="margin-top:12px"></ul>
-      </div>
+          <button class="b main big" type="submit">Ajouter le contact</button></form></details>
+      <div class="rows" id="c-list"></div>
+    </div>
+    <div class="sub" id="pl-reglages">
+      <div class="card"><div class="hd"><h2>Relevé automatique</h2></div>
+        <p class="muted small lead">À 5 h et 17 h, le Cockpit lit seul tes pages : TikTok (abonnés, vidéos, vues, enregistrements, partages), Spotify (abonnés, popularité de l’artiste et de chaque titre), Instagram et YouTube s’ils sont reliés dans ton compte.</p>
+        <form class="form" id="s-form"><div class="grid2 stack"><label class="field">Page artiste Spotify<input id="s-spotify" maxlength="200" placeholder="https://open.spotify.com/artist/…"></label>
+          <label class="field">Pseudo TikTok<input id="s-tiktok" maxlength="80" placeholder="@tjrseuhz"></label></div>
+          <div class="actions"><button class="b" type="submit">Enregistrer</button><button class="b main" type="button" id="s-refresh">Actualiser maintenant</button></div></form>
+        <ul class="rows" id="s-report" style="margin-top:12px"></ul></div>
+      <div class="card"><div class="hd"><h2>Rappels sur ce téléphone</h2></div>
+        <p class="muted small lead">Une notification à ton heure pour poster, puis celles du Cockpit : 13 h si rien n’est publié, 21 h si le minimum n’est pas fait, lundi 10 h pour le bilan.</p>
+        <label class="switch">Me rappeler chaque jour<input type="checkbox" id="r-on"></label>
+        <label class="field">À quelle heure<input type="time" id="r-time" value="18:00"></label>
+        <div class="actions" style="margin-top:10px"><button class="b" type="button" id="r-test">Envoyer un essai</button></div>
+        <p class="muted small" id="r-note" aria-live="polite" style="margin-top:8px"></p></div>
+      <div class="card"><div class="hd"><h2>Légendes</h2></div>
+        <p class="muted small lead">« Copier la légende » met la phrase en capitales, puis ces hashtags et celui du titre. Les mêmes que dans Mes vidéos.</p>
+        <label class="field">Mes hashtags<input id="g-tags" maxlength="200" placeholder="#undergroundmusic #rapfr"></label></div>
+      <div class="card"><div class="hd"><h2>Application</h2></div>
+        <div class="actions"><button class="b" type="button" id="i-install"></button><button class="b" type="button" id="i-csv"></button></div>
+        <p class="muted small" id="i-note" style="margin-top:10px"></p></div>
+      <div class="card"><div class="hd"><h2>Raccourcis clavier</h2></div>
+        <ul class="rows small"><li><b>N</b> · noter une publication</li><li><b>1</b> à <b>5</b> · changer de rubrique</li><li><b>R</b> · actualiser</li><li><b>/</b> · chercher (Contenu)</li></ul></div>
     </div>
   </section>
+</div>
 </main>
 
-<dialog id="post-dlg" aria-labelledby="p-title">
-  <form class="form" method="dialog" id="p-form">
+<button class="fab" id="fab" type="button" hidden></button>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<dialog class="sheet" id="post-dlg" aria-labelledby="p-title">
+  <form id="p-form" method="dialog">
+    <span class="grab" aria-hidden="true"></span>
     <h2 id="p-title">J’ai posté</h2>
-    <div class="two"><label class="field">Réseau<select id="p-network"><option value="tiktok">TikTok</option><option value="instagram">Instagram</option><option value="youtube">YouTube</option></select></label>
-      <label class="field">Quand<input type="datetime-local" id="p-at"></label></div>
-    <label class="field">Vidéo du cloud CUT<select id="p-video"><option value="">Aucune</option></select></label>
-    <label class="field">Phrase des paroles<select id="p-phrase"><option value="">Aucune</option></select></label>
-    <label class="field">Format<input id="p-format" list="formats" maxlength="60" placeholder="Réplique → drop"></label>
+    <div id="p-net"></div>
+    <label class="field">Phrase des paroles<select id="p-phrase"></select></label>
+    <div class="field">Format<div class="choice" id="p-formats"></div><input id="p-format" list="formats" maxlength="60" placeholder="ou écris-le" aria-label="Format"></div>
     <label class="field">Accroche (les 2 premières secondes)<input id="p-hook" list="hooks" maxlength="200" placeholder="Spider-Man, « T’as une copine toi ? »"></label>
-    <label class="field">Lien (facultatif)<input id="p-url" type="url" maxlength="500" placeholder="https://www.tiktok.com/@…"></label>
-    <p class="warn" id="p-error" aria-live="polite" style="margin:0"></p>
-    <div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button><button class="btn btn-primary" type="submit" id="p-save">Noter</button></div>
+    <label class="field">Vidéo du cloud CUT<select id="p-video"></select></label>
+    <div class="grid2 stack"><label class="field">Quand<input type="datetime-local" id="p-at"></label><label class="field">Lien (facultatif)<input id="p-url" type="url" maxlength="500" placeholder="https://www.tiktok.com/@…"></label></div>
+    <p class="bad small" id="p-error" aria-live="polite"></p>
+    <div class="grid2 sheet-actions"><button class="b big" type="button" id="p-cancel">Annuler</button><button class="b main big" type="submit" id="p-save">Noter</button></div>
   </form>
 </dialog>
 <datalist id="formats">
@@ -272,18 +403,48 @@ dialog form { padding: 16px; }
   <option value="Clip + paroles"><option value="Coupé → Spotify"><option value="Carrousel Instagram">
 </datalist>
 <datalist id="hooks"></datalist>
+<datalist id="titles"></datalist>
 
 <script>
 const $ = (id) => document.getElementById(id);
+const store = { get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* stockage indisponible */ } } };
 const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
 const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children.filter((c) => c != null && c !== false)); return node; };
 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const NETWORK = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" };
+const CANDIDATES = ["Réplique → drop", "Univers visuel en série", "Le son naît dans ONIRIQUE", "Phrase plein écran"];
+const TAGS = "onirique.cut.tags"; // les hashtags partagés avec Mes vidéos
+const n = (x) => (x == null ? "—" : Math.round(Number(x)).toLocaleString("fr-FR"));
+const plural = (k, word, many = word + "s") => k + " " + (Math.abs(k) > 1 ? many : word);
 const when = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const dayText = (d) => new Date(d + "T12:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 const short = (d) => new Date(d + "T12:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-const n = (x) => (x == null ? "—" : Math.round(Number(x)).toLocaleString("fr-FR"));
-const plural = (k, word) => k + " " + word + (k > 1 ? "s" : "");
+const between = (a, b) => Math.round((new Date(b + "T12:00") - new Date(a + "T12:00")) / 864e5);
+const relDay = (d) => { const k = between(state.today.day, d); return k === 0 ? "Aujourd’hui" : k === 1 ? "Demain" : k === -1 ? "Hier" : dayText(d); };
+const tagOf = (text) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase();
+const plain = (text) => String(text || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+// ——— Les icônes (traits, couleur du texte) ———
+const ICONS = {
+  jour: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  semaine: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  stats: '<path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/>',
+  contenu: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+  plus: '<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>',
+  add: '<path d="M12 5v14M5 12h14"/>', refresh: '<path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/>', check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', open: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  video: '<rect x="3" y="5" width="14" height="14" rx="2"/><path d="M17 10l4-3v10l-4-3"/>', chat: '<path d="M4 5h16v11H9l-5 4V5z"/>',
+  box: '<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/>', num: '<path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/>',
+  alert: '<path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4M12 17.5v.5"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+  flame: '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 1.5 1 2 2 3 4 0-3-1-5 0-7z"/>', download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+};
+const svg = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+const icon = (name) => el("span", { className: "ic", innerHTML: svg(name) });
+$("h-refresh").innerHTML = svg("refresh"); $("h-videos").innerHTML = svg("video");
+$("fab").append(icon("add"), "Posté");
+$("jr-csv").append(icon("download"), "CSV"); $("i-csv").append(icon("download"), "Exporter le journal (CSV)");
+
 async function api(method, path, body) {
   const response = await fetch("/api" + path, { method, body: body && JSON.stringify(body),
     headers: { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : {}) } })
@@ -292,347 +453,619 @@ async function api(method, path, body) {
   if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
   return data;
 }
-/** Une action, puis la page relue ; une erreur s'affiche sans rien casser. */
-const act = (fn) => async (...args) => { try { await fn(...args); await load(); } catch (error) { alert(error.message); } };
-function gate(html) { $("gate").hidden = false; $("gate").innerHTML = html; }
-
-// ——— Les onglets ———
-const TABS = [["today", "Aujourd’hui"], ["week", "Semaine"], ["analysis", "Analyse"], ["phrases", "Phrases"], ["journal", "Journal"], ["releases", "Sorties"], ["audience", "Audience"], ["network", "Réseau"]];
-let tab = (() => { try { return localStorage.getItem("onirique.cockpit.tab") || "today"; } catch { return "today"; } })();
-function showTab(name) {
-  tab = TABS.some(([k]) => k === name) ? name : "today";
-  try { localStorage.setItem("onirique.cockpit.tab", tab); } catch { /* stockage indisponible */ }
-  for (const s of document.querySelectorAll("[data-tab]")) s.hidden = s.dataset.tab !== tab;
-  for (const b of $("tabs").children) { b.setAttribute("aria-selected", String(b.dataset.key === tab)); if (b.dataset.key === tab) b.scrollIntoView({ inline: "nearest", block: "nearest" }); }
+function toast(text, error = false) {
+  const t = el("div", { className: "toast" + (error ? " err" : ""), textContent: text, role: error ? "alert" : "status" });
+  $("toasts").append(t);
+  setTimeout(() => t.remove(), error ? 6000 : 2600);
+}
+/** Une action, puis la page relue et un mot de confirmation ; une erreur s'affiche sans rien casser. */
+const act = (fn, done) => async (...args) => { try { await fn(...args); await load(); if (done) toast(done); } catch (error) { toast(error.message, true); } };
+async function copy(text, what = "Copié") {
+  try { await navigator.clipboard.writeText(text); toast(what + " : colle-le dans TikTok."); }
+  catch { prompt("Copie ce texte :", text); }
+}
+/** La légende façon dossier : la phrase en capitales, puis tes hashtags et celui du titre. */
+const captionOf = (text, title) => text.toUpperCase() + "\n\n" + [(store.get(TAGS, "") || "#undergroundmusic #rapfr").trim(), title && "#" + tagOf(title)].filter(Boolean).join(" ");
+const copyCaption = (text, title) => copy(captionOf(text, title), "Légende copiée");
+function seg(options, current, onPick, cls = "") {
+  return el("div", { className: "seg " + cls, role: "group" }, ...options.map(([key, label]) => el("button", { type: "button", textContent: label, ariaPressed: String(key === current), onclick: () => onPick(key) })));
+}
+function sparkline(points) {
+  if (points.length < 2) return null;
+  const w = 240, h = 40, lo = Math.min(...points), hi = Math.max(...points);
+  const xy = points.map((v, i) => `${((i / (points.length - 1)) * (w - 6) + 3).toFixed(1)},${(hi === lo ? h / 2 : h - 4 - ((v - lo) / (hi - lo)) * (h - 8)).toFixed(1)}`).join(" ");
+  return el("span", { innerHTML: `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="rgb(var(--acc-hi))" stroke-width="2.5" vector-effect="non-scaling-stroke" points="${xy}"/></svg>` });
 }
 
-let state = null, auto = null, videos = [];
+// ——— Les rubriques : l'adresse (#stats/audience) suit la rubrique, le bouton retour du téléphone aussi ———
+const VIEWS = [["jour", "Aujourd’hui"], ["semaine", "Semaine"], ["stats", "Stats"], ["contenu", "Contenu"], ["plus", "Plus"]];
+const SUBS = { stats: [["marche", "Ce qui marche"], ["audience", "Audience"]], contenu: [["phrases", "Phrases"], ["journal", "Journal"]],
+  plus: [["sorties", "Sorties"], ["radar", "Radar"], ["contacts", "Contacts"], ["reglages", "Réglages"]] };
+const PREFIX = { stats: "st", contenu: "co", plus: "pl" };
+let view = "jour", sub = {};
+try { sub = JSON.parse(store.get("onirique.cockpit.sub", "{}")) || {}; } catch { sub = {}; }
+function readHash() {
+  const [v, s] = decodeURIComponent(location.hash.slice(1)).split("/");
+  view = VIEWS.some(([k]) => k === v) ? v : store.get("onirique.cockpit.view", "jour");
+  if (!VIEWS.some(([k]) => k === view)) view = "jour";
+  if (s && SUBS[view] && SUBS[view].some(([k]) => k === s)) sub[view] = s;
+}
+function go(v, s) { const target = "#" + v + (s ? "/" + s : ""); if (location.hash !== target) location.hash = target; else show(); }
+addEventListener("hashchange", () => { readHash(); show(); scrollTo(0, 0); });
+function show() {
+  store.set("onirique.cockpit.view", view); store.set("onirique.cockpit.sub", JSON.stringify(sub));
+  for (const [k] of VIEWS) $("v-" + k).hidden = !state || k !== view;
+  for (const b of $("tabbar").children) b.setAttribute("aria-current", b.dataset.key === view ? "page" : "false");
+  for (const [v, list] of Object.entries(SUBS)) {
+    const current = sub[v] || list[0][0];
+    $(PREFIX[v] + "-seg").replaceChildren(seg(list, current, (k) => go(v, k), list.length > 3 ? "wrapy" : ""));
+    for (const [k] of list) $(PREFIX[v] + "-" + k).hidden = k !== current;
+  }
+}
+
+// ——— Le chargement ———
+let state = null, auto = null, videos = [], loadedAt = 0, eveningOpened = false;
 async function load() {
+  $("h-refresh").classList.add("spin");
   try {
     [state, auto] = await Promise.all([api("GET", "/cockpit?tz=" + encodeURIComponent(tz)), api("GET", "/cockpit/auto").catch(() => null)]);
-    $("gate").hidden = true; $("tabs").hidden = false;
+    loadedAt = Date.now();
+    $("gate").hidden = true; $("tabbar").hidden = false; $("fab").hidden = false; $("h-progress").hidden = false;
     render();
     if (!videos.length) api("GET", "/cut/library").then((lib) => { videos = lib.videos; render(); }).catch(() => {});
   } catch (error) {
-    if (error.status === 401) gate('Ta session a expiré. <a class="btn btn-primary" href="compte?next=cockpit">Se reconnecter</a>');
-    else if (error.status === 403) gate("Le Cockpit est réservé aux membres ONIRIQUE.");
-    else { gate(""); $("gate").textContent = error.message; }
+    if (error.status === 401) gate('<h2>Ta session a expiré</h2><p class="muted" style="margin:8px 0 14px">Reconnecte-toi pour retrouver ton Cockpit.</p><a class="b main big" href="compte?next=cockpit">Se reconnecter</a>');
+    else if (error.status === 403) gate('<h2>Réservé aux membres ONIRIQUE</h2><p class="muted" style="margin-top:8px">Le Cockpit suit la promo des membres ONIRIQUE.</p>');
+    else { gate(""); $("gate").append(el("p", { textContent: error.message }), el("button", { className: "b main big", type: "button", textContent: "Réessayer", onclick: load, style: "margin-top:14px" })); }
+  } finally { $("h-refresh").classList.remove("spin"); }
+}
+function gate(html) { $("gate").hidden = false; $("gate").innerHTML = html; }
+$("h-refresh").onclick = () => load().then(() => toast("À jour"));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && token && loadedAt && Date.now() - loadedAt > 60_000 && !$("post-dlg").open) load(); });
+
+const KEPT = ["ok", "joker", "pause"];
+function tasksOf(s) {
+  const t = s.today;
+  return [{ done: t.tiktoks >= t.perDay, left: plural(t.perDay - t.tiktoks, "TikTok", "TikTok") }, { done: t.replies, left: "les commentaires" }, { done: t.missingStats === 0, left: "les chiffres à 48 h" }];
+}
+/** Les jours tenus d'affilée (aujourd'hui compte s'il est déjà tenu). */
+function streakOf(s) {
+  let k = 0;
+  for (const d of [...s.calendar].reverse()) {
+    if (d.status === "future" || (d.day === s.today.day && !KEPT.includes(d.status))) continue;
+    if (KEPT.includes(d.status)) k++; else break;
   }
+  return k;
 }
 function render() {
-  const s = state;
-  $("tabs").replaceChildren(...TABS.map(([key, label]) => {
-    const badge = key === "today" ? s.alerts.filter((a) => a.level !== "low").length : key === "network" ? s.contacts.filter((c) => c.overdue).length : 0;
-    const b = el("button", { type: "button", role: "tab", textContent: label, onclick: () => showTab(key) }, badge ? el("span", { className: "dot", textContent: badge }) : null);
+  const s = state, tasks = tasksOf(s), done = tasks.filter((x) => x.done).length, pause = s.today.status === "pause";
+  $("h-progress").className = "pill" + (done === 3 || pause ? " ok" : "");
+  $("h-progress").replaceChildren(el("i"), pause ? "Pause" : done + " / 3");
+  $("h-progress").title = "Minimum du jour : " + done + " sur 3";
+  $("h-progress").onclick = () => go("jour");
+  const untagged = s.posts.filter((p) => p.auto && !p.format).length;
+  const badges = { jour: pause ? 0 : 3 - done, contenu: untagged, plus: s.contacts.filter((c) => c.overdue).length };
+  $("tabbar").replaceChildren(...VIEWS.map(([key, label]) => {
+    const b = el("button", { type: "button", onclick: () => go(key) }, icon(key), el("span", { textContent: label }), badges[key] ? el("span", { className: "badge", textContent: badges[key] }) : null);
     b.dataset.key = key;
     return b;
   }));
-  renderToday(s); renderWeek(s); renderAnalysis(s); renderPhrases(s); renderJournal(s); renderReleases(s); renderAudience(s); renderNetwork(s); renderAuto();
-  showTab(tab);
+  $("titles").replaceChildren(...[...new Set(s.phrases.map((p) => p.title))].map((t) => el("option", { value: t })));
+  $("hooks").replaceChildren(...[...new Set(s.posts.map((p) => p.hook).filter(Boolean))].slice(0, 60).map((h) => el("option", { value: h })));
+  renderJour(s, tasks, done, pause); renderSemaine(s); renderStats(s); renderAudience(s); renderPhrases(s); renderJournal(s); renderSorties(s); renderRadar(s); renderContacts(s); renderReglages();
+  show();
 }
-/** Le nom d'une publication : réseau, format, phrase ou vidéo. */
-function label(p) {
-  const phrase = p.phraseId && state.phrases.find((ph) => ph.id === p.phraseId), video = p.cutVideoId && videos.find((v) => v.id === p.cutVideoId);
-  return [NETWORK[p.network], p.format, phrase ? "« " + phrase.text + " »" : video ? video.name : p.hook || p.caption].filter(Boolean).join(" · ");
-}
-const planItem = (i, withDay) => {
-  const go = el("button", { className: "link", type: "button", textContent: "Posté", onclick: () => openPost({ phraseId: i.phraseId, format: i.format }) });
-  return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: i.text ? "« " + i.text + " »" : "Phrase libre" }), go),
-    el("small", { textContent: [withDay && dayText(i.day), i.title, i.format, i.why].filter(Boolean).join(" · ") }));
-};
 
 // ——— Aujourd'hui ———
-function renderToday(s) {
-  const t = s.today;
-  $("t-mode").textContent = "Mode " + s.mode.label + (s.mode.auto ? " (automatique)" : "") + " : " + plural(s.mode.perDay, "TikTok") + " par jour." + (s.release ? " Sortie de « " + s.release.title + " » : semaine S" + (s.release.s >= 0 ? "+" : "") + s.release.s + "." : "");
-  const extra = [];
-  if (auto && !auto.settings.tiktokHandle) extra.push({ level: "mid", text: "Branche ton TikTok (onglet Audience) : tes vidéos et leurs chiffres arriveront seuls, deux fois par jour." });
-  if (auto && auto.report && auto.report.tiktok && !auto.report.tiktok.ok) extra.push({ level: "mid", text: "Le dernier relevé TikTok a échoué : " + auto.report.tiktok.error + "." });
-  for (const f of (auto ? auto.films : []).filter((x) => !x.followed && x.score >= 70)) {
-    const inDays = Math.round((new Date(f.day + "T12:00") - new Date(s.today.day + "T12:00")) / 864e5);
-    if (inDays >= 0 && inDays <= 10) extra.push({ level: "low", text: "Radar : « " + f.title + " » (" + f.score + "/100) sort " + (inDays ? "dans " + plural(inDays, "jour") : "aujourd’hui") + ". Prépare 2 ou 3 répliques." });
-  }
-  $("alerts").replaceChildren(...[...s.alerts, ...extra].map((a) => el("li", { className: a.level, textContent: a.text })));
-  $("t-tiktoks").textContent = t.status === "pause" ? "pause" : t.tiktoks + " / " + t.perDay;
-  $("t-tiktoks").className = t.tiktoks >= t.perDay ? "done" : "";
-  $("t-replies").checked = t.replies;
-  $("t-stats").textContent = s.toFill.length ? s.toFill.length + " à noter" : "à jour";
-  $("t-stats").className = s.toFill.length ? "warn" : "done";
-  $("t-stock").textContent = plural(s.stock, "vidéo");
-  $("t-stock").className = s.stock < s.targets.stockMin ? "warn" : "done";
-  const todays = s.plan.items.filter((i) => i.day === t.day);
-  $("t-plan").replaceChildren(...(todays.length ? todays.map((i) => planItem(i, false)) : [el("li", { className: "muted", textContent: t.status === "pause" ? "Pause annoncée : rien à publier." : "Le minimum du jour est publié. Le reste est du bonus." })]));
-  $("fill").hidden = !s.toFill.length;
-  $("fill-list").replaceChildren(...s.toFill.map((p) => {
-    const views = el("input", { className: "num", type: "number", min: 0, inputMode: "numeric", placeholder: "Vues", ariaLabel: "Vues" });
-    const saves = el("input", { className: "num", type: "number", min: 0, inputMode: "numeric", placeholder: "Enreg.", ariaLabel: "Enregistrements" });
-    const save = el("button", { className: "btn btn-ghost", type: "button", textContent: "Enregistrer" });
-    save.onclick = act(async () => { if (views.value === "") throw new Error("Note au moins les vues."); await api("PATCH", "/cockpit/posts/" + p.id, { views: views.value, saves: saves.value === "" ? null : saves.value }); });
-    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), el("small", { textContent: when(p.postedAt) })), el("div", { className: "row" }, views, saves, save));
-  }));
-  const untagged = s.posts.filter((p) => p.auto && !p.format).slice(0, 8);
-  $("tag-box").hidden = !untagged.length;
-  $("tag-list").replaceChildren(...untagged.map((p) => el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }),
-    el("button", { className: "link", type: "button", textContent: "Étiqueter", onclick: () => openPost({ post: p }) })), el("small", { textContent: when(p.postedAt) + (p.views != null ? " · " + n(p.views) + " vues" : "") }))));
-  const evening = s.evenings.find((e) => e.day === t.day);
-  if (document.activeElement !== $("e-best") && document.activeElement !== $("e-lesson")) { $("e-best").value = evening ? evening.best : ""; $("e-lesson").value = evening ? evening.lesson : ""; }
-  const lv = s.level, prev = [...lv.levels].reverse().find((l) => l <= lv.count) || 0;
-  $("lvl-text").textContent = plural(lv.count, "TikTok") + " noté" + (lv.count > 1 ? "s" : "") + (lv.next ? " · prochain palier : " + lv.next + (lv.next === 374 ? " (le rythme de Priilick en 10 mois)" : "") : " · tous les paliers sont passés");
-  $("lvl-bar").style.width = (lv.next ? Math.round(((lv.count - prev) / (lv.next - prev)) * 100) : 100) + "%";
+function ring(pct, big, label, ok) {
+  const r = 52, c = 2 * Math.PI * r;
+  const node = el("div", { className: "ring" + (ok ? " done" : ""), innerHTML: `<svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="${r}" fill="none" stroke-width="12"/><circle class="fill" cx="60" cy="60" r="${r}" fill="none" stroke-width="12" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - pct)).toFixed(1)}"/></svg>` });
+  node.append(el("b", {}, big, el("small", { textContent: label })));
+  return node;
 }
-$("t-replies").onchange = act(() => api("PUT", "/cockpit/days/" + state.today.day, { replies: $("t-replies").checked }));
-$("evening").onsubmit = async (event) => {
-  event.preventDefault();
-  try { await api("PUT", "/cockpit/evenings/" + state.today.day, { best: $("e-best").value, lesson: $("e-lesson").value }); $("e-note").textContent = "Bilan gardé."; await load(); }
-  catch (error) { $("e-note").textContent = error.message; }
-};
+function tile(cls, iconName, label, value, hint, onclick, href) {
+  const node = el(href ? "a" : "button", { className: "tile " + cls, ...(href ? { href } : { type: "button", onclick }) },
+    el("span", { className: "k" }, icon(iconName), label), el("strong", { textContent: value }), el("small", { textContent: hint }));
+  return node;
+}
+function planCard(i, compact) {
+  return el("div", { className: "todo" + (compact ? " compact" : "") },
+    el("p", { className: "quote" + (i.text ? "" : " muted"), textContent: i.text ? "« " + i.text + " »" : "Phrase libre (ajoute des phrases à ta banque)" }),
+    el("div", { className: "chips" }, i.title && el("span", { className: "chip", textContent: i.title }), el("span", { className: "chip acc", textContent: i.format }), el("span", { className: "chip", textContent: i.why })),
+    el("div", { className: "actions" },
+      i.text && el("button", { className: "b" + (compact ? " small" : ""), type: "button", onclick: () => copyCaption(i.text, i.title) }, icon("copy"), "Copier la légende"),
+      el("button", { className: "b main" + (compact ? " small" : ""), type: "button", onclick: () => openPost({ phraseId: i.phraseId, format: i.format }) }, icon("check"), "Posté")));
+}
+const quickFormats = () => [...new Set([...state.plan.formats.map((f) => f.format), ...CANDIDATES])].slice(0, 4);
+function renderJour(s, tasks, done, pause) {
+  const t = s.today, streak = streakOf(s);
+  const status = pause ? "Pause annoncée : rien à faire aujourd’hui." : done === 3 ? "Minimum fait. Tout le reste est du bonus." : "Il reste : " + tasks.filter((x) => !x.done).map((x) => x.left).join(", ") + ".";
+  $("j-hero").replaceChildren(
+    el("div", { className: "hero" }, ring(pause ? 1 : done / 3, pause ? "—" : done + "/3", "minimum", done === 3 || pause),
+      el("div", {}, el("p", { className: "kicker", textContent: dayText(t.day) }), el("h1", { textContent: "Aujourd’hui" }),
+        el("div", { className: "chips", style: "margin-top:10px" },
+          el("span", { className: "chip acc", textContent: "Mode " + s.mode.label + (s.mode.auto ? " (auto)" : "") + " · " + plural(s.mode.perDay, "TikTok", "TikTok") + "/jour" }),
+          el("span", { className: "chip" + (streak ? " ok" : "") }, icon("flame"), streak ? "Série : " + plural(streak, "jour tenu", "jours tenus") : "Série à lancer aujourd’hui"),
+          s.release && el("span", { className: "chip", textContent: "Sortie « " + s.release.title + " » · S" + (s.release.s >= 0 ? "+" : "") + s.release.s })))),
+    el("p", { className: "status-line " + (done === 3 || pause ? "ok" : ""), textContent: status }),
+    el("div", { className: "tiles" },
+      tile(t.tiktoks >= t.perDay ? "ok" : "", "video", "TikTok", t.tiktoks + " / " + t.perDay, t.tiktoks >= t.perDay ? "publiés, c’est fait" : "touche pour noter", () => openPost()),
+      tile(t.replies ? "ok" : "", "chat", "Commentaires", t.replies ? "Fait" : "À faire", t.replies ? "touche pour annuler" : "une vingtaine de réponses", act(() => api("PUT", "/cockpit/days/" + t.day, { replies: !t.replies }), t.replies ? "Décoché" : "Commentaires faits")),
+      tile(s.toFill.length ? "bad" : "ok", "num", "Chiffres 48 h", s.toFill.length ? String(s.toFill.length) : "À jour", s.toFill.length ? "vidéos à noter" : "rien à noter", () => { if (s.toFill.length) $("fill-card").scrollIntoView({ behavior: "smooth", block: "start" }); else toast("Aucun chiffre à noter."); }),
+      tile(s.stock < s.targets.stockMin ? "bad" : "ok", "box", "Stock", String(s.stock), s.stock < s.targets.stockMin ? "trop bas : monte des vidéos" : "vidéos d’avance", null, "mes-videos")));
+
+  const extra = [];
+  if (auto && !auto.settings.tiktokHandle) extra.push({ level: "mid", text: "Branche ton TikTok (Plus → Réglages) : tes vidéos et leurs chiffres arriveront seuls, deux fois par jour.", go: ["plus", "reglages"] });
+  if (auto && auto.report && auto.report.tiktok && !auto.report.tiktok.ok) extra.push({ level: "mid", text: "Le dernier relevé TikTok a échoué : " + auto.report.tiktok.error + ".", go: ["plus", "reglages"] });
+  for (const f of (auto ? auto.films : []).filter((x) => !x.followed && x.score >= 70)) {
+    const k = between(t.day, f.day);
+    if (k >= 0 && k <= 10) extra.push({ level: "low", text: "Radar : « " + f.title + " » (" + f.score + "/100) sort " + (k ? "dans " + plural(k, "jour") : "aujourd’hui") + ". Prépare 2 ou 3 répliques.", go: ["plus", "radar"] });
+  }
+  const alerts = [...s.alerts, ...extra];
+  $("j-alerts-card").hidden = !alerts.length;
+  $("j-alerts-count").textContent = alerts.length > 1 ? alerts.length + " points" : "";
+  $("j-alerts").replaceChildren(...alerts.map((a) => el("li", { className: a.level, style: a.go ? "cursor:pointer" : "", onclick: a.go ? () => go(...a.go) : null },
+    icon(a.level === "high" ? "alert" : "info"), el("span", { textContent: a.text }))));
+
+  const todays = s.plan.items.filter((i) => i.day === t.day);
+  $("j-plan-count").textContent = todays.length ? plural(todays.length, "publication") : "";
+  $("j-plan").replaceChildren(...(todays.length ? todays.map((i) => planCard(i, false))
+    : [el("p", { className: "muted", textContent: pause ? "Pause annoncée : rien à publier." : "Le minimum du jour est publié. Ce qui vient en plus est du bonus." })]));
+
+  const untagged = s.posts.filter((p) => p.auto && !p.format).slice(0, 8);
+  $("j-tag-card").hidden = !untagged.length;
+  $("j-tag-count").textContent = untagged.length ? String(untagged.length) : "";
+  $("j-tag").replaceChildren(...untagged.map((p) => el("div", { className: "item" },
+    el("div", { className: "item-top" }, el("b", { textContent: label(p) }), el("span", { className: "net " + p.network, textContent: NETWORK[p.network] })),
+    el("p", { className: "meta", textContent: when(p.postedAt) + (p.views != null ? " · " + n(p.views) + " vues" : "") }),
+    el("div", { className: "choice" }, ...quickFormats().map((f) => el("button", { className: "b small", type: "button", textContent: f, onclick: act(() => api("PATCH", "/cockpit/posts/" + p.id, { format: f }), "Format noté : " + f) })),
+      el("button", { className: "b small", type: "button", textContent: "Autre…", onclick: () => openPost({ post: p }) })))));
+
+  $("fill-card").hidden = !s.toFill.length;
+  $("j-fill").replaceChildren(...s.toFill.map((p) => {
+    const views = el("input", { type: "number", min: 0, inputMode: "numeric", className: "num-in", placeholder: "Vues", ariaLabel: "Vues", style: "flex:1;min-width:100px;width:auto" });
+    const saves = el("input", { type: "number", min: 0, inputMode: "numeric", className: "num-in", placeholder: "Enregistrements", ariaLabel: "Enregistrements", style: "flex:1;min-width:100px;width:auto" });
+    const save = el("button", { className: "b main", type: "button", textContent: "OK", onclick: act(async () => {
+      if (views.value === "") throw new Error("Note au moins les vues.");
+      await api("PATCH", "/cockpit/posts/" + p.id, { views: views.value, saves: saves.value === "" ? null : saves.value });
+    }, "Chiffres notés") });
+    return el("div", { className: "item" }, el("div", { className: "item-top" }, el("b", { textContent: label(p) }), el("span", { className: "meta", textContent: when(p.postedAt) })),
+      el("div", { className: "actions" }, views, saves, save));
+  }));
+
+  const evening = s.evenings.find((e) => e.day === t.day);
+  for (const [id, key] of [["e-best", "best"], ["e-lesson", "lesson"]]) if (document.activeElement !== $(id)) $(id).value = evening ? evening[key] : "";
+  $("e-state").hidden = !(evening && (evening.best || evening.lesson));
+  if (!eveningOpened) { eveningOpened = true; $("j-evening").open = new Date().getHours() >= 18 || !!evening; }
+
+  const lv = s.level, prev = [...lv.levels].reverse().find((l) => l <= lv.count) || 0;
+  const pct = lv.next ? Math.round(((lv.count - prev) / (lv.next - prev)) * 100) : 100;
+  $("j-level").replaceChildren(el("div", { className: "hd" }, el("h2", { textContent: "Palier" }), el("span", { className: "kicker", textContent: plural(lv.count, "TikTok noté", "TikTok notés") })),
+    el("p", { textContent: lv.next ? "Prochain palier : " + lv.next + " TikTok" + (lv.next === 374 ? " (le rythme de Priilick en 10 mois)" : "") + " · encore " + (lv.next - lv.count) + "." : "Tous les paliers sont passés." }),
+    el("div", { className: "barwrap" }, el("div", { className: "bar" }, el("i", { style: "width:" + pct + "%" }))));
+}
+for (const id of ["e-best", "e-lesson"]) $(id).addEventListener("change", async () => {
+  try { await api("PUT", "/cockpit/evenings/" + state.today.day, { best: $("e-best").value, lesson: $("e-lesson").value }); $("e-state").hidden = !($("e-best").value || $("e-lesson").value); toast("Bilan gardé"); }
+  catch (error) { toast(error.message, true); }
+});
 
 // ——— Semaine ———
-function renderWeek(s) {
-  const w = s.week;
-  $("w-modes").replaceChildren(...Object.entries(s.modes).map(([key, m]) => el("button", { type: "button", className: "btn btn-ghost" + (s.mode.key === key ? " on" : ""),
-    textContent: m.label + " · " + m.perWeek, onclick: act(() => api("PUT", "/cockpit/weeks/" + w.week, { mode: key })) })));
-  $("w-mode-note").textContent = s.mode.auto ? "Choisi automatiquement : deux semaines sous 110 points. Il repasse en Normal la semaine prochaine." : s.release && w.mode === "sortie" ? "Mode Sortie par défaut (S-3 à S0 de « " + s.release.title + " »)." : "Pause annoncée : 7 jours par trimestre au plus, décidés à l’avance.";
-  $("w-joker").textContent = w.joker ? "Joker posé le " + short(w.joker) + " · le retirer" : "Poser le joker aujourd’hui";
-  $("w-joker").onclick = act(() => api("PUT", "/cockpit/weeks/" + w.week, { joker: w.joker ? null : s.today.day }));
-  $("w-points").textContent = w.points + " / " + s.targets.weekMax + " points" + (w.points >= s.targets.weekKept ? " · semaine tenue" : " · tenue à " + s.targets.weekKept);
-  $("w-bar").style.width = Math.round((w.points / s.targets.weekMax) * 100) + "%";
-  const f = (value, text) => el("div", { className: "figure" }, el("strong", { textContent: value }), el("small", { textContent: text }));
-  $("w-parts").replaceChildren(f(w.tiktoks + " / " + w.perWeek, "TikTok publiés"), f(w.daysOk + " / " + w.daysPast, "journées tenues (" + w.parts.days + " pts)"),
-    f(w.produced + " / " + s.targets.producedPerWeek, "vidéos montées (" + w.parts.produced + " pts)"), f(w.newHooks + " / " + s.targets.hooksPerWeek, "accroches nouvelles (" + w.parts.hooks + " pts)"),
-    f(w.spoke ? "oui" : "non", "prise de parole (" + w.parts.spoke + " pts)"), f(w.reviewed ? "fait" : "à faire", "bilan du lundi (" + w.parts.reviewed + " pts)"), f(s.stock, "stock, 10 pts si ≥ 2 (" + w.parts.stock + " pts)"));
-  $("w-formats").textContent = s.plan.formats.length ? "Répartition : " + s.plan.formats.map((x) => x.format + " × " + x.count).join(", ") + "." : "";
-  $("w-plan").replaceChildren(...(s.plan.items.length ? s.plan.items.map((i) => planItem(i, true)) : [el("li", { className: "muted", textContent: "Rien de prévu d’ici dimanche." })]));
+function renderSemaine(s) {
+  const w = s.week, T = s.targets, kept = w.points >= T.weekKept;
+  const todayKept = KEPT.includes(s.today.status), daysLeft = 7 - w.daysPast + (todayKept ? 0 : 1);
+  const tips = [
+    daysLeft > 0 && ["+" + daysLeft * 10, "Tiens le minimum " + (daysLeft > 1 ? "les " + daysLeft + " jours qui restent" : "aujourd’hui")],
+    !w.reviewed && ["+10", "Fais le bilan du lundi (plus bas)"],
+    !w.spoke && ["+10", "Une prise de parole (format « L’histoire d’une phrase » ou « Réponse à un commentaire »)"],
+    w.newHooks < T.hooksPerWeek && ["+" + (T.hooksPerWeek - w.newHooks) * 5, "Teste " + plural(T.hooksPerWeek - w.newHooks, "accroche nouvelle", "accroches nouvelles")],
+    w.produced < T.producedPerWeek && ["+" + Math.min(T.producedPerWeek - w.produced, 18) * 2, "Monte encore " + plural(T.producedPerWeek - w.produced, "vidéo") + " dans CUT"],
+    s.stock < T.stockMin && ["+10", "Remonte le stock à " + T.stockMin + " vidéos d’avance"],
+  ].filter(Boolean);
+  const kpi = (value, labelText, ok) => el("div", { className: "kpi" }, el("span", { textContent: labelText }), el("strong", { className: ok ? "ok" : "", textContent: value }));
+  $("w-hero").replaceChildren(
+    el("p", { className: "kicker", textContent: "Semaine du " + short(w.week) + " · mode " + w.label }),
+    el("div", { className: "hd", style: "margin:8px 0 0" }, el("p", { className: "big-num" }, String(w.points), el("small", { textContent: " / " + T.weekMax + " pts" })),
+      el("span", { className: "chip " + (kept ? "ok" : "acc"), textContent: kept ? "Semaine tenue" : "Encore " + (T.weekKept - w.points) + " pts" })),
+    el("div", { className: "barwrap" }, el("div", { className: "bar" + (kept ? " ok" : "") }, el("i", { style: "width:" + Math.round((w.points / T.weekMax) * 100) + "%" })),
+      el("span", { className: "mark", style: "left:" + ((T.weekKept / T.weekMax) * 100).toFixed(1) + "%", title: "110 : semaine tenue" })),
+    el("p", { className: "muted small", textContent: "Le trait blanc : 110 points, la semaine est tenue." }),
+    el("div", { className: "kpis", style: "margin-top:14px" },
+      kpi(w.tiktoks + " / " + w.perWeek, "TikTok publiés", w.tiktoks >= w.perWeek), kpi(w.daysOk + " / " + w.daysPast, "journées tenues", w.daysOk === w.daysPast),
+      kpi(w.produced + " / " + T.producedPerWeek, "vidéos montées", w.produced >= T.producedPerWeek), kpi(w.newHooks + " / " + T.hooksPerWeek, "accroches nouvelles", w.newHooks >= T.hooksPerWeek)),
+    tips.length ? el("h3", { textContent: "Pour gagner des points" }) : null,
+    tips.length ? el("ul", { className: "tips" }, ...tips.map(([pts, text]) => el("li", {}, el("b", { textContent: pts }), el("span", { textContent: text })))) : null);
+
+  $("w-modes").replaceChildren(seg(Object.entries(s.modes).map(([k, m]) => [k, m.label + " · " + m.perWeek]), s.mode.key,
+    act((k) => api("PUT", "/cockpit/weeks/" + w.week, { mode: k }), "Mode changé"), "wrapy"));
+  $("w-mode-note").textContent = s.mode.auto ? "Choisi tout seul : deux semaines sous 110 points. Retour au Normal la semaine prochaine." : s.release && w.mode === "sortie" ? "Mode Sortie par défaut (S-3 à S0 de « " + s.release.title + " »)." : "Pause annoncée : 7 jours par trimestre au plus, décidés à l’avance.";
+  $("w-joker").textContent = w.joker ? "Joker posé le " + short(w.joker) + " · le retirer" : "Poser le joker sur aujourd’hui";
+  $("w-joker").className = "b" + (w.joker ? " on" : "");
+  $("w-joker").onclick = act(() => api("PUT", "/cockpit/weeks/" + w.week, { joker: w.joker ? null : s.today.day }), w.joker ? "Joker retiré" : "Joker posé");
+
+  const byDay = new Map();
+  for (const i of s.plan.items) { if (!byDay.has(i.day)) byDay.set(i.day, []); byDay.get(i.day).push(i); }
+  $("w-plan-count").textContent = s.plan.items.length ? plural(s.plan.items.length, "publication") + " d’ici dimanche" : "";
+  $("w-formats").textContent = s.plan.formats.length ? "Répartition : " + s.plan.formats.map((x) => x.format + " × " + x.count).join(" · ") : "";
+  $("w-plan").replaceChildren(...(byDay.size ? [...byDay].map(([d, items]) => el("div", { className: "dayblock" }, el("h3", { textContent: relDay(d) }), el("div", { className: "rows" }, ...items.map((i) => planCard(i, true)))))
+    : [el("p", { className: "muted", textContent: "Rien de prévu d’ici dimanche." })]));
+
+  const streak = streakOf(s);
+  $("w-streak").className = "chip" + (streak ? " ok" : "");
+  $("w-streak").replaceChildren(icon("flame"), streak ? "Série : " + plural(streak, "jour") : "Série à lancer");
+  $("cal").replaceChildren(...["L", "M", "M", "J", "V", "S", "D"].map((d) => el("span", { textContent: d })),
+    ...s.calendar.map((c) => {
+      const detail = c.status === "future" ? dayText(c.day) + " : à venir" : dayText(c.day) + " : " + c.tiktoks + "/" + c.perDay + " TikTok, commentaires " + (c.replies ? "faits" : "non faits")
+        + (c.missingStats ? ", " + c.missingStats + " chiffre(s) manquant(s)" : "") + (c.caught ? " (rattrapé)" : c.status === "joker" ? " (joker)" : c.status === "pause" ? " (pause)" : "");
+      return el("button", { type: "button", className: c.status + (c.caught ? " caught" : "") + (c.day === s.today.day ? " today" : ""), textContent: String(Number(c.day.slice(8))), title: detail, ariaLabel: detail, onclick: () => toast(detail) });
+    }));
+
   const last = s.weeks.at(-2), winners = s.analysis.byFormat.filter((x) => x.reliable).slice(0, 2);
+  $("w-review-state").className = "chip " + (w.reviewed ? "ok" : "acc"); $("w-review-state").textContent = w.reviewed ? "Fait" : "À faire";
   $("w-review").replaceChildren(...[
-    "Semaine dernière : " + (last ? last.points : 0) + " points" + (last && last.points >= s.targets.weekKept ? " (tenue)." : " (non tenue)."),
-    winners.length ? "Formats en tête : " + winners.map((x) => x.key + " (" + n(x.views) + " vues médianes)").join(", ") + "." : "Pas encore 5 vidéos mesurées par format : continue de tester les 3 formats-candidats.",
-    s.wear.length ? "Usure : " + s.wear.map((x) => x.format).join(", ") + "." : "Aucun format usé.",
-    "Choisis les 3 accroches à tester cette semaine et le mode (en haut).",
-    "Note l’audience de la semaine (onglet Audience).",
-  ].map((t) => el("li", { className: "item", textContent: t })));
-  $("w-reviewed").textContent = w.reviewed ? "Bilan fait ✓ · annuler" : "Bilan fait";
-  $("w-reviewed").onclick = act(() => api("PUT", "/cockpit/weeks/" + w.week, { reviewed: !w.reviewed }));
-  $("cal").replaceChildren(...["L", "M", "M", "J", "V", "S", "D"].map((d) => el("span", { className: "head", textContent: d })),
-    ...s.calendar.map((c) => el("span", { className: c.status + (c.caught ? " caught" : "") + (c.day === s.today.day ? " today" : ""),
-      title: c.status === "future" ? short(c.day) : short(c.day) + " · " + c.tiktoks + " / " + c.perDay + " TikTok · réponses " + (c.replies ? "faites" : "non") + (c.missingStats ? " · " + c.missingStats + " chiffre(s) manquant(s)" : "") + (c.caught ? " · rattrapé" : "") })));
-  $("w-history").replaceChildren(...s.weeks.map((x) => el("div", { className: "row", style: "flex-wrap:nowrap" },
-    el("small", { className: "muted", style: "width:84px;flex:none", textContent: short(x.week) }),
-    el("div", { className: "bar" + (x.points >= s.targets.weekKept ? "" : " acc"), style: "flex:1" }, el("i", { style: "width:" + Math.round((x.points / s.targets.weekMax) * 100) + "%" })),
-    el("small", { style: "width:72px;flex:none;text-align:right", textContent: x.points + " pts" }))));
+    "Semaine dernière : " + (last ? last.points : 0) + " points" + (last && last.points >= T.weekKept ? " (tenue)." : " (non tenue)."),
+    winners.length ? "Formats en tête : " + winners.map((x) => x.key + " (" + n(x.views) + " vues médianes)").join(", ") + "." : "Pas encore 5 vidéos mesurées par format : continue de tester les formats-candidats.",
+    s.wear.length ? "Usure : " + s.wear.map((x) => x.format).join(", ") + " — garde-le en appoint." : "Aucun format usé.",
+    "Choisis 3 accroches à tester et le mode de la semaine (plus haut).",
+    "Note les auditeurs mensuels Spotify (Stats → Audience).",
+  ].map((text) => el("li", { className: "item", textContent: text })));
+  $("w-reviewed").textContent = w.reviewed ? "Bilan fait ✓ (annuler)" : "J’ai fait le bilan · +10 pts";
+  $("w-reviewed").className = "b big wide" + (w.reviewed ? "" : " main");
+  $("w-reviewed").onclick = act(() => api("PUT", "/cockpit/weeks/" + w.week, { reviewed: !w.reviewed }), w.reviewed ? "Bilan annulé" : "Bilan fait : +10 points");
+  $("w-history").replaceChildren(...s.weeks.map((x) => el("div", { className: "histo" }, el("span", { className: "muted", textContent: short(x.week) }),
+    el("div", { className: "bar thin" + (x.points >= T.weekKept ? " ok" : "") }, el("i", { style: "width:" + Math.round((x.points / T.weekMax) * 100) + "%" })),
+    el("b", { className: "n", textContent: x.points + " pts" }))));
 }
 
-// ——— Analyse ———
-function table(title, rows, keyLabel) {
+// ——— Stats : ce qui marche ———
+const HOW = ["D’où viennent les chiffres : tes TikTok sont relevés seuls à 5 h et 17 h (vues tout de suite, enregistrements et partages à partir de 46 h), les Reels et Shorts publiés par CUT aussi. Le reste se note à 48 h.",
+  "Ce qui est compté : la médiane (la vidéo du milieu), pas la moyenne, pour qu’un seul gros succès ne fausse pas tout. Une vidéo de moins de 48 h n’entre pas.",
+  "Ce qui compte le plus : les enregistrements pour 1 000 vues (on veut retrouver le son) et les partages (on le fait découvrir). Les vues disent surtout si l’image arrête le défilement.",
+  "Quand c’est fiable : à partir de 5 vidéos dans un groupe ; avant, c’est marqué « peu de données ».",
+  "Ce que le Cockpit en fait seul : le plan met en avant les formats et phrases gagnants, l’alerte d’usure prévient quand un format tombe sous la moitié de son meilleur niveau, les tests d’accroches désignent la meilleure entrée.",
+  "Ce qu’il ne devine pas : le format d’une vidéo. Étiquette les vidéos arrivées seules (Aujourd’hui → À étiqueter) pour que l’analyse sache quoi comparer."];
+function groupTable(title, rows, keyLabel, open) {
   if (!rows.length) return null;
-  const head = el("tr", {}, el("th", { textContent: keyLabel }), el("th", { className: "n", textContent: "Vidéos" }), el("th", { className: "n", textContent: "Vues méd." }), el("th", { className: "n", textContent: "Enreg./1 000" }), el("th", { className: "n", textContent: "Partages/1 000" }));
-  return el("div", { className: "panel" }, el("h2", { textContent: title }), el("div", { className: "scroll" }, el("table", {}, el("thead", {}, head),
-    el("tbody", {}, ...rows.map((r) => el("tr", {}, el("td", {}, r.key + " ", r.reliable ? null : el("span", { className: "tag", textContent: "peu de données" })),
+  const max = Math.max(1, ...rows.map((r) => r.views || 0));
+  return el("details", { className: "card fold", open }, el("summary", { textContent: title }), el("div", { className: "scroll" }, el("table", {},
+    el("thead", {}, el("tr", {}, el("th", { textContent: keyLabel }), el("th", { className: "n", textContent: "Vid." }), el("th", { className: "n", textContent: "Vues méd." }), el("th", { className: "n", textContent: "Enreg./1 000" }), el("th", { className: "n", textContent: "Partages/1 000" }))),
+    el("tbody", {}, ...rows.map((r) => el("tr", {}, el("td", {}, el("span", { textContent: r.key }), r.reliable ? null : el("span", { className: "muted small", textContent: " · peu de données" }), el("span", { className: "cellbar", style: "width:" + Math.max(4, Math.round(((r.views || 0) / max) * 100)) + "%" })),
       el("td", { className: "n", textContent: r.n }), el("td", { className: "n", textContent: n(r.views) }), el("td", { className: "n", textContent: r.rate == null ? "—" : n(r.rate) }), el("td", { className: "n", textContent: r.shares == null ? "—" : n(r.shares) })))))));
 }
-const HOW = ["D’où viennent les chiffres : tes TikTok sont relevés seuls à 5 h et 17 h (vues tout de suite, enregistrements et partages à partir de 46 h). Reels et Shorts publiés par CUT aussi. Le reste se note à 48 h.",
-  "Ce qui est compté : la médiane (la vidéo du milieu), pas la moyenne, pour qu’un seul gros succès ne fausse pas tout. Une vidéo de moins de 48 h n’entre pas : elle n’a pas fini sa course.",
-  "Ce qui compte le plus : les enregistrements pour 1 000 vues (la personne veut retrouver le son) et les partages (elle le fait découvrir). Les vues seules disent surtout si l’image arrête le défilement.",
-  "Quand c’est fiable : à partir de 5 vidéos dans un groupe. Avant, le groupe est marqué « peu de données ».",
-  "Ce que le Cockpit en fait tout seul : le plan de la semaine met en avant les formats et les phrases qui gagnent, l’alerte d’usure prévient quand un format tombe sous la moitié de son meilleur niveau, et les tests d’accroches désignent la meilleure entrée pour une même phrase.",
-  "Ce qu’il ne fait pas : deviner pourquoi une vidéo a marché. Il faut renseigner le format et la phrase (bouton « Posté » du plan, ou « Chiffres » dans le journal) pour que l’analyse sache quoi comparer."];
-function renderAnalysis(s) {
+function renderStats(s) {
   const a = s.analysis;
-  const how = el("details", { className: "panel" }, el("summary", { style: "cursor:pointer;font-weight:700", textContent: "Comment l’analyse marche" }), el("ul", { className: "list", style: "margin-top:12px" }, ...HOW.map((t) => el("li", { className: "item", textContent: t }))));
-  if (!a.baseline.n) { $("an").replaceChildren(how, el("p", { className: "panel muted", textContent: "Aucune vidéo mesurée pour l’instant : branche ton TikTok dans l’onglet Audience (relevé automatique), ou note les chiffres à 48 h. L’analyse se remplit toute seule." })); return; }
-  const base = el("div", { className: "panel" }, el("h2", { textContent: "Ta base" }), el("div", { className: "figures" },
-    el("div", { className: "figure" }, el("strong", { textContent: n(a.baseline.views) }), el("small", { textContent: "vues médianes" })),
-    el("div", { className: "figure" }, el("strong", { textContent: a.baseline.rate == null ? "—" : n(a.baseline.rate) }), el("small", { textContent: "enregistrements pour 1 000 vues" })),
-    el("div", { className: "figure" }, el("strong", { textContent: a.baseline.n }), el("small", { textContent: "vidéos mesurées" }))));
-  const wear = s.wear.length ? el("div", { className: "panel" }, el("h2", { textContent: "Formats qui s’usent" }), el("ul", { className: "list" },
-    ...s.wear.map((w) => el("li", { className: "item", textContent: w.format + " : de " + n(w.best) + " à " + n(w.now) + " vues médianes (" + w.n + " vidéos). Garde-le en appoint (une vidéo sur cinq) et relance deux formats-candidats." })))) : null;
-  const hooks = a.hooks.length ? el("div", { className: "panel" }, el("h2", { textContent: "Tests d’accroches" }), el("p", { className: "muted small", style: "margin:0 0 12px", textContent: "Même phrase, accroches différentes : la gagnante est celle qui fait le plus d’enregistrements pour 1 000 vues." }),
-    ...a.hooks.map((h) => el("div", {}, el("h3", { textContent: "« " + h.text + " » · " + h.title }), el("ul", { className: "list" },
-      ...h.tests.map((x, i) => el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: x.hook }), i === 0 ? el("span", { className: "tag good", textContent: "gagnante" }) : null),
-        el("small", { textContent: plural(x.n, "vidéo") + " · " + n(x.views) + " vues méd. · " + (x.rate == null ? "—" : n(x.rate)) + " enreg./1 000" }))))))) : null;
-  const maxViews = Math.max(1, ...a.months.map((m) => m.views || 0));
-  const months = a.months.length > 1 ? el("div", { className: "panel" }, el("h2", { textContent: "Tendance par mois (vues médianes)" }), el("div", { style: "display:grid;gap:6px" },
-    ...a.months.map((m) => el("div", { className: "row", style: "flex-wrap:nowrap" }, el("small", { className: "muted", style: "width:70px;flex:none", textContent: m.key }),
-      el("div", { className: "bar acc", style: "flex:1" }, el("i", { style: "width:" + Math.round(((m.views || 0) / maxViews) * 100) + "%" })), el("small", { style: "width:110px;flex:none;text-align:right", textContent: n(m.views) + " · " + m.n + " vid." }))))) : null;
-  $("an").replaceChildren(...[how, base, wear, table("Par format", a.byFormat, "Format"), hooks, table("Par titre", a.byTitle, "Titre"), table("Par heure de publication", a.byHour, "Moment"),
-    table("Par jour", a.byWeekday, "Jour"), table("Par réseau", a.byNetwork.map((r) => ({ ...r, key: NETWORK[r.key] || r.key })), "Réseau"), months].filter(Boolean));
+  const how = el("details", { className: "card fold" }, el("summary", { textContent: "Comment l’analyse marche" }), el("ul", { className: "rows" }, ...HOW.map((t) => el("li", { className: "item small", textContent: t }))));
+  if (!a.baseline.n) {
+    $("st-marche").replaceChildren(el("div", { className: "card" }, el("h2", { textContent: "Pas encore de vidéo mesurée" }),
+      el("p", { className: "muted", style: "margin:8px 0 14px", textContent: "Branche ton TikTok : tes vidéos et leurs chiffres arrivent seuls, et l’analyse se remplit toute seule." }),
+      el("button", { className: "b main big", type: "button", textContent: "Brancher le relevé", onclick: () => go("plus", "reglages") })), how);
+    return;
+  }
+  const win = (list, labelText) => {
+    const top = list[0];
+    if (!top) return null;
+    return el("div", { className: "kpi win" }, el("span", { textContent: labelText }), el("strong", { textContent: top.key }),
+      el("em", { className: top.reliable ? "ok" : "muted", textContent: (top.rate != null ? n(top.rate) + " enreg./1 000 · " : n(top.views) + " vues méd. · ") + plural(top.n, "vidéo") + (top.reliable ? "" : " · peu de données") }));
+  };
+  const kpi = (value, labelText) => el("div", { className: "kpi" }, el("span", { textContent: labelText }), el("strong", { textContent: value }));
+  const maxMonth = Math.max(1, ...a.months.map((m) => m.views || 0));
+  $("st-marche").replaceChildren(...[
+    el("div", { className: "kpis" }, kpi(n(a.baseline.views), "vues médianes"), kpi(a.baseline.rate == null ? "—" : n(a.baseline.rate), "enreg. pour 1 000 vues"),
+      kpi(String(a.baseline.n), "vidéos mesurées"), kpi(String(s.analysis.byFormat.filter((f) => f.reliable).length), "formats fiables")),
+    s.wear.length ? el("div", { className: "card" }, el("div", { className: "hd" }, el("h2", { textContent: "Formats qui s’usent" }), el("span", { className: "chip bad", textContent: String(s.wear.length) })),
+      el("div", { className: "rows" }, ...s.wear.map((w) => el("div", { className: "item" }, el("b", { textContent: w.format }),
+        el("p", { className: "meta", textContent: "De " + n(w.best) + " à " + n(w.now) + " vues médianes sur " + plural(w.n, "vidéo") + ". Garde-le en appoint (une vidéo sur cinq) et relance deux formats-candidats." }))))) : null,
+    el("div", { className: "card" }, el("div", { className: "hd" }, el("h2", { textContent: "Ce qui gagne" })),
+      el("div", { className: "kpis" }, win(a.byFormat, "Format"), win(a.byTitle, "Titre"), win(a.byHour, "Moment"), win(a.byWeekday, "Jour"))),
+    a.hooks.length ? el("div", { className: "card" }, el("div", { className: "hd" }, el("h2", { textContent: "Tests d’accroches" })),
+      el("p", { className: "muted small lead", textContent: "Même phrase, entrées différentes : la gagnante fait le plus d’enregistrements pour 1 000 vues." }),
+      ...a.hooks.map((h) => el("div", {}, el("h3", { textContent: "« " + h.text + " » · " + h.title }), el("div", { className: "rows" },
+        ...h.tests.map((x, i) => el("div", { className: "item" + (i === 0 ? " now" : "") }, el("div", { className: "item-top" }, el("b", { textContent: x.hook }), i === 0 ? el("span", { className: "chip ok", textContent: "Gagnante" }) : null),
+          el("p", { className: "meta", textContent: plural(x.n, "vidéo") + " · " + n(x.views) + " vues méd. · " + (x.rate == null ? "—" : n(x.rate)) + " enreg./1 000" }))))))) : null,
+    groupTable("Par format", a.byFormat, "Format", true), groupTable("Par titre", a.byTitle, "Titre"), groupTable("Par moment de publication", a.byHour, "Moment"),
+    groupTable("Par jour", a.byWeekday, "Jour"), groupTable("Par réseau", a.byNetwork.map((r) => ({ ...r, key: NETWORK[r.key] || r.key })), "Réseau"),
+    a.months.length > 1 ? el("details", { className: "card fold" }, el("summary", { textContent: "Tendance par mois" }), el("div", { className: "rows" },
+      ...a.months.map((m) => el("div", { className: "histo" }, el("span", { className: "muted", textContent: m.key }), el("div", { className: "bar thin" }, el("i", { style: "width:" + Math.round(((m.views || 0) / maxMonth) * 100) + "%" })),
+        el("b", { className: "n", textContent: n(m.views) })))))
+      : null,
+    how,
+  ].filter(Boolean));
 }
 
-// ——— Phrases ———
-function renderPhrases(s) {
-  const unused = $("b-unused").checked, titles = [...new Set(s.phrases.map((ph) => ph.title))];
-  $("titles").replaceChildren(...titles.map((t) => el("option", { value: t })));
-  $("hooks").replaceChildren(...[...new Set(s.posts.map((p) => p.hook).filter(Boolean))].slice(0, 50).map((h) => el("option", { value: h })));
-  const shown = s.phrases.filter((ph) => !unused || !ph.uses);
-  $("b-list").replaceChildren(...(shown.length ? shown.map((ph) => el("li", { className: "item" },
-    el("div", { className: "top" }, el("b", { textContent: "« " + ph.text + " »" }), el("span", { className: "row" },
-      el("button", { className: "link", type: "button", textContent: "Posté", onclick: () => openPost({ phraseId: ph.id }) }),
-      el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer cette phrase ?")) await api("DELETE", "/cockpit/phrases/" + ph.id); }) }))),
-    el("small", {}, ph.title + " · ", ph.uses ? plural(ph.uses, "publication") + " · dernière le " + new Date(ph.lastUsed).toLocaleDateString("fr-FR")
-      + (ph.best != null ? " · meilleur : " + n(ph.best) + " enreg. pour 1 000 vues" : "") : el("span", { className: "tag new", textContent: "jamais utilisée" }))))
-    : [el("li", { className: "muted", textContent: s.phrases.length ? "Toutes tes phrases ont déjà servi." : "Aucune phrase : ajoute 3 à 5 lignes par titre." })]));
-}
-$("b-unused").onchange = () => renderPhrases(state);
-$("b-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/phrases", { title: $("b-title-in").value, text: $("b-text").value }); $("b-text").value = ""; });
-
-// ——— Journal ———
-function renderJournal(s) {
-  $("j-list").replaceChildren(...(s.posts.length ? s.posts.map((p) => {
-    const stats = p.views == null ? (p.auto ? "chiffres relevés seuls à partir de 46 h" : "chiffres pas encore notés")
-      : [n(p.views) + " vues", p.saves != null && n(p.saves) + " enreg.", p.shares != null && n(p.shares) + " partages", p.likes != null && n(p.likes) + " j’aime", p.rate != null && p.rate + " enreg. pour 1 000"].filter(Boolean).join(" · ");
-    const edit = el("button", { className: "link", type: "button", textContent: "Chiffres", onclick: act(async () => {
-      const views = prompt("Vues :", p.views ?? ""); if (views === null) return;
-      const saves = prompt("Enregistrements :", p.saves ?? ""); if (saves === null) return;
-      await api("PATCH", "/cockpit/posts/" + p.id, { views: views.trim() === "" ? null : views.trim(), saves: saves.trim() === "" ? null : saves.trim() });
-    }) });
-    const remove = el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer cette publication du journal ?" + (p.auto ? " Elle reviendra au prochain relevé tant qu’elle est sur ton profil." : ""))) await api("DELETE", "/cockpit/posts/" + p.id); }) });
-    const tag = el("button", { className: "link", type: "button", textContent: "Modifier", onclick: () => openPost({ post: p }) });
-    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), el("span", { className: "row" }, tag, edit, remove)),
-      el("small", {}, (p.auto ? "relevé auto · " : "") + when(p.postedAt) + (p.hook ? " · " + p.hook : "") + " · " + stats, p.url ? el("span", {}, " · ", el("a", { href: p.url, target: "_blank", rel: "noopener", textContent: "voir" })) : null));
-  }) : [el("li", { className: "muted", textContent: "Rien de noté : touche « J’ai posté » après chaque publication." })]));
-}
-$("j-post").onclick = () => openPost();
-$("j-csv").onclick = async () => {
-  try {
-    const response = await fetch("/api/cockpit/export.csv", { headers: { Authorization: "Bearer " + token } });
-    if (!response.ok) throw new Error("Export impossible.");
-    const url = URL.createObjectURL(await response.blob()), a = el("a", { href: url, download: "cockpit-journal.csv" });
-    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
-  } catch (error) { alert(error.message); }
-};
-
-// ——— Sorties ———
-function renderReleases(s) {
-  $("r-list").replaceChildren(...(s.releases.length ? [...s.releases].reverse().map((r) => el("div", { className: "item" },
-    el("div", { className: "top" }, el("b", { textContent: r.title + " · sortie le " + dayText(r.day) }),
-      el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer cette sortie ?")) await api("DELETE", "/cockpit/releases/" + r.id); }) })),
-    el("ul", { className: "list" }, ...r.weeks.map((w) => el("li", { className: "item" + (w.current ? " now" : "") },
-      el("div", { className: "top" }, el("b", { textContent: "S" + (w.s > 0 ? "+" : "") + w.s + " · semaine du " + short(w.week) }), el("span", { className: "tag" + (w.done >= w.target ? " good" : ""), textContent: w.done + " / " + w.target })),
-      el("small", { textContent: w.todo }), el("div", { className: "bar" + (w.done >= w.target ? "" : " acc") }, el("i", { style: "width:" + Math.min(100, Math.round((w.done / w.target) * 100)) + "%" })))))))
-    : [el("p", { className: "muted", style: "margin:0", textContent: "Aucune sortie prévue. Ajoute la prochaine : le plan s’organise trois semaines avant." })]));
-}
-$("r-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/releases", { title: $("r-title").value, day: $("r-day").value }); $("r-title").value = ""; });
-
-// ——— Audience ———
-const METRICS = [["spotify", "Auditeurs mensuels Spotify", "Auditeurs"], ["spotify_followers", "Abonnés Spotify", "Ab. Spotify"], ["spotify_popularity", "Popularité Spotify (0 à 100)", "Pop."],
+// ——— Stats : audience ———
+const METRICS = [["spotify", "Auditeurs mensuels Spotify", "Auditeurs"], ["spotify_followers", "Abonnés Spotify", "Ab. Spotify"], ["spotify_popularity", "Popularité Spotify", "Pop."],
   ["tiktok", "Abonnés TikTok", "TikTok"], ["tiktok_likes", "J’aime TikTok", "J’aime"], ["instagram", "Abonnés Instagram", "Instagram"], ["youtube", "Abonnés YouTube", "YouTube"]];
-function spark(points) {
-  const w = 240, h = 56, xs = points.map((_, i) => (points.length > 1 ? (i / (points.length - 1)) * (w - 8) + 4 : w / 2));
-  const lo = Math.min(...points), hi = Math.max(...points), y = (v) => (hi === lo ? h / 2 : h - 6 - ((v - lo) / (hi - lo)) * (h - 12));
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${w} ${h}`); svg.setAttribute("class", "spark"); svg.setAttribute("aria-hidden", "true");
-  svg.innerHTML = `<polyline fill="none" stroke="rgb(var(--acc))" stroke-width="2" points="${points.map((v, i) => xs[i].toFixed(1) + "," + y(v).toFixed(1)).join(" ")}"/>`;
-  return svg;
+const SOURCES = { spotify: "Spotify", tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" };
+function sourceText(name, r) {
+  if (!r.ok) return "échec : " + r.error;
+  if (name === "tiktok") return n(r.followers) + " abonnés · " + plural(r.added, "vidéo ajoutée", "vidéos ajoutées") + ", " + plural(r.linked, "rattachée", "rattachées") + " · " + plural(r.measured, "mesurée", "mesurées") + " en détail";
+  if (name === "spotify") return n(r.followers) + " abonnés · popularité " + r.popularity + "/100 · " + plural(r.tracks, "titre");
+  if (name === "instagram") return n(r.followers) + " abonnés · " + plural(r.reels, "Reel suivi", "Reels suivis");
+  return n(r.subscribers) + " abonnés · " + plural(r.shorts, "Short suivi", "Shorts suivis");
+}
+function runReport(target) {
+  if (!auto) return target.replaceChildren(el("li", { className: "item small", textContent: "Relevé indisponible pour l’instant." }));
+  const lines = [el("li", { className: "item small", textContent: auto.lastRun ? "Dernier relevé : " + when(auto.lastRun) + ". Les suivants : " + auto.next + "." : "Aucun relevé encore : renseigne tes pages, puis « Actualiser maintenant »." })];
+  for (const [name, r] of Object.entries(auto.report || {})) lines.push(el("li", { className: "item small" }, el("div", { className: "item-top" }, el("b", { textContent: SOURCES[name] }), el("span", { className: "chip " + (r.ok ? "ok" : "bad"), textContent: r.ok ? "OK" : "Échec" })), el("span", { className: "meta", textContent: sourceText(name, r) })));
+  if (!auto.linked.instagram) lines.push(el("li", { className: "item small line" }, "Instagram n’est pas relié : ", el("a", { href: "compte", textContent: "le relier dans ton compte" }), " (Reels Instagram)."));
+  if (!auto.linked.youtube) lines.push(el("li", { className: "item small line" }, "YouTube n’est pas relié : ", el("a", { href: "compte", textContent: "relier ta chaîne" }), " (Shorts YouTube)."));
+  target.replaceChildren(...lines);
+}
+async function refreshNow(button) {
+  button.disabled = true; const old = button.textContent; button.textContent = "Relevé en cours…";
+  try { await api("PUT", "/cockpit/settings", { spotifyArtist: $("s-spotify").value, tiktokHandle: $("s-tiktok").value }); await api("POST", "/cockpit/refresh"); await load(); toast("Relevé terminé"); }
+  catch (error) { toast(error.message, true); }
+  finally { button.disabled = false; button.textContent = old; }
 }
 function renderAudience(s) {
-  if (!$("a-day").value) $("a-day").value = s.today.day;
-  $("a-charts").replaceChildren(...METRICS.map(([key, labelText]) => {
+  const run = el("ul", { className: "rows" });
+  runReport(run);
+  const now = el("button", { className: "b main", type: "button", textContent: "Actualiser maintenant" });
+  now.onclick = () => refreshNow(now);
+  $("au-run").replaceChildren(el("div", { className: "hd" }, el("h2", { textContent: "Relevé automatique" }), el("button", { className: "b small", type: "button", textContent: "Réglages", onclick: () => go("plus", "reglages") })),
+    run, el("div", { className: "actions", style: "margin-top:12px" }, now));
+  $("au-kpis").replaceChildren(...METRICS.map(([key, labelText]) => {
     const pts = s.audience.filter((a) => a[key] != null);
     if (!pts.length) return null;
-    const last = pts.at(-1)[key], first = pts[0][key], delta = last - first;
-    return el("div", { className: "figure" }, el("strong", { textContent: n(last) }), el("small", { textContent: labelText + (pts.length > 1 ? " · " + (delta >= 0 ? "+" : "") + n(delta) + " depuis le " + short(pts[0].day) : "") }), pts.length > 1 ? spark(pts.map((a) => a[key])) : null);
+    const last = pts.at(-1), ref = [...pts].reverse().find((a) => between(a.day, last.day) >= 7) || pts[0], delta = last[key] - ref[key];
+    return el("div", { className: "kpi" }, el("span", { textContent: labelText }), el("strong", { textContent: n(last[key]) }),
+      pts.length > 1 ? el("em", { className: delta > 0 ? "ok" : delta < 0 ? "bad" : "muted", textContent: (delta > 0 ? "+" : "") + n(delta) + " depuis le " + short(ref.day) }) : el("em", { className: "muted", textContent: "le " + short(last.day) }),
+      sparkline(pts.map((a) => a[key])));
   }).filter(Boolean));
-  $("a-table").replaceChildren(el("thead", {}, el("tr", {}, el("th", { textContent: "Jour" }), ...METRICS.map(([, , short]) => el("th", { className: "n", textContent: short })), el("th"))),
+  const tracks = auto ? auto.tracks : [];
+  $("au-tracks-card").hidden = !tracks.length;
+  $("au-tracks").replaceChildren(el("thead", {}, el("tr", {}, el("th", { textContent: "Titre" }), el("th", { className: "n", textContent: "Pop." }), el("th", { className: "n", textContent: "Évolution" }), el("th", { className: "n", textContent: "Vidéos 28 j" }))),
+    el("tbody", {}, ...tracks.map((t) => el("tr", {}, el("td", { textContent: t.name }), el("td", { className: "n", textContent: t.popularity }),
+      el("td", { className: "n " + (t.change > 0 ? "ok" : t.change < 0 ? "bad" : "muted"), textContent: (t.change > 0 ? "+" : "") + t.change + " (" + short(t.since) + ")" }), el("td", { className: "n", textContent: t.videos28 })))));
+  if (!$("a-day").value) $("a-day").value = s.today.day;
+  $("a-table").replaceChildren(el("thead", {}, el("tr", {}, el("th", { textContent: "Jour" }), ...METRICS.map(([, , sh]) => el("th", { className: "n", textContent: sh })), el("th"))),
     el("tbody", {}, ...[...s.audience].reverse().map((a) => el("tr", {}, el("td", { textContent: short(a.day) }), ...METRICS.map(([k]) => el("td", { className: "n", textContent: n(a[k]) })),
-      el("td", { className: "n" }, el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(() => api("DELETE", "/cockpit/audience/" + a.day)) }))))));
+      el("td", { className: "n" }, el("button", { className: "b small danger", type: "button", ariaLabel: "Retirer cette ligne", innerHTML: svg("trash"), onclick: act(async () => { if (confirm("Retirer les chiffres du " + short(a.day) + " ?")) await api("DELETE", "/cockpit/audience/" + a.day); }, "Ligne retirée") }))))));
 }
 $("a-form").onsubmit = act(async (event) => {
   event.preventDefault();
   const v = (id) => ($(id).value === "" ? null : $(id).value);
   await api("PUT", "/cockpit/audience/" + $("a-day").value, { spotify: v("a-spotify"), tiktok: v("a-tiktok"), instagram: v("a-instagram"), youtube: v("a-youtube") });
   for (const id of ["a-spotify", "a-tiktok", "a-instagram", "a-youtube"]) $(id).value = "";
+}, "Chiffres enregistrés");
+
+// ——— Contenu : phrases ———
+let phraseFilter = "all";
+/** Le nom d'une publication : réseau, format, phrase, vidéo, accroche ou légende. */
+function label(p) {
+  const phrase = p.phraseId && state.phrases.find((ph) => ph.id === p.phraseId), video = p.cutVideoId && videos.find((v) => v.id === p.cutVideoId);
+  return [p.format, phrase ? "« " + phrase.text + " »" : video ? video.name.replace(/\s*-\s*ONIRIQUE CUT.*$/i, "") : p.hook || p.caption || "Publication"].filter(Boolean).join(" · ");
+}
+function renderPhrases(s) {
+  $("b-filter").replaceChildren(seg([["all", "Toutes"], ["unused", "Jamais utilisées"], ["best", "Gagnantes"]], phraseFilter, (k) => { phraseFilter = k; renderPhrases(state); }));
+  const q = plain($("b-search").value.trim());
+  let list = s.phrases.filter((ph) => !q || plain(ph.text + " " + ph.title).includes(q));
+  if (phraseFilter === "unused") list = list.filter((ph) => !ph.uses);
+  if (phraseFilter === "best") list = list.filter((ph) => ph.best != null).sort((a, b) => b.best - a.best);
+  if (!s.phrases.length) $("b-add").open = true;
+  const groups = new Map();
+  for (const ph of list) { const key = phraseFilter === "best" ? "Les meilleures" : ph.title; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(ph); }
+  const row = (ph) => el("div", { className: "item" },
+    el("b", { textContent: "« " + ph.text + " »" }),
+    el("p", { className: "meta" }, (phraseFilter === "best" ? ph.title + " · " : "") + (ph.uses ? plural(ph.uses, "publication") + " · dernière le " + new Date(ph.lastUsed).toLocaleDateString("fr-FR")
+      + (ph.best != null ? " · meilleur : " + n(ph.best) + " enreg./1 000" : "") : ""), ph.uses ? null : el("span", { className: "chip acc", textContent: "Jamais utilisée" })),
+    el("div", { className: "tools" },
+      el("button", { className: "b main", type: "button", onclick: () => openPost({ phraseId: ph.id }) }, icon("check"), "Posté"),
+      el("button", { className: "b", type: "button", onclick: () => copyCaption(ph.text, ph.title) }, icon("copy"), "Légende"),
+      el("button", { className: "b", type: "button", onclick: act(async () => { const t = prompt("Corriger la phrase :", ph.text); if (t !== null && t.trim()) await api("PATCH", "/cockpit/phrases/" + ph.id, { text: t }); }, "Phrase corrigée") }, icon("edit"), "Modifier"),
+      el("button", { className: "b danger", type: "button", ariaLabel: "Retirer la phrase", onclick: act(async () => { if (confirm("Retirer cette phrase ? Ses publications restent, sans phrase.")) await api("DELETE", "/cockpit/phrases/" + ph.id); }, "Phrase retirée") }, icon("trash"))));
+  $("b-list").replaceChildren(...(groups.size ? [...groups].map(([title, items]) => el("details", { className: "card fold", open: groups.size <= 4 || !!q || phraseFilter !== "all" },
+    el("summary", {}, el("span", { textContent: title }), el("span", { className: "kicker", style: "margin-left:auto", textContent: plural(items.length, "phrase") })), el("div", { className: "rows" }, ...items.map(row))))
+    : [el("p", { className: "muted card", textContent: s.phrases.length ? "Aucune phrase ne correspond." : "Aucune phrase : ajoute 3 à 5 lignes par titre (une par ligne)." })]));
+}
+$("b-search").oninput = () => renderPhrases(state);
+$("b-form").onsubmit = act(async (event) => {
+  event.preventDefault();
+  const texts = $("b-texts").value.split("\n").map((t) => t.trim()).filter(Boolean);
+  if (!texts.length) throw new Error("Écris au moins une phrase.");
+  await api("POST", "/cockpit/phrases", { title: $("b-title").value, texts });
+  $("b-texts").value = "";
+  toast(plural(texts.length, "phrase ajoutée", "phrases ajoutées"));
 });
 
-// ——— Relevé automatique et radar des films ———
-const SOURCES = { spotify: "Spotify", tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" };
-function sourceText(name, r) {
-  if (!r.ok) return SOURCES[name] + " : échec (" + r.error + ")";
-  if (name === "tiktok") return "TikTok : " + n(r.followers) + " abonnés · " + plural(r.added, "vidéo") + " ajoutée" + (r.added > 1 ? "s" : "") + ", " + r.linked + " rattachée" + (r.linked > 1 ? "s" : "") + " · " + plural(r.measured, "vidéo") + " mesurée" + (r.measured > 1 ? "s" : "") + " en détail";
-  if (name === "spotify") return "Spotify : " + n(r.followers) + " abonnés · popularité " + r.popularity + "/100 · " + plural(r.tracks, "titre");
-  if (name === "instagram") return "Instagram : " + n(r.followers) + " abonnés · " + plural(r.reels, "Reel") + " suivi" + (r.reels > 1 ? "s" : "");
-  return "YouTube : " + n(r.subscribers) + " abonnés · " + plural(r.shorts, "Short") + " suivi" + (r.shorts > 1 ? "s" : "");
+// ——— Contenu : journal ———
+let journalFilter = "all";
+function renderJournal(s) {
+  $("jr-filter").replaceChildren(seg([["all", "Tout"], ["tiktok", "TikTok"], ["instagram", "Insta"], ["youtube", "YouTube"], ["untagged", "Sans format"]], journalFilter, (k) => { journalFilter = k; renderJournal(state); }, "wrapy"));
+  const q = plain($("jr-search").value.trim());
+  const list = s.posts.filter((p) => (journalFilter === "all" || (journalFilter === "untagged" ? !p.format : p.network === journalFilter))
+    && (!q || plain([label(p), p.hook, p.caption].join(" ")).includes(q)));
+  $("jr-count").textContent = plural(list.length, "publication");
+  $("jr-list").replaceChildren(...(list.length ? list.map((p) => {
+    const stats = p.views == null ? (p.auto ? "chiffres relevés seuls à partir de 46 h" : "chiffres pas encore notés")
+      : [n(p.views) + " vues", p.saves != null && n(p.saves) + " enreg.", p.shares != null && n(p.shares) + " partages", p.likes != null && n(p.likes) + " j’aime", p.rate != null && p.rate + " enreg./1 000"].filter(Boolean).join(" · ");
+    return el("div", { className: "item" },
+      el("div", { className: "item-top" }, el("b", { textContent: label(p) }), el("span", { className: "net " + p.network, textContent: NETWORK[p.network] })),
+      el("p", { className: "meta", textContent: when(p.postedAt) + (p.auto ? " · relevé auto" : "") + (p.hook ? " · " + p.hook : "") }),
+      el("p", { className: p.views == null ? "meta" : "", style: "font-weight:600", textContent: stats }),
+      el("div", { className: "tools" },
+        el("button", { className: "b", type: "button", onclick: () => openPost({ post: p }) }, icon("edit"), "Modifier"),
+        el("button", { className: "b", type: "button", onclick: act(async () => {
+          const views = prompt("Vues :", p.views ?? ""); if (views === null) return;
+          const saves = prompt("Enregistrements :", p.saves ?? ""); if (saves === null) return;
+          await api("PATCH", "/cockpit/posts/" + p.id, { views: views.trim() === "" ? null : views.trim(), saves: saves.trim() === "" ? null : saves.trim() });
+        }, "Chiffres notés") }, icon("num"), "Chiffres"),
+        p.url ? el("a", { className: "b", href: p.url, target: "_blank", rel: "noopener" }, icon("open"), "Voir") : null,
+        el("button", { className: "b danger", type: "button", ariaLabel: "Retirer du journal", onclick: act(async () => {
+          if (confirm("Retirer cette publication du journal ?" + (p.auto ? " Elle reviendra au prochain relevé tant qu’elle est sur ton profil." : ""))) await api("DELETE", "/cockpit/posts/" + p.id);
+        }, "Publication retirée") }, icon("trash"))));
+  }) : [el("p", { className: "muted card", textContent: s.posts.length ? "Aucune publication ne correspond." : "Rien de noté : touche « Posté » après chaque publication, ou branche le relevé TikTok." })]));
 }
-function renderAuto() {
-  if (!auto) return;
-  if (document.activeElement !== $("s-spotify")) $("s-spotify").value = auto.settings.spotifyArtist ? "https://open.spotify.com/artist/" + auto.settings.spotifyArtist : "";
-  if (document.activeElement !== $("s-tiktok")) $("s-tiktok").value = auto.settings.tiktokHandle ? "@" + auto.settings.tiktokHandle : "";
-  const lines = [auto.lastRun ? "Dernier relevé : " + when(auto.lastRun) + ". Les suivants : " + auto.next + "." : "Aucun relevé pour l’instant : renseigne tes pages, puis « Actualiser maintenant »."];
-  for (const [name, r] of Object.entries(auto.report || {})) lines.push(sourceText(name, r));
-  if (!auto.linked.instagram) lines.push("Instagram n’est pas relié : relie-le dans ton compte (Reels Instagram) pour suivre tes abonnés et tes Reels.");
-  if (!auto.linked.youtube) lines.push("YouTube n’est pas relié : relie ta chaîne dans ton compte (Shorts YouTube) pour suivre tes abonnés et tes Shorts.");
-  $("s-report").replaceChildren(...lines.map((t) => el("li", { className: "item small", textContent: t })));
-  $("tracks-box").hidden = !auto.tracks.length;
-  $("tracks").replaceChildren(el("thead", {}, el("tr", {}, el("th", { textContent: "Titre" }), el("th", { className: "n", textContent: "Popularité" }), el("th", { className: "n", textContent: "Évolution" }), el("th", { className: "n", textContent: "Vidéos (28 j)" }))),
-    el("tbody", {}, ...auto.tracks.map((t) => el("tr", {}, el("td", { textContent: t.name }), el("td", { className: "n", textContent: t.popularity + "/100" }),
-      el("td", { className: "n " + (t.change > 0 ? "done" : t.change < 0 ? "warn" : ""), textContent: (t.change > 0 ? "+" : "") + t.change + " depuis le " + short(t.since) }), el("td", { className: "n", textContent: t.videos28 })))));
-  $("films").replaceChildren(...(!auto.filmsReady ? [el("li", { className: "item small muted", textContent: "Radar automatique pas encore branché : sur le VPS, lancer onirique-tmdb (clé gratuite de themoviedb.org). En attendant, ajoute les sorties à la main ci-dessous." })]
-    : auto.films.length ? auto.films.slice(0, 15).map((f) => el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: f.title + " · " + f.kind }), el("span", { className: "tag" + (f.score >= 70 ? " good" : ""), textContent: f.score + "/100" })),
-      el("small", { textContent: dayText(f.day) + " · " + f.reasons.join(" · ") }),
-      el("div", { className: "row" }, f.followed ? el("span", { className: "muted small", textContent: "Dans ton radar" })
-        : el("button", { className: "link", type: "button", textContent: "Suivre", onclick: act(() => api("POST", "/cockpit/events", { title: f.title, day: f.day, note: f.reasons.join(", ") })) }))))
-    : [el("li", { className: "item small muted", textContent: "Aucune sortie trouvée pour l’instant (le radar se refait chaque matin)." })]));
+$("jr-search").oninput = () => renderJournal(state);
+async function downloadCsv() {
+  try {
+    const response = await fetch("/api/cockpit/export.csv", { headers: { Authorization: "Bearer " + token } });
+    if (!response.ok) throw new Error("Export impossible.");
+    const url = URL.createObjectURL(await response.blob()), a = el("a", { href: url, download: "cockpit-journal.csv" });
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast("Journal exporté");
+  } catch (error) { toast(error.message, true); }
 }
-$("s-form").onsubmit = act(async (event) => { event.preventDefault(); await api("PUT", "/cockpit/settings", { spotifyArtist: $("s-spotify").value, tiktokHandle: $("s-tiktok").value }); });
-$("s-refresh").onclick = async () => {
-  $("s-refresh").disabled = true; $("s-refresh").textContent = "Relevé en cours…";
-  try { await api("PUT", "/cockpit/settings", { spotifyArtist: $("s-spotify").value, tiktokHandle: $("s-tiktok").value }); await api("POST", "/cockpit/refresh"); await load(); }
-  catch (error) { alert(error.message); }
-  finally { $("s-refresh").disabled = false; $("s-refresh").textContent = "Actualiser maintenant"; }
+$("jr-csv").onclick = downloadCsv; $("i-csv").onclick = downloadCsv;
+
+// ——— Plus : sorties, radar, contacts ———
+function renderSorties(s) {
+  if (!s.releases.length) $("r-add").open = true;
+  $("r-list").replaceChildren(...(s.releases.length ? [...s.releases].reverse().map((r) => el("div", { className: "card" },
+    el("div", { className: "hd" }, el("div", {}, el("p", { className: "kicker", textContent: "Sortie · " + dayText(r.day) }), el("h2", { textContent: r.title })),
+      el("button", { className: "b small danger", type: "button", ariaLabel: "Retirer la sortie", innerHTML: svg("trash"), onclick: act(async () => { if (confirm("Retirer la sortie de « " + r.title + " » ?")) await api("DELETE", "/cockpit/releases/" + r.id); }, "Sortie retirée") })),
+    el("div", { className: "rows" }, ...r.weeks.map((w) => el("div", { className: "item" + (w.current ? " now" : "") },
+      el("div", { className: "item-top" }, el("b", { textContent: "S" + (w.s > 0 ? "+" : "") + w.s + " · " + (w.current ? "cette semaine" : "semaine du " + short(w.week)) }),
+        el("span", { className: "chip " + (w.done >= w.target ? "ok" : w.past ? "bad" : "acc"), textContent: w.done + " / " + w.target })),
+      el("p", { className: "meta", textContent: w.todo }),
+      el("div", { className: "bar thin" + (w.done >= w.target ? " ok" : "") }, el("i", { style: "width:" + Math.min(100, Math.round((w.done / w.target) * 100)) + "%" })))))))
+    : [el("p", { className: "muted card", textContent: "Aucune sortie prévue. Ajoute la prochaine : le plan s’organise trois semaines avant." })]));
+}
+$("r-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/releases", { title: $("r-title").value, day: $("r-day").value }); $("r-form").reset(); }, "Sortie ajoutée");
+function renderRadar(s) {
+  $("f-at").textContent = auto && auto.filmsAt ? "mis à jour le " + new Date(auto.filmsAt).toLocaleDateString("fr-FR") : "";
+  $("films").replaceChildren(...(!auto || !auto.filmsReady ? [el("p", { className: "muted", textContent: "Radar automatique pas encore branché : sur le VPS, lancer onirique-tmdb (clé gratuite de themoviedb.org). En attendant, ajoute les sorties à la main plus bas." })]
+    : auto.films.length ? auto.films.slice(0, 20).map((f) => el("div", { className: "item" + (f.score >= 70 ? " now" : "") },
+      el("div", { className: "item-top" }, el("b", { textContent: f.title }), el("span", { className: "chip " + (f.score >= 70 ? "ok" : ""), textContent: f.score + "/100" })),
+      el("p", { className: "meta", textContent: f.kind + " · " + dayText(f.day) + " · " + f.reasons.join(" · ") }),
+      el("div", { className: "tools" }, f.followed ? el("span", { className: "chip ok", textContent: "Dans ton radar" })
+        : el("button", { className: "b main", type: "button", onclick: act(() => api("POST", "/cockpit/events", { title: f.title, day: f.day, note: f.reasons.join(", ") }), "Ajouté au radar") }, icon("add"), "Suivre"))))
+    : [el("p", { className: "muted", textContent: "Aucune sortie trouvée pour l’instant (le radar se refait chaque matin)." })]));
+  $("ev-list").replaceChildren(...(s.events.length ? s.events.map((e) => el("div", { className: "item" + (e.inDays >= 0 && e.inDays <= 7 ? " now" : "") },
+    el("div", { className: "item-top" }, el("b", { textContent: e.title }), el("span", { className: "chip " + (e.inDays >= 0 && e.inDays <= 7 ? "acc" : ""), textContent: e.inDays > 0 ? "dans " + plural(e.inDays, "jour") : e.inDays === 0 ? "aujourd’hui" : "passé" })),
+    el("p", { className: "meta", textContent: dayText(e.day) + (e.note ? " · " + e.note : "") }),
+    el("div", { className: "tools" }, el("button", { className: "b danger", type: "button", onclick: act(() => api("DELETE", "/cockpit/events/" + e.id), "Retiré du radar") }, icon("trash"), "Retirer"))))
+    : [el("p", { className: "muted", textContent: "Rien dans ton radar : « Suivre » un film ou une série au-dessus." })]));
+}
+$("ev-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/events", { title: $("ev-title").value, day: $("ev-day").value, note: $("ev-note").value }); $("ev-form").reset(); }, "Ajouté au radar");
+function renderContacts(s) {
+  if (!s.contacts.length) $("c-add").open = true;
+  $("c-list").replaceChildren(...(s.contacts.length ? s.contacts.map((c) => {
+    const status = el("select", { ariaLabel: "Statut de " + c.name, style: "min-height:40px" }, ...s.contactStatuses.map((x) => el("option", { value: x, textContent: x, selected: x === c.status })));
+    status.onchange = act(() => api("PATCH", "/cockpit/contacts/" + c.id, { status: status.value }), "Statut changé");
+    return el("div", { className: "item" + (c.overdue ? " now" : "") },
+      el("div", { className: "item-top" }, el("b", { textContent: c.name + (c.role ? " · " + c.role : "") }), c.overdue ? el("span", { className: "chip acc", textContent: "À relancer" }) : null),
+      el("p", { className: "meta", textContent: (c.nextAction ? "Prochaine action : " + c.nextAction + " · " : "") + (c.lastContact ? "dernier contact le " + short(c.lastContact) : "jamais contacté") }),
+      el("div", { className: "tools" }, status,
+        el("button", { className: "b main", type: "button", onclick: act(() => api("PATCH", "/cockpit/contacts/" + c.id, { lastContact: s.today.day, status: c.status === "à contacter" ? "en discussion" : c.status }), "Contact noté") }, icon("check"), "Contacté aujourd’hui"),
+        el("button", { className: "b", type: "button", onclick: act(async () => { const x = prompt("Prochaine action :", c.nextAction); if (x !== null) await api("PATCH", "/cockpit/contacts/" + c.id, { nextAction: x }); }, "Action notée") }, icon("edit"), "Action"),
+        el("button", { className: "b danger", type: "button", ariaLabel: "Retirer " + c.name, onclick: act(async () => { if (confirm("Retirer " + c.name + " ?")) await api("DELETE", "/cockpit/contacts/" + c.id); }, "Contact retiré") }, icon("trash"))));
+  }) : [el("p", { className: "muted card", textContent: "Aucun contact : un feat ou un graphiste par mois change la portée." })]));
+}
+$("c-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/contacts", { name: $("c-name").value, role: $("c-role").value, nextAction: $("c-next").value }); $("c-form").reset(); }, "Contact ajouté");
+
+// ——— Plus : réglages (relevé, rappels, légendes, application) ———
+function renderReglages() {
+  if (auto) {
+    if (document.activeElement !== $("s-spotify")) $("s-spotify").value = auto.settings.spotifyArtist ? "https://open.spotify.com/artist/" + auto.settings.spotifyArtist : "";
+    if (document.activeElement !== $("s-tiktok")) $("s-tiktok").value = auto.settings.tiktokHandle ? "@" + auto.settings.tiktokHandle : "";
+  }
+  runReport($("s-report"));
+  if (document.activeElement !== $("g-tags")) $("g-tags").value = store.get(TAGS, "");
+}
+$("s-form").onsubmit = act(async (event) => { event.preventDefault(); await api("PUT", "/cockpit/settings", { spotifyArtist: $("s-spotify").value, tiktokHandle: $("s-tiktok").value }); }, "Réglages enregistrés");
+$("s-refresh").onclick = () => refreshNow($("s-refresh"));
+$("g-tags").onchange = () => { store.set(TAGS, $("g-tags").value.trim()); toast("Hashtags gardés"); };
+
+// Les rappels : les notifications passent par sw.js (comme Mes vidéos) ; sur iPhone, seulement depuis l'icône de l'écran d'accueil.
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const canPush = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const keyBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+async function enablePush() {
+  if (!canPush) throw new Error(ios && !standalone ? "Sur iPhone, ajoute d’abord le Cockpit à l’écran d’accueil, puis active les rappels depuis l’icône." : "Ce navigateur ne peut pas recevoir de notifications.");
+  if (await Notification.requestPermission() !== "granted") throw new Error("Notifications refusées : autorise-les pour ONIRIQUE dans les réglages du téléphone ou du navigateur.");
+  const r = await navigator.serviceWorker.register("/sw.js");
+  const { key } = await api("GET", "/push/key");
+  const sub = (await r.pushManager.getSubscription()) || await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+  await api("POST", "/me/push", sub.toJSON());
+}
+async function loadReminder() {
+  try { const r = await api("GET", "/cut/reminder"); $("r-on").checked = r.on; $("r-time").value = r.time; $("r-note").textContent = r.on ? "Rappel chaque jour à " + r.time.replace(":", " h ") + "." : ""; } catch { /* réglage à faire */ }
+  if (canPush && Notification.permission === "granted") navigator.serviceWorker.register("/sw.js").then((r) => r.pushManager.getSubscription()).then((sub) => sub && api("POST", "/me/push", sub.toJSON())).catch(() => {});
+}
+async function saveReminder() {
+  const on = $("r-on").checked, time = $("r-time").value || "18:00";
+  try {
+    if (on) await enablePush();
+    await api("PUT", "/cut/reminder", { on, time, tz });
+    $("r-note").textContent = on ? "Rappel chaque jour à " + time.replace(":", " h ") + " sur ce téléphone." : "Rappels coupés.";
+    toast(on ? "Rappels activés" : "Rappels coupés");
+  } catch (error) { $("r-on").checked = !on; toast(error.message, true); }
+}
+$("r-on").onchange = saveReminder;
+$("r-time").onchange = () => { if ($("r-on").checked) saveReminder(); };
+$("r-test").onclick = async () => { try { await enablePush(); await api("POST", "/me/push/test"); toast("Essai envoyé : la notification arrive."); } catch (error) { toast(error.message, true); } };
+
+// Sur l'écran d'accueil, comme une application.
+let installEvent = null;
+addEventListener("beforeinstallprompt", (event) => { event.preventDefault(); installEvent = event; });
+$("i-install").append(icon("download"), standalone ? "Déjà sur l’écran d’accueil" : "Ajouter à l’écran d’accueil");
+$("i-install").disabled = standalone;
+$("i-install").onclick = async () => {
+  if (installEvent) { installEvent.prompt(); await installEvent.userChoice.catch(() => {}); installEvent = null; return; }
+  $("i-note").textContent = ios ? "Dans Safari : bouton Partager, puis « Sur l’écran d’accueil »." : "Menu du navigateur (⋮), puis « Ajouter à l’écran d’accueil » ou « Installer l’application ».";
 };
 
-// ——— Réseau ———
-function renderNetwork(s) {
-  $("c-list").replaceChildren(...(s.contacts.length ? s.contacts.map((c) => {
-    const status = el("select", { className: "sel", ariaLabel: "Statut" }, ...s.contactStatuses.map((x) => el("option", { value: x, textContent: x, selected: x === c.status })));
-    status.onchange = act(() => api("PATCH", "/cockpit/contacts/" + c.id, { status: status.value }));
-    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", {}, c.name + (c.role ? " · " + c.role : "") + " ", c.overdue ? el("span", { className: "tag new", textContent: "à relancer" }) : null), status),
-      el("small", { textContent: (c.nextAction ? "Prochaine action : " + c.nextAction + " · " : "") + (c.lastContact ? "dernier contact le " + short(c.lastContact) : "jamais contacté") }),
-      el("div", { className: "row" }, el("button", { className: "link", type: "button", textContent: "Contacté aujourd’hui", onclick: act(() => api("PATCH", "/cockpit/contacts/" + c.id, { lastContact: s.today.day, status: c.status === "à contacter" ? "en discussion" : c.status })) }),
-        el("button", { className: "link", type: "button", textContent: "Prochaine action", onclick: act(async () => { const x = prompt("Prochaine action :", c.nextAction); if (x !== null) await api("PATCH", "/cockpit/contacts/" + c.id, { nextAction: x }); }) }),
-        el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer " + c.name + " ?")) await api("DELETE", "/cockpit/contacts/" + c.id); }) })));
-  }) : [el("li", { className: "muted", textContent: "Aucun contact : un feat ou un graphiste par mois change la portée." })]));
-  $("v-list").replaceChildren(...(s.events.length ? s.events.map((e) => el("li", { className: "item" + (e.inDays >= 0 && e.inDays <= 7 ? " now" : "") },
-    el("div", { className: "top" }, el("b", { textContent: e.title }), el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(() => api("DELETE", "/cockpit/events/" + e.id)) })),
-    el("small", { textContent: dayText(e.day) + (e.inDays > 0 ? " · dans " + plural(e.inDays, "jour") : e.inDays === 0 ? " · aujourd’hui" : " · passé") + (e.note ? " · " + e.note : "") })))
-    : [el("li", { className: "muted", textContent: "Rien sur le radar." })]));
-}
-$("c-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/contacts", { name: $("c-name").value, role: $("c-role").value, nextAction: $("c-next").value }); $("c-form").reset(); });
-$("v-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/events", { title: $("v-title").value, day: $("v-day").value, note: $("v-note").value }); $("v-form").reset(); });
-
-// ——— « J'ai posté » : la publication entre au journal, avec sa vidéo, sa phrase, son format et son accroche ———
+// ——— « Posté » : la feuille qui note une publication (ou la modifie) ———
+let editing = null, postNetwork = "tiktok";
 const localInput = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-let editing = null; // la publication modifiée (null : une nouvelle)
+function renderNet() { $("p-net").replaceChildren(seg(Object.entries(NETWORK), postNetwork, (k) => { postNetwork = k; renderNet(); })); }
+function renderFormatChips() {
+  const current = $("p-format").value.trim();
+  $("p-formats").replaceChildren(...[...new Set([...quickFormats(), "L’histoire d’une phrase", "Réponse à un commentaire"])].map((f) =>
+    el("button", { className: "b small" + (f === current ? " on" : ""), type: "button", textContent: f, ariaPressed: String(f === current), onclick: () => { $("p-format").value = f === current ? "" : f; renderFormatChips(); } })));
+}
+$("p-format").oninput = renderFormatChips;
 function openPost(prefill = {}) {
+  if (!state) return;
   editing = prefill.post || null;
-  if (editing) prefill = { phraseId: editing.phraseId, format: editing.format, hook: editing.hook, network: editing.network, cutVideoId: editing.cutVideoId, url: editing.url, at: editing.postedAt };
+  const p = editing ? { phraseId: editing.phraseId, format: editing.format, hook: editing.hook, network: editing.network, cutVideoId: editing.cutVideoId, url: editing.url, at: editing.postedAt } : prefill;
   $("p-title").textContent = editing ? "Modifier la publication" : "J’ai posté";
-  const posted = new Set(state.posts.filter((p) => p.network === "tiktok").map((p) => p.cutVideoId));
+  $("p-save").textContent = editing ? "Enregistrer" : "Noter";
+  postNetwork = p.network || store.get("onirique.cockpit.net", "tiktok");
+  renderNet();
+  const groups = new Map();
+  for (const ph of state.phrases) { if (!groups.has(ph.title)) groups.set(ph.title, []); groups.get(ph.title).push(ph); }
+  $("p-phrase").replaceChildren(el("option", { value: "", textContent: "Aucune" }), ...[...groups].map(([title, list]) => el("optgroup", { label: title }, ...list.map((ph) => el("option", { value: ph.id, textContent: ph.text, selected: ph.id === p.phraseId })))));
+  const posted = new Set(state.posts.filter((x) => x.network === "tiktok").map((x) => x.cutVideoId));
   $("p-video").replaceChildren(el("option", { value: "", textContent: "Aucune" }),
-    ...[...videos].sort((a, b) => posted.has(a.id) - posted.has(b.id)).map((v) => el("option", { value: v.id, textContent: (posted.has(v.id) ? "(déjà sur TikTok) " : "") + v.name, selected: v.id === prefill.cutVideoId })));
-  $("p-phrase").replaceChildren(el("option", { value: "", textContent: "Aucune" }),
-    ...state.phrases.map((ph) => el("option", { value: ph.id, textContent: ph.title + " · « " + ph.text + " »", selected: ph.id === prefill.phraseId })));
-  $("p-format").value = prefill.format || ""; $("p-hook").value = prefill.hook || ""; $("p-url").value = prefill.url || "";
-  $("p-network").value = prefill.network || "tiktok";
-  $("p-at").value = localInput(prefill.at ? new Date(prefill.at) : new Date()); $("p-error").textContent = "";
+    ...[...videos].sort((a, b) => posted.has(a.id) - posted.has(b.id)).map((v) => el("option", { value: v.id, textContent: (posted.has(v.id) ? "(déjà sur TikTok) " : "") + v.name, selected: v.id === p.cutVideoId })));
+  $("p-format").value = p.format || ""; renderFormatChips();
+  $("p-hook").value = p.hook || ""; $("p-url").value = p.url || "";
+  $("p-at").value = localInput(p.at ? new Date(p.at) : new Date());
+  $("p-error").textContent = "";
   $("post-dlg").showModal();
 }
-$("t-post").onclick = () => openPost();
+$("fab").onclick = () => openPost();
+$("p-cancel").onclick = () => $("post-dlg").close();
+$("post-dlg").addEventListener("click", (event) => { if (event.target === $("post-dlg")) $("post-dlg").close(); });
 $("p-form").onsubmit = async (event) => {
   event.preventDefault();
   $("p-save").disabled = true;
   try {
-    const body = { network: $("p-network").value, cutVideoId: $("p-video").value || null, phraseId: $("p-phrase").value || null,
-      format: $("p-format").value, hook: $("p-hook").value, url: $("p-url").value, postedAt: new Date($("p-at").value).getTime() };
+    const body = { network: postNetwork, cutVideoId: $("p-video").value || null, phraseId: $("p-phrase").value || null, format: $("p-format").value,
+      hook: $("p-hook").value, url: $("p-url").value, postedAt: new Date($("p-at").value).getTime() };
     if (editing) await api("PATCH", "/cockpit/posts/" + editing.id, body); else await api("POST", "/cockpit/posts", body);
-    $("post-dlg").close(); $("p-hook").value = ""; $("p-url").value = "";
+    store.set("onirique.cockpit.net", postNetwork);
+    $("post-dlg").close();
     await load();
+    toast(editing ? "Publication modifiée" : "Publication notée");
   } catch (error) { $("p-error").textContent = error.message; }
   finally { $("p-save").disabled = false; }
 };
-// Toucher à côté de la fenêtre la ferme.
-$("post-dlg").addEventListener("click", (event) => { if (event.target === $("post-dlg")) $("post-dlg").close(); });
 
-if (!token) gate('Connecte-toi d’abord à ton compte. <a class="btn btn-primary" href="compte?next=cockpit">Se connecter</a>');
-else load();
+// ——— Raccourcis clavier (ordinateur) ———
+addEventListener("keydown", (event) => {
+  if (!state || event.ctrlKey || event.metaKey || event.altKey || $("post-dlg").open || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
+  const k = event.key.toLowerCase();
+  if (k === "n") { event.preventDefault(); openPost(); }
+  else if (k === "r") { event.preventDefault(); load().then(() => toast("À jour")); }
+  else if (k >= "1" && k <= "5") go(VIEWS[Number(k) - 1][0]);
+  else if (k === "/") { event.preventDefault(); go("contenu"); setTimeout(() => $((sub.contenu || "phrases") === "journal" ? "jr-search" : "b-search").focus(), 50); }
+});
+
+readHash();
+if (!token) gate('<h2>Connecte-toi d’abord</h2><p class="muted" style="margin:8px 0 14px">Le Cockpit suit ta promo : il lui faut ton compte ONIRIQUE.</p><a class="b main big" href="compte?next=cockpit">Se connecter</a>');
+else { load(); loadReminder(); }
 </script>
 </html>

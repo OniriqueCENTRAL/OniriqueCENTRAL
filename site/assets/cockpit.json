@@ -1,0 +1,17 @@
+{
+  "id": "/cockpit",
+  "name": "ONIRIQUE COCKPIT",
+  "short_name": "COCKPIT",
+  "description": "Ta promo au quotidien : le minimum du jour, le plan, les chiffres et la mémoire de ce qui marche.",
+  "lang": "fr",
+  "start_url": "/cockpit?app=1",
+  "scope": "/cockpit",
+  "display": "standalone",
+  "background_color": "#09080A",
+  "theme_color": "#09080A",
+  "icons": [
+    { "src": "/assets/cut-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/cut-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/cut-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

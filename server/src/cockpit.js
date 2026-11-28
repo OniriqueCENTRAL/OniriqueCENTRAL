@@ -337,7 +337,7 @@ export function cockpitOf(userId, tz, at = now()) {
     const done = posts.filter((p) => p.day >= week && p.day <= end && norm(p.title) === norm(r.title)).length;
     return { ...step, week, done, current: week === thisWeek, past: end < today };
   }) }));
-  const audience = all('SELECT day, spotify, tiktok, instagram, youtube FROM cockpit_audience WHERE user_id = ? ORDER BY day', userId);
+  const audience = all('SELECT * FROM cockpit_audience WHERE user_id = ? ORDER BY day', userId).map(({ user_id: _, ...a }) => a);
   const contacts = all("SELECT * FROM cockpit_contacts WHERE user_id = ? ORDER BY (status = 'fait'), COALESCE(last_contact, ''), name COLLATE NOCASE", userId).map((c) => ({
     id: c.id, name: c.name, role: c.role, status: c.status, lastContact: c.last_contact, nextAction: c.next_action,
     overdue: c.status !== 'fait' && (!c.last_contact || c.last_contact < shift(today, -30)) }));
@@ -516,12 +516,22 @@ export function mountCockpit(app, { requireUser }) {
     res.json({ day, best, lesson });
   });
 
+  // Une phrase (text), ou plusieurs d'un coup (texts : une par ligne collée dans la page, 50 au plus).
   app.post('/api/cockpit/phrases', requireUser, member, (req, res) => {
-    const title = text(req.body?.title, 100), phrase = text(req.body?.text, 300);
+    const title = text(req.body?.title, 100), many = Array.isArray(req.body?.texts);
+    const texts = (many ? req.body.texts.slice(0, 50) : [req.body?.text]).map((t) => text(t, 300)).filter(Boolean);
+    if (!title || !texts.length) throw new HttpError(400, 'Le titre et la phrase sont attendus.');
+    if (get('SELECT COUNT(*) AS n FROM cockpit_phrases WHERE user_id = ?', req.user.id).n + texts.length > 2000) throw new HttpError(400, 'Phrases : 2000 au plus.');
+    const made = texts.map((t) => ({ id: Number(run('INSERT INTO cockpit_phrases (user_id, title, text, created_at) VALUES (?, ?, ?, ?)', req.user.id, title, t, now()).lastInsertRowid),
+      title, text: t, uses: 0, lastUsed: null, best: null }));
+    res.status(201).json(many ? made : made[0]);
+  });
+  app.patch('/api/cockpit/phrases/:id', requireUser, member, (req, res) => {
+    const ph = own('cockpit_phrases', 'Phrase')(req);
+    const title = req.body?.title === undefined ? ph.title : text(req.body.title, 100), phrase = req.body?.text === undefined ? ph.text : text(req.body.text, 300);
     if (!title || !phrase) throw new HttpError(400, 'Le titre et la phrase sont attendus.');
-    limit('cockpit_phrases', req.user.id, 2000, 'Phrases');
-    const id = run('INSERT INTO cockpit_phrases (user_id, title, text, created_at) VALUES (?, ?, ?, ?)', req.user.id, title, phrase, now()).lastInsertRowid;
-    res.status(201).json({ id: Number(id), title, text: phrase, uses: 0, lastUsed: null, best: null });
+    run('UPDATE cockpit_phrases SET title = ?, text = ? WHERE id = ?', title, phrase, ph.id);
+    res.json({ id: ph.id, title, text: phrase });
   });
   // Une phrase retirée : les publications qui l'utilisaient restent, sans phrase.
   app.delete('/api/cockpit/phrases/:id', requireUser, member, (req, res) => {

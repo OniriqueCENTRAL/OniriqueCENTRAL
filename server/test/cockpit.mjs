@@ -52,6 +52,13 @@ try {
   const ph = (await call(me.token, 'POST', '/cockpit/phrases', { title: 'MGL', text: 'Une phrase qui se comprend seule' })).data;
   assert.equal(ph.uses, 0);
   const otherPhrase = (await call(other.token, 'POST', '/cockpit/phrases', { title: 'X', text: 'à un autre' })).data;
+  // Plusieurs phrases d'un coup (les lignes vides partent), puis une phrase corrigée ; pas celle d'un autre.
+  const batch = (await call(me.token, 'POST', '/cockpit/phrases', { title: 'DEAD', texts: ['Ligne une', '  ', 'Ligne deux'] })).data;
+  assert.deepEqual(batch.map((b) => b.text), ['Ligne une', 'Ligne deux']);
+  assert.equal((await call(me.token, 'PATCH', `/cockpit/phrases/${batch[0].id}`, { text: 'Ligne une, corrigée' })).data.text, 'Ligne une, corrigée');
+  assert.equal((await call(other.token, 'PATCH', `/cockpit/phrases/${batch[0].id}`, { text: 'non' })).status, 404);
+  assert.equal((await call(me.token, 'PATCH', `/cockpit/phrases/${batch[0].id}`, { text: '' })).status, 400);
+  for (const b of batch) await call(me.token, 'DELETE', `/cockpit/phrases/${b.id}`);
 
   // Le journal : on ne peut pas citer la vidéo ou la phrase de quelqu'un d'autre ; lien en https seulement.
   assert.equal((await call(me.token, 'POST', '/cockpit/posts', { network: 'tiktok', phraseId: otherPhrase.id })).status, 404);
