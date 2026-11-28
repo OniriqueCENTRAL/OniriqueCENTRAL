@@ -51,6 +51,8 @@ export async function popularity(query) {
       headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(12_000),
     });
     data = await response.json();
+    // La source renvoie parfois sa réponse encodée deux fois (une chaîne qui contient le JSON).
+    if (typeof data === 'string') data = JSON.parse(data);
   } catch {
     throw new HttpError(502, 'Le score est momentanément indisponible. Réessaie dans un instant.');
   }

@@ -126,6 +126,9 @@ dialog form { padding: 16px; }
         <div class="check"><span>Stock d’avance : <b id="t-stock"></b></span><a class="link" href="mes-videos">Mes vidéos</a></div>
       </div>
       <div class="panel"><h2>Le plan du jour</h2><ul class="list" id="t-plan"></ul></div>
+      <div class="panel" id="tag-box" hidden><h2>À étiqueter</h2>
+        <p class="muted small" style="margin:0 0 12px">Ces vidéos sont arrivées seules. Donne-leur un format (et une phrase si elle n’a pas été reconnue) : c’est ce qui permet à l’analyse de comparer.</p>
+        <ul class="list" id="tag-list"></ul></div>
       <div class="panel" id="fill" hidden><h2>Chiffres à noter</h2>
         <p class="muted small" style="margin:0 0 12px">Deux jours après la publication : les vues et les enregistrements (le signet sur TikTok). Dix secondes par vidéo.</p>
         <ul class="list" id="fill-list"></ul></div>
@@ -198,9 +201,19 @@ dialog form { padding: 16px; }
 
   <!-- ——— Audience ——— -->
   <section data-tab="audience" hidden>
+    <div style="display:grid;gap:16px">
+    <div class="panel"><h2>Relevé automatique</h2>
+      <p class="muted small" style="margin:0 0 12px">Chaque jour à 5 h et 17 h, le Cockpit va lire tes pages lui-même : TikTok (abonnés, tes vidéos, leurs vues, enregistrements et partages), Spotify (abonnés, popularité de l’artiste et de chaque titre), et, s’ils sont reliés dans ton compte, Instagram et YouTube (abonnés, Reels et Shorts publiés par CUT). Les auditeurs mensuels Spotify ne se lisent que dans Spotify for Artists : eux restent à noter à la main.</p>
+      <form class="form" id="s-form"><div class="two wide"><label class="field">Page artiste Spotify<input id="s-spotify" maxlength="200" placeholder="https://open.spotify.com/artist/…"></label>
+        <label class="field">Pseudo TikTok<input id="s-tiktok" maxlength="80" placeholder="@tjrseuhz"></label></div>
+        <div class="row"><button class="btn btn-ghost" type="submit">Enregistrer</button><button class="btn btn-primary" type="button" id="s-refresh">Actualiser maintenant</button></div></form>
+      <ul class="list" id="s-report" style="margin-top:12px"></ul></div>
+    <div class="panel" id="tracks-box" hidden><h2>Tes titres sur Spotify</h2>
+      <p class="muted small" style="margin:0 0 12px">La popularité Spotify (0 à 100) suit les écoutes récentes. Un titre poussé en vidéo qui monte : la promo convertit. Un titre poussé qui ne bouge pas : la vidéo plaît, pas encore le son.</p>
+      <div class="scroll"><table id="tracks"></table></div></div>
     <div class="panel">
       <h2>Audience</h2>
-      <p class="muted small" style="margin:0 0 12px">Une fois par semaine, le lundi : auditeurs mensuels (Spotify for Artists) et abonnés. Les résultats arrivent en semaines ; les actions, elles, se comptent chaque jour.</p>
+      <p class="muted small" style="margin:0 0 12px">À la main, une fois par semaine : les auditeurs mensuels (Spotify for Artists). Le reste se remplit seul. Les résultats arrivent en semaines ; les actions, elles, se comptent chaque jour.</p>
       <form class="form" id="a-form"><div class="four"><label class="field">Jour<input id="a-day" type="date" required></label>
         <label class="field">Spotify<input id="a-spotify" type="number" min="0" inputmode="numeric"></label>
         <label class="field">TikTok<input id="a-tiktok" type="number" min="0" inputmode="numeric"></label>
@@ -209,6 +222,7 @@ dialog form { padding: 16px; }
         <div class="row"><button class="btn btn-ghost" type="submit">Enregistrer</button></div></form>
       <div id="a-charts" class="figures" style="margin-top:16px"></div>
       <div class="scroll" style="margin-top:12px"><table id="a-table"></table></div>
+    </div>
     </div>
   </section>
 
@@ -225,7 +239,9 @@ dialog form { padding: 16px; }
       </div>
       <div class="panel">
         <h2>Radar</h2>
-        <p class="muted small" style="margin:0 0 12px">Les films, séries ou jeux qui sortent : prépare les répliques avant la vague (alerte 7 jours avant).</p>
+        <p class="muted small" style="margin:0 0 12px">Les films et séries des 60 prochains jours, notés sur 100 : intérêt du moment sur TMDB, suite d’une saga, genre qui donne de bonnes répliques, date proche. C’est une estimation de l’attente, pas une prévision de succès. « Suivre » le met dans ton radar (alerte 7 jours avant).</p>
+        <ul class="list" id="films" style="margin-bottom:16px"></ul>
+        <h3>Mon radar</h3>
         <form class="form" id="v-form"><div class="two"><label class="field">Titre<input id="v-title" maxlength="120" required></label><label class="field">Date<input id="v-day" type="date" required></label></div>
           <label class="field">Note<input id="v-note" maxlength="300" placeholder="Réplique à couper sur le refrain de MGL"></label>
           <div class="row"><button class="btn btn-ghost" type="submit">Ajouter au radar</button></div></form>
@@ -290,10 +306,10 @@ function showTab(name) {
   for (const b of $("tabs").children) { b.setAttribute("aria-selected", String(b.dataset.key === tab)); if (b.dataset.key === tab) b.scrollIntoView({ inline: "nearest", block: "nearest" }); }
 }
 
-let state = null, videos = [];
+let state = null, auto = null, videos = [];
 async function load() {
   try {
-    state = await api("GET", "/cockpit?tz=" + encodeURIComponent(tz));
+    [state, auto] = await Promise.all([api("GET", "/cockpit?tz=" + encodeURIComponent(tz)), api("GET", "/cockpit/auto").catch(() => null)]);
     $("gate").hidden = true; $("tabs").hidden = false;
     render();
     if (!videos.length) api("GET", "/cut/library").then((lib) => { videos = lib.videos; render(); }).catch(() => {});
@@ -311,13 +327,13 @@ function render() {
     b.dataset.key = key;
     return b;
   }));
-  renderToday(s); renderWeek(s); renderAnalysis(s); renderPhrases(s); renderJournal(s); renderReleases(s); renderAudience(s); renderNetwork(s);
+  renderToday(s); renderWeek(s); renderAnalysis(s); renderPhrases(s); renderJournal(s); renderReleases(s); renderAudience(s); renderNetwork(s); renderAuto();
   showTab(tab);
 }
 /** Le nom d'une publication : réseau, format, phrase ou vidéo. */
 function label(p) {
   const phrase = p.phraseId && state.phrases.find((ph) => ph.id === p.phraseId), video = p.cutVideoId && videos.find((v) => v.id === p.cutVideoId);
-  return [NETWORK[p.network], p.format, phrase ? "« " + phrase.text + " »" : video ? video.name : p.hook].filter(Boolean).join(" · ");
+  return [NETWORK[p.network], p.format, phrase ? "« " + phrase.text + " »" : video ? video.name : p.hook || p.caption].filter(Boolean).join(" · ");
 }
 const planItem = (i, withDay) => {
   const go = el("button", { className: "link", type: "button", textContent: "Posté", onclick: () => openPost({ phraseId: i.phraseId, format: i.format }) });
@@ -329,7 +345,14 @@ const planItem = (i, withDay) => {
 function renderToday(s) {
   const t = s.today;
   $("t-mode").textContent = "Mode " + s.mode.label + (s.mode.auto ? " (automatique)" : "") + " : " + plural(s.mode.perDay, "TikTok") + " par jour." + (s.release ? " Sortie de « " + s.release.title + " » : semaine S" + (s.release.s >= 0 ? "+" : "") + s.release.s + "." : "");
-  $("alerts").replaceChildren(...s.alerts.map((a) => el("li", { className: a.level, textContent: a.text })));
+  const extra = [];
+  if (auto && !auto.settings.tiktokHandle) extra.push({ level: "mid", text: "Branche ton TikTok (onglet Audience) : tes vidéos et leurs chiffres arriveront seuls, deux fois par jour." });
+  if (auto && auto.report && auto.report.tiktok && !auto.report.tiktok.ok) extra.push({ level: "mid", text: "Le dernier relevé TikTok a échoué : " + auto.report.tiktok.error + "." });
+  for (const f of (auto ? auto.films : []).filter((x) => !x.followed && x.score >= 70)) {
+    const inDays = Math.round((new Date(f.day + "T12:00") - new Date(s.today.day + "T12:00")) / 864e5);
+    if (inDays >= 0 && inDays <= 10) extra.push({ level: "low", text: "Radar : « " + f.title + " » (" + f.score + "/100) sort " + (inDays ? "dans " + plural(inDays, "jour") : "aujourd’hui") + ". Prépare 2 ou 3 répliques." });
+  }
+  $("alerts").replaceChildren(...[...s.alerts, ...extra].map((a) => el("li", { className: a.level, textContent: a.text })));
   $("t-tiktoks").textContent = t.status === "pause" ? "pause" : t.tiktoks + " / " + t.perDay;
   $("t-tiktoks").className = t.tiktoks >= t.perDay ? "done" : "";
   $("t-replies").checked = t.replies;
@@ -347,6 +370,10 @@ function renderToday(s) {
     save.onclick = act(async () => { if (views.value === "") throw new Error("Note au moins les vues."); await api("PATCH", "/cockpit/posts/" + p.id, { views: views.value, saves: saves.value === "" ? null : saves.value }); });
     return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), el("small", { textContent: when(p.postedAt) })), el("div", { className: "row" }, views, saves, save));
   }));
+  const untagged = s.posts.filter((p) => p.auto && !p.format).slice(0, 8);
+  $("tag-box").hidden = !untagged.length;
+  $("tag-list").replaceChildren(...untagged.map((p) => el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }),
+    el("button", { className: "link", type: "button", textContent: "Étiqueter", onclick: () => openPost({ post: p }) })), el("small", { textContent: when(p.postedAt) + (p.views != null ? " · " + n(p.views) + " vues" : "") }))));
   const evening = s.evenings.find((e) => e.day === t.day);
   if (document.activeElement !== $("e-best") && document.activeElement !== $("e-lesson")) { $("e-best").value = evening ? evening.best : ""; $("e-lesson").value = evening ? evening.lesson : ""; }
   const lv = s.level, prev = [...lv.levels].reverse().find((l) => l <= lv.count) || 0;
@@ -398,14 +425,21 @@ function renderWeek(s) {
 // ——— Analyse ———
 function table(title, rows, keyLabel) {
   if (!rows.length) return null;
-  const head = el("tr", {}, el("th", { textContent: keyLabel }), el("th", { className: "n", textContent: "Vidéos" }), el("th", { className: "n", textContent: "Vues méd." }), el("th", { className: "n", textContent: "Enreg./1 000" }));
+  const head = el("tr", {}, el("th", { textContent: keyLabel }), el("th", { className: "n", textContent: "Vidéos" }), el("th", { className: "n", textContent: "Vues méd." }), el("th", { className: "n", textContent: "Enreg./1 000" }), el("th", { className: "n", textContent: "Partages/1 000" }));
   return el("div", { className: "panel" }, el("h2", { textContent: title }), el("div", { className: "scroll" }, el("table", {}, el("thead", {}, head),
     el("tbody", {}, ...rows.map((r) => el("tr", {}, el("td", {}, r.key + " ", r.reliable ? null : el("span", { className: "tag", textContent: "peu de données" })),
-      el("td", { className: "n", textContent: r.n }), el("td", { className: "n", textContent: n(r.views) }), el("td", { className: "n", textContent: r.rate == null ? "—" : n(r.rate) })))))));
+      el("td", { className: "n", textContent: r.n }), el("td", { className: "n", textContent: n(r.views) }), el("td", { className: "n", textContent: r.rate == null ? "—" : n(r.rate) }), el("td", { className: "n", textContent: r.shares == null ? "—" : n(r.shares) })))))));
 }
+const HOW = ["D’où viennent les chiffres : tes TikTok sont relevés seuls à 5 h et 17 h (vues tout de suite, enregistrements et partages à partir de 46 h). Reels et Shorts publiés par CUT aussi. Le reste se note à 48 h.",
+  "Ce qui est compté : la médiane (la vidéo du milieu), pas la moyenne, pour qu’un seul gros succès ne fausse pas tout. Une vidéo de moins de 48 h n’entre pas : elle n’a pas fini sa course.",
+  "Ce qui compte le plus : les enregistrements pour 1 000 vues (la personne veut retrouver le son) et les partages (elle le fait découvrir). Les vues seules disent surtout si l’image arrête le défilement.",
+  "Quand c’est fiable : à partir de 5 vidéos dans un groupe. Avant, le groupe est marqué « peu de données ».",
+  "Ce que le Cockpit en fait tout seul : le plan de la semaine met en avant les formats et les phrases qui gagnent, l’alerte d’usure prévient quand un format tombe sous la moitié de son meilleur niveau, et les tests d’accroches désignent la meilleure entrée pour une même phrase.",
+  "Ce qu’il ne fait pas : deviner pourquoi une vidéo a marché. Il faut renseigner le format et la phrase (bouton « Posté » du plan, ou « Chiffres » dans le journal) pour que l’analyse sache quoi comparer."];
 function renderAnalysis(s) {
   const a = s.analysis;
-  if (!a.baseline.n) { $("an").replaceChildren(el("p", { className: "panel muted", textContent: "Aucune vidéo mesurée : note les vues et les enregistrements à 48 h (onglet Aujourd’hui), l’analyse se remplit toute seule." })); return; }
+  const how = el("details", { className: "panel" }, el("summary", { style: "cursor:pointer;font-weight:700", textContent: "Comment l’analyse marche" }), el("ul", { className: "list", style: "margin-top:12px" }, ...HOW.map((t) => el("li", { className: "item", textContent: t }))));
+  if (!a.baseline.n) { $("an").replaceChildren(how, el("p", { className: "panel muted", textContent: "Aucune vidéo mesurée pour l’instant : branche ton TikTok dans l’onglet Audience (relevé automatique), ou note les chiffres à 48 h. L’analyse se remplit toute seule." })); return; }
   const base = el("div", { className: "panel" }, el("h2", { textContent: "Ta base" }), el("div", { className: "figures" },
     el("div", { className: "figure" }, el("strong", { textContent: n(a.baseline.views) }), el("small", { textContent: "vues médianes" })),
     el("div", { className: "figure" }, el("strong", { textContent: a.baseline.rate == null ? "—" : n(a.baseline.rate) }), el("small", { textContent: "enregistrements pour 1 000 vues" })),
@@ -420,7 +454,7 @@ function renderAnalysis(s) {
   const months = a.months.length > 1 ? el("div", { className: "panel" }, el("h2", { textContent: "Tendance par mois (vues médianes)" }), el("div", { style: "display:grid;gap:6px" },
     ...a.months.map((m) => el("div", { className: "row", style: "flex-wrap:nowrap" }, el("small", { className: "muted", style: "width:70px;flex:none", textContent: m.key }),
       el("div", { className: "bar acc", style: "flex:1" }, el("i", { style: "width:" + Math.round(((m.views || 0) / maxViews) * 100) + "%" })), el("small", { style: "width:110px;flex:none;text-align:right", textContent: n(m.views) + " · " + m.n + " vid." }))))) : null;
-  $("an").replaceChildren(...[base, wear, table("Par format", a.byFormat, "Format"), hooks, table("Par titre", a.byTitle, "Titre"), table("Par heure de publication", a.byHour, "Moment"),
+  $("an").replaceChildren(...[how, base, wear, table("Par format", a.byFormat, "Format"), hooks, table("Par titre", a.byTitle, "Titre"), table("Par heure de publication", a.byHour, "Moment"),
     table("Par jour", a.byWeekday, "Jour"), table("Par réseau", a.byNetwork.map((r) => ({ ...r, key: NETWORK[r.key] || r.key })), "Réseau"), months].filter(Boolean));
 }
 
@@ -444,15 +478,17 @@ $("b-form").onsubmit = act(async (event) => { event.preventDefault(); await api(
 // ——— Journal ———
 function renderJournal(s) {
   $("j-list").replaceChildren(...(s.posts.length ? s.posts.map((p) => {
-    const stats = p.views == null ? "chiffres pas encore notés" : n(p.views) + " vues · " + n(p.saves) + " enreg." + (p.rate != null ? " · " + p.rate + " pour 1 000" : "");
+    const stats = p.views == null ? (p.auto ? "chiffres relevés seuls à partir de 46 h" : "chiffres pas encore notés")
+      : [n(p.views) + " vues", p.saves != null && n(p.saves) + " enreg.", p.shares != null && n(p.shares) + " partages", p.likes != null && n(p.likes) + " j’aime", p.rate != null && p.rate + " enreg. pour 1 000"].filter(Boolean).join(" · ");
     const edit = el("button", { className: "link", type: "button", textContent: "Chiffres", onclick: act(async () => {
       const views = prompt("Vues :", p.views ?? ""); if (views === null) return;
       const saves = prompt("Enregistrements :", p.saves ?? ""); if (saves === null) return;
       await api("PATCH", "/cockpit/posts/" + p.id, { views: views.trim() === "" ? null : views.trim(), saves: saves.trim() === "" ? null : saves.trim() });
     }) });
-    const remove = el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer cette publication du journal ?")) await api("DELETE", "/cockpit/posts/" + p.id); }) });
-    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), el("span", { className: "row" }, edit, remove)),
-      el("small", {}, when(p.postedAt) + (p.hook ? " · " + p.hook : "") + " · " + stats, p.url ? el("span", {}, " · ", el("a", { href: p.url, target: "_blank", rel: "noopener", textContent: "voir" })) : null));
+    const remove = el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(async () => { if (confirm("Retirer cette publication du journal ?" + (p.auto ? " Elle reviendra au prochain relevé tant qu’elle est sur ton profil." : ""))) await api("DELETE", "/cockpit/posts/" + p.id); }) });
+    const tag = el("button", { className: "link", type: "button", textContent: "Modifier", onclick: () => openPost({ post: p }) });
+    return el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: label(p) }), el("span", { className: "row" }, tag, edit, remove)),
+      el("small", {}, (p.auto ? "relevé auto · " : "") + when(p.postedAt) + (p.hook ? " · " + p.hook : "") + " · " + stats, p.url ? el("span", {}, " · ", el("a", { href: p.url, target: "_blank", rel: "noopener", textContent: "voir" })) : null));
   }) : [el("li", { className: "muted", textContent: "Rien de noté : touche « J’ai posté » après chaque publication." })]));
 }
 $("j-post").onclick = () => openPost();
@@ -478,7 +514,8 @@ function renderReleases(s) {
 $("r-form").onsubmit = act(async (event) => { event.preventDefault(); await api("POST", "/cockpit/releases", { title: $("r-title").value, day: $("r-day").value }); $("r-title").value = ""; });
 
 // ——— Audience ———
-const METRICS = [["spotify", "Auditeurs Spotify"], ["tiktok", "Abonnés TikTok"], ["instagram", "Abonnés Instagram"], ["youtube", "Abonnés YouTube"]];
+const METRICS = [["spotify", "Auditeurs mensuels Spotify", "Auditeurs"], ["spotify_followers", "Abonnés Spotify", "Ab. Spotify"], ["spotify_popularity", "Popularité Spotify (0 à 100)", "Pop."],
+  ["tiktok", "Abonnés TikTok", "TikTok"], ["tiktok_likes", "J’aime TikTok", "J’aime"], ["instagram", "Abonnés Instagram", "Instagram"], ["youtube", "Abonnés YouTube", "YouTube"]];
 function spark(points) {
   const w = 240, h = 56, xs = points.map((_, i) => (points.length > 1 ? (i / (points.length - 1)) * (w - 8) + 4 : w / 2));
   const lo = Math.min(...points), hi = Math.max(...points), y = (v) => (hi === lo ? h / 2 : h - 6 - ((v - lo) / (hi - lo)) * (h - 12));
@@ -495,7 +532,7 @@ function renderAudience(s) {
     const last = pts.at(-1)[key], first = pts[0][key], delta = last - first;
     return el("div", { className: "figure" }, el("strong", { textContent: n(last) }), el("small", { textContent: labelText + (pts.length > 1 ? " · " + (delta >= 0 ? "+" : "") + n(delta) + " depuis le " + short(pts[0].day) : "") }), pts.length > 1 ? spark(pts.map((a) => a[key])) : null);
   }).filter(Boolean));
-  $("a-table").replaceChildren(el("thead", {}, el("tr", {}, el("th", { textContent: "Jour" }), ...METRICS.map(([, t]) => el("th", { className: "n", textContent: t.split(" ").pop() })), el("th"))),
+  $("a-table").replaceChildren(el("thead", {}, el("tr", {}, el("th", { textContent: "Jour" }), ...METRICS.map(([, , short]) => el("th", { className: "n", textContent: short })), el("th"))),
     el("tbody", {}, ...[...s.audience].reverse().map((a) => el("tr", {}, el("td", { textContent: short(a.day) }), ...METRICS.map(([k]) => el("td", { className: "n", textContent: n(a[k]) })),
       el("td", { className: "n" }, el("button", { className: "link", type: "button", textContent: "Retirer", onclick: act(() => api("DELETE", "/cockpit/audience/" + a.day)) }))))));
 }
@@ -505,6 +542,43 @@ $("a-form").onsubmit = act(async (event) => {
   await api("PUT", "/cockpit/audience/" + $("a-day").value, { spotify: v("a-spotify"), tiktok: v("a-tiktok"), instagram: v("a-instagram"), youtube: v("a-youtube") });
   for (const id of ["a-spotify", "a-tiktok", "a-instagram", "a-youtube"]) $(id).value = "";
 });
+
+// ——— Relevé automatique et radar des films ———
+const SOURCES = { spotify: "Spotify", tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" };
+function sourceText(name, r) {
+  if (!r.ok) return SOURCES[name] + " : échec (" + r.error + ")";
+  if (name === "tiktok") return "TikTok : " + n(r.followers) + " abonnés · " + plural(r.added, "vidéo") + " ajoutée" + (r.added > 1 ? "s" : "") + ", " + r.linked + " rattachée" + (r.linked > 1 ? "s" : "") + " · " + plural(r.measured, "vidéo") + " mesurée" + (r.measured > 1 ? "s" : "") + " en détail";
+  if (name === "spotify") return "Spotify : " + n(r.followers) + " abonnés · popularité " + r.popularity + "/100 · " + plural(r.tracks, "titre");
+  if (name === "instagram") return "Instagram : " + n(r.followers) + " abonnés · " + plural(r.reels, "Reel") + " suivi" + (r.reels > 1 ? "s" : "");
+  return "YouTube : " + n(r.subscribers) + " abonnés · " + plural(r.shorts, "Short") + " suivi" + (r.shorts > 1 ? "s" : "");
+}
+function renderAuto() {
+  if (!auto) return;
+  if (document.activeElement !== $("s-spotify")) $("s-spotify").value = auto.settings.spotifyArtist ? "https://open.spotify.com/artist/" + auto.settings.spotifyArtist : "";
+  if (document.activeElement !== $("s-tiktok")) $("s-tiktok").value = auto.settings.tiktokHandle ? "@" + auto.settings.tiktokHandle : "";
+  const lines = [auto.lastRun ? "Dernier relevé : " + when(auto.lastRun) + ". Les suivants : " + auto.next + "." : "Aucun relevé pour l’instant : renseigne tes pages, puis « Actualiser maintenant »."];
+  for (const [name, r] of Object.entries(auto.report || {})) lines.push(sourceText(name, r));
+  if (!auto.linked.instagram) lines.push("Instagram n’est pas relié : relie-le dans ton compte (Reels Instagram) pour suivre tes abonnés et tes Reels.");
+  if (!auto.linked.youtube) lines.push("YouTube n’est pas relié : relie ta chaîne dans ton compte (Shorts YouTube) pour suivre tes abonnés et tes Shorts.");
+  $("s-report").replaceChildren(...lines.map((t) => el("li", { className: "item small", textContent: t })));
+  $("tracks-box").hidden = !auto.tracks.length;
+  $("tracks").replaceChildren(el("thead", {}, el("tr", {}, el("th", { textContent: "Titre" }), el("th", { className: "n", textContent: "Popularité" }), el("th", { className: "n", textContent: "Évolution" }), el("th", { className: "n", textContent: "Vidéos (28 j)" }))),
+    el("tbody", {}, ...auto.tracks.map((t) => el("tr", {}, el("td", { textContent: t.name }), el("td", { className: "n", textContent: t.popularity + "/100" }),
+      el("td", { className: "n " + (t.change > 0 ? "done" : t.change < 0 ? "warn" : ""), textContent: (t.change > 0 ? "+" : "") + t.change + " depuis le " + short(t.since) }), el("td", { className: "n", textContent: t.videos28 })))));
+  $("films").replaceChildren(...(!auto.filmsReady ? [el("li", { className: "item small muted", textContent: "Radar automatique pas encore branché : sur le VPS, lancer onirique-tmdb (clé gratuite de themoviedb.org). En attendant, ajoute les sorties à la main ci-dessous." })]
+    : auto.films.length ? auto.films.slice(0, 15).map((f) => el("li", { className: "item" }, el("div", { className: "top" }, el("b", { textContent: f.title + " · " + f.kind }), el("span", { className: "tag" + (f.score >= 70 ? " good" : ""), textContent: f.score + "/100" })),
+      el("small", { textContent: dayText(f.day) + " · " + f.reasons.join(" · ") }),
+      el("div", { className: "row" }, f.followed ? el("span", { className: "muted small", textContent: "Dans ton radar" })
+        : el("button", { className: "link", type: "button", textContent: "Suivre", onclick: act(() => api("POST", "/cockpit/events", { title: f.title, day: f.day, note: f.reasons.join(", ") })) }))))
+    : [el("li", { className: "item small muted", textContent: "Aucune sortie trouvée pour l’instant (le radar se refait chaque matin)." })]));
+}
+$("s-form").onsubmit = act(async (event) => { event.preventDefault(); await api("PUT", "/cockpit/settings", { spotifyArtist: $("s-spotify").value, tiktokHandle: $("s-tiktok").value }); });
+$("s-refresh").onclick = async () => {
+  $("s-refresh").disabled = true; $("s-refresh").textContent = "Relevé en cours…";
+  try { await api("PUT", "/cockpit/settings", { spotifyArtist: $("s-spotify").value, tiktokHandle: $("s-tiktok").value }); await api("POST", "/cockpit/refresh"); await load(); }
+  catch (error) { alert(error.message); }
+  finally { $("s-refresh").disabled = false; $("s-refresh").textContent = "Actualiser maintenant"; }
+};
 
 // ——— Réseau ———
 function renderNetwork(s) {
@@ -527,14 +601,19 @@ $("v-form").onsubmit = act(async (event) => { event.preventDefault(); await api(
 
 // ——— « J'ai posté » : la publication entre au journal, avec sa vidéo, sa phrase, son format et son accroche ———
 const localInput = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+let editing = null; // la publication modifiée (null : une nouvelle)
 function openPost(prefill = {}) {
+  editing = prefill.post || null;
+  if (editing) prefill = { phraseId: editing.phraseId, format: editing.format, hook: editing.hook, network: editing.network, cutVideoId: editing.cutVideoId, url: editing.url, at: editing.postedAt };
+  $("p-title").textContent = editing ? "Modifier la publication" : "J’ai posté";
   const posted = new Set(state.posts.filter((p) => p.network === "tiktok").map((p) => p.cutVideoId));
   $("p-video").replaceChildren(el("option", { value: "", textContent: "Aucune" }),
-    ...[...videos].sort((a, b) => posted.has(a.id) - posted.has(b.id)).map((v) => el("option", { value: v.id, textContent: (posted.has(v.id) ? "(déjà sur TikTok) " : "") + v.name })));
+    ...[...videos].sort((a, b) => posted.has(a.id) - posted.has(b.id)).map((v) => el("option", { value: v.id, textContent: (posted.has(v.id) ? "(déjà sur TikTok) " : "") + v.name, selected: v.id === prefill.cutVideoId })));
   $("p-phrase").replaceChildren(el("option", { value: "", textContent: "Aucune" }),
     ...state.phrases.map((ph) => el("option", { value: ph.id, textContent: ph.title + " · « " + ph.text + " »", selected: ph.id === prefill.phraseId })));
-  $("p-format").value = prefill.format || "";
-  $("p-at").value = localInput(new Date()); $("p-error").textContent = "";
+  $("p-format").value = prefill.format || ""; $("p-hook").value = prefill.hook || ""; $("p-url").value = prefill.url || "";
+  $("p-network").value = prefill.network || "tiktok";
+  $("p-at").value = localInput(prefill.at ? new Date(prefill.at) : new Date()); $("p-error").textContent = "";
   $("post-dlg").showModal();
 }
 $("t-post").onclick = () => openPost();
@@ -542,8 +621,9 @@ $("p-form").onsubmit = async (event) => {
   event.preventDefault();
   $("p-save").disabled = true;
   try {
-    await api("POST", "/cockpit/posts", { network: $("p-network").value, cutVideoId: $("p-video").value || null, phraseId: $("p-phrase").value || null,
-      format: $("p-format").value, hook: $("p-hook").value, url: $("p-url").value, postedAt: new Date($("p-at").value).getTime() });
+    const body = { network: $("p-network").value, cutVideoId: $("p-video").value || null, phraseId: $("p-phrase").value || null,
+      format: $("p-format").value, hook: $("p-hook").value, url: $("p-url").value, postedAt: new Date($("p-at").value).getTime() };
+    if (editing) await api("PATCH", "/cockpit/posts/" + editing.id, body); else await api("POST", "/cockpit/posts", body);
     $("post-dlg").close(); $("p-hook").value = ""; $("p-url").value = "";
     await load();
   } catch (error) { $("p-error").textContent = error.message; }

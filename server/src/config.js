@@ -112,6 +112,12 @@ export const config = {
   ticketmasterKey: env.TICKETMASTER_API_KEY || '',
   // Les communes de France pour la carte des membres (cities.js) : l'API officielle, gratuite et sans clé.
   ticketmasterApi: (env.TICKETMASTER_API || 'https://app.ticketmaster.com').replace(/\/+$/, ''),
+  // Le radar des films du Cockpit (cockpitauto.js) : clé de l'API de TMDB (gratuite), posée par onirique-tmdb. Sans elle,
+  // le radar reste à remplir à la main.
+  tmdbToken: env.TMDB_TOKEN || '',
+  tmdbApi: (env.TMDB_API || 'https://api.themoviedb.org').replace(/\/+$/, ''),
+  // Les pages publiques lues par le relevé du Cockpit (remplacées pendant les tests).
+  tiktokBase: (env.TIKTOK_BASE || 'https://www.tiktok.com').replace(/\/+$/, ''),
   geminiApi: (env.GEMINI_API || 'https://generativelanguage.googleapis.com').replace(/\/+$/, ''),
   geminiModel: env.GEMINI_MODEL || 'gemini-flash-lite-latest', // rapide ; le Flash complet saturait (503, 30 s et plus)
   // Les paroles des titres Spotify (platforms.js) : LRCLIB, base de paroles ouverte, synchronisées quand elle les a.

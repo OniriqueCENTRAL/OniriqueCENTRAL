@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Branche le radar des films et séries du Cockpit sur TMDB. À lancer sur le VPS, en root :
+#   onirique-tmdb        demande la clé de l'API TMDB (gratuite)
+#   onirique-tmdb off    retire la clé (le radar redevient manuel)
+# La clé : sur themoviedb.org, créer un compte, puis Paramètres → API → demander une clé (usage personnel) ; copier
+# la « Clé d'API » (32 caractères) ou le « Jeton d'accès en lecture » (long). Saisie ici sans s'afficher, elle ne quitte pas le serveur.
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  read -rsp "Clé TMDB (rien ne s'affiche) : " KEY; echo
+  KEY=$(printf '%s' "$KEY" | sed 's/\x1b\[20[01]~//g' | tr -cd '[:graph:]' | tr -d "'\"\\\\")
+  [ ${#KEY} -ge 32 ] || stop "Clé trop courte. Rien n'est changé."
+  # TMDB dit tout de suite si la clé marche, avant de l'enregistrer.
+  if [ ${#KEY} -gt 60 ]; then
+    CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $KEY" "https://api.themoviedb.org/3/configuration" || true)
+  else
+    CODE=$(curl -s -o /dev/null -w '%{http_code}' "https://api.themoviedb.org/3/configuration?api_key=$KEY" || true)
+  fi
+  [ "$CODE" = 200 ] || stop "TMDB refuse cette clé (code $CODE). Recopie-la depuis themoviedb.org (Paramètres → API), puis relance. Rien n'est changé."
+fi
+
+sed -i '/^TMDB_TOKEN=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "TMDB_TOKEN='%s'\n" "$KEY" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "Le radar automatique est coupé."; else echo "C'est bon : le radar des films se remplit (au plus tard au prochain relevé de 5 h ou 17 h)."; fi

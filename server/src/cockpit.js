@@ -130,6 +130,7 @@ const weeksBetween = (a, b) => Math.round((Date.parse(monday(b)) - Date.parse(mo
 const zone = (tz) => { try { new Intl.DateTimeFormat('fr', { timeZone: String(tz) }); return String(tz); } catch { return 'Europe/Paris'; } };
 export const median = (xs) => { const s = xs.filter((x) => x != null).sort((a, b) => a - b); if (!s.length) return null; const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const rate = (p) => (p.views >= 100 && p.saves != null ? Math.round((p.saves * 1000) / p.views) : null); // enregistrements pour 1 000 vues
+const shareRate = (p) => (p.views >= 100 && p.shares != null ? Math.round((p.shares * 1000) / p.views) : null); // partages pour 1 000 vues
 
 /** La couleur d'une journée : 'ok' quand le minimum est fait, 'part' quand une partie l'est, 'none' sinon. */
 export function dayStatus({ tiktoks, replies, missingStats, perDay = TARGETS.tiktoksPerDay }) {
@@ -152,7 +153,7 @@ export function analysisOf(measured) {
   const group = (keyOf) => {
     const groups = new Map();
     for (const p of measured) { const k = keyOf(p); if (!k) continue; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); }
-    return [...groups].map(([key, ps]) => ({ key, n: ps.length, views: median(ps.map((p) => p.views)), rate: median(ps.map(rate)), reliable: ps.length >= TARGETS.reliable }))
+    return [...groups].map(([key, ps]) => ({ key, n: ps.length, views: median(ps.map((p) => p.views)), rate: median(ps.map(rate)), shares: median(ps.map(shareRate)), reliable: ps.length >= TARGETS.reliable }))
       .sort((a, b) => (b.reliable - a.reliable) || ((b.rate ?? -1) - (a.rate ?? -1)) || (b.views - a.views));
   };
   // Les tests d'accroches : une même phrase publiée avec au moins deux accroches différentes.
@@ -246,7 +247,8 @@ export const stockOf = (userId) => get(`SELECT COUNT(*) AS n FROM cut_videos v W
   AND NOT EXISTS (SELECT 1 FROM cockpit_posts p WHERE p.user_id = v.user_id AND p.cut_video_id = v.id AND p.network = 'tiktok')`, userId).n;
 
 const postView = (p) => ({ id: p.id, network: p.network, cutVideoId: p.cut_video_id, phraseId: p.phrase_id, format: p.format, hook: p.hook, url: p.url,
-  postedAt: p.posted_at, views: p.views, saves: p.saves, rate: rate(p) });
+  postedAt: p.posted_at, views: p.views, saves: p.saves, rate: rate(p), likes: p.likes ?? null, shares: p.shares ?? null, comments: p.comments ?? null,
+  caption: p.caption || '', auto: !!p.ext_id });
 
 /** Tout ce que montre la page, vu depuis le fuseau tz. */
 export function cockpitOf(userId, tz, at = now()) {
@@ -273,7 +275,7 @@ export function cockpitOf(userId, tz, at = now()) {
   for (const p of [...posts].reverse()) if (p.hook && !firstHook.has(norm(p.hook))) firstHook.set(norm(p.hook), p.day);
 
   const entry = (d, perDay, joker) => {
-    const tiktoks = tiktoksOn(d), replies = replied.has(d), missingStats = (byDay.get(shift(d, -2)) || []).filter((p) => p.views == null).length;
+    const tiktoks = tiktoksOn(d), replies = replied.has(d), missingStats = (byDay.get(shift(d, -2)) || []).filter((p) => p.views == null && !p.ext_id).length; // une vidéo relevée seule n'est pas à noter
     const status = d > today ? 'future' : perDay === 0 ? 'pause' : joker === d ? 'joker' : dayStatus({ tiktoks, replies, missingStats, perDay });
     return { day: d, tiktoks, replies, missingStats, perDay, status, caught: false };
   };
@@ -324,7 +326,8 @@ export function cockpitOf(userId, tz, at = now()) {
     usage.set(p.phrase_id, u);
   }
   const phrases = phraseRows.map((ph) => { const u = usage.get(ph.id); return { id: ph.id, title: ph.title, text: ph.text, uses: u ? u.n : 0, lastUsed: u ? u.last : null, best: u ? u.best : null }; });
-  const measured = posts.filter((p) => p.views != null);
+  // Une vidéo de moins de 48 h n'a pas fini sa course : elle n'entre pas dans l'analyse.
+  const measured = posts.filter((p) => p.views != null && p.posted_at <= at - 2 * DAY);
   const analysis = analysisOf(measured), wear = wearOf(measured);
   const release = releaseOf(thisWeek);
   const plan = planWeek({ today, perDay: MODES[mode].perDay, postedToday: todayEntry.tiktoks, phrases, formats: analysis.byFormat, releaseTitle: release ? release.title : null });
@@ -341,7 +344,7 @@ export function cockpitOf(userId, tz, at = now()) {
   const events = all('SELECT * FROM cockpit_events WHERE user_id = ? AND day >= ? ORDER BY day', userId, shift(today, -7)).map((e) => ({ id: e.id, title: e.title, day: e.day, note: e.note,
     inDays: Math.round((Date.parse(e.day) - Date.parse(today)) / DAY) }));
   const evenings = all('SELECT * FROM cockpit_evenings WHERE user_id = ? ORDER BY day DESC LIMIT 14', userId);
-  const toFill = posts.filter((p) => p.views == null && p.posted_at <= at - 2 * DAY).reverse().map(postView);
+  const toFill = posts.filter((p) => p.views == null && !p.ext_id && p.posted_at <= at - 2 * DAY).reverse().map(postView);
   const tiktokTotal = posts.filter((p) => p.network === 'tiktok').length;
 
   // Les alertes du jour, de la plus urgente à la moins urgente.
