@@ -1,6 +1,6 @@
 // ONIRIQUE SESSION dans ONIRIQUE CENTRAL : dépôt des pistes, reconnaissance (stem-kind.js), infos du morceau, choix du
 // DAW, création. L'application (app/main/session/, par window.oniriqueSession) donne les fichiers déposés ou choisis,
-// les dossiers clients et les templates, et écrit le projet. Même interface que l'application ONIRIQUE Session.
+// les dossiers clients et les templates, et écrit le projet. Même interface que l'ancienne application ONIRIQUE Session.
 const $ = (id) => document.getElementById(id);
 const A = OniriqueAudio, S = OniriqueStems;
 const RATE = 22050, MIX_SECONDS = 240;
@@ -9,7 +9,6 @@ const keyName = (k) => EN[k.tonic] + (k.mode === "major" ? " major" : " minor");
 const DAWS = {
   fl: { name: "FL Studio", note: "Un .flp prêt à ouvrir : un clip et un insert par piste, chaque insert routé vers son bus, les bus vers le master." },
   protools: { name: "Pro Tools", note: "Pro Tools doit être ouvert : la session y est créée directement (pistes, bus, sorties). Template : un .ptxt du dossier « Session Templates »." },
-  luna: { name: "LUNA", note: "LUNA se prépare pour l'instant dans l'application ONIRIQUE Session." },
 };
 
 let api = null, settings = {}, stems = [], mix = null, daw = "fl", template = null, analysing = 0;
@@ -428,7 +427,7 @@ async function gate() {
   await loadClients();
   $("i-artist").addEventListener("input", () => { picked = null; showClients(); });
   document.querySelectorAll("[data-daw]").forEach((b) => (b.onclick = () => setDaw(b.dataset.daw)));
-  setDaw((settings.daws || []).includes(settings.daw) ? settings.daw : "fl"); // LUNA reste dans l'app ONIRIQUE Session
+  setDaw((settings.daws || []).includes(settings.daw) ? settings.daw : "fl");
   for (const k of ["artist", "title", "feat", "bpm"]) $("i-" + k).addEventListener("input", target);
   $("i-key").addEventListener("change", target);
   for (const k of ["bpm", "key"]) $("i-" + k).addEventListener("input", readout);

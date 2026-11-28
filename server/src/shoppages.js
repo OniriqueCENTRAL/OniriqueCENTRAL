@@ -5,12 +5,12 @@ import fs from 'node:fs';
 import { saleOf } from './soldes.js';
 import path from 'node:path';
 import { config } from './config.js';
-import { all, get } from './db.js';
+import { all, get, RECENT_FIRST } from './db.js';
 
 const esc = (s) => String(s ?? '').replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c]);
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length <= n ? t : t.slice(0, n - 1).replace(/\s+\S*$/, '') + '…'; };
 const readSite = (name) => fs.readFileSync(path.join(config.siteDir, name), 'utf8');
-const visible = () => all('SELECT * FROM products WHERE published = 1 AND founders_only = 0 AND beta_only = 0 ORDER BY position, created_at');
+const visible = () => all(`SELECT * FROM products WHERE published = 1 AND founders_only = 0 AND beta_only = 0 ${RECENT_FIRST}`);
 
 /** La page d'un plugin : boutique.html avec sa propre tête (titre, description, canonique, aperçu, JSON-LD). */
 export function productPage(p, html = readSite('boutique.html')) {

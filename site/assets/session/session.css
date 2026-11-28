@@ -140,7 +140,7 @@ h1 { margin: 0; font: 600 30px/1.1 var(--f-display); letter-spacing: -.01em; col
 .console select { font: 600 17px/1.3 var(--f-mono); color: var(--bone); }
 
 /* ——— 03 · DAW et template ——— */
-.daws { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.daws { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 .daw { position: relative; display: grid; gap: 6px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 18px; text-align: left; cursor: pointer;
   background: linear-gradient(180deg, var(--panel-2), var(--panel)); transition: border-color .2s, box-shadow .2s; }
 .daw b { font: 600 18px/1.2 var(--f-display); color: var(--bone); }
@@ -189,7 +189,7 @@ h1 { margin: 0; font: 600 30px/1.1 var(--f-display); letter-spacing: -.01em; col
   .lanes-art .head, .step { animation: none; } .playhead { transition: none; }
 }
 
-/* ——— CENTRAL : hors de l'application, ou sans le droit ; LUNA reste dans l'app ONIRIQUE Session ——— */
+/* ——— CENTRAL : hors de l'application, ou sans le droit ——— */
 .locked { display: grid; justify-items: center; gap: 14px; max-width: 560px; margin: 12vh auto 0; text-align: center; }
 .locked img { border-radius: 16px; box-shadow: 0 14px 40px -12px rgba(var(--acc, 226, 52, 68), .8); }
 .locked .lede { margin: 0; }

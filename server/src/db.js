@@ -556,6 +556,11 @@ if (!hasColumn('support_messages', 'archived_at')) db.exec('ALTER TABLE support_
 db.exec(`DELETE FROM social_automations WHERE platform = 'tiktok'; DELETE FROM social_accounts WHERE platform = 'tiktok';`);
 
 export const now = () => Date.now();
+// L'ordre de la boutique (site et application) : les plugins ONIRIQUE d'abord, le plus récemment sorti ou mis à jour en
+// premier (sa dernière version, ou sa création s'il n'en a pas encore) : une publication le fait remonter en tête.
+// Toujours à la fin : les applications (catégorie « app » : STREAM, BROADCAST, PLAYER…) et les plugins des partenaires.
+export const RECENT_FIRST = "ORDER BY (products.creator <> 'onirique' OR ',' || products.category || ',' LIKE '%,app,%'), "
+  + 'MAX(products.created_at, COALESCE((SELECT MAX(v.created_at) FROM versions v WHERE v.product_id = products.id), 0)) DESC, products.id DESC';
 
 /** Un réglage modifiable depuis le panel admin (table settings), ou la valeur de la configuration s'il n'a jamais été changé. */
 export const setting = (key, fallback) => {

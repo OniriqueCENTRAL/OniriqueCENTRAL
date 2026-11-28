@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
 import express from 'express';
 import { config } from './config.js';
-import { all, get, run, now, transaction, grantFounders, setting, setSetting } from './db.js';
+import { all, get, run, now, transaction, grantFounders, setting, setSetting, RECENT_FIRST } from './db.js';
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
@@ -359,7 +359,7 @@ export function createApp() {
     const platform = platformOf(req.get('X-Onirique-Platform'));
     const user = optionalUser(req); // l'application envoie le compte connecté : un fondateur voit aussi ses plugins réservés
     res.json({
-      products: all('SELECT * FROM products WHERE published = 1 ORDER BY position, created_at').filter((p) => !hiddenFrom(p, user)).map((p) => productView(p, platform)),
+      products: all(`SELECT * FROM products WHERE published = 1 ${RECENT_FIRST}`).filter((p) => !hiddenFrom(p, user)).map((p) => productView(p, platform)),
       plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map((p) => ({ ...planView(p), sale: planSaleOf(p) })),
       packs: all('SELECT * FROM packs WHERE active = 1 ORDER BY price_cents').map(packView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.

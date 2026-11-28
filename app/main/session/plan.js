@@ -100,7 +100,7 @@ async function create(request, words = request.words || []) {
     fs.writeFileSync(path.join(root, 'Infos.txt'), notes(plan, typed), 'utf8');
     return { folder: root, project };
   }
-  if (plan.daw !== 'fl') throw new Error('LUNA se prépare dans l\'application ONIRIQUE Session : ce DAW n\'est pas encore dans CENTRAL.');
+  if (plan.daw !== 'fl') throw new Error("Ce DAW n'est pas pris en charge : choisis FL Studio ou Pro Tools.");
 
   const audio = path.join(root, 'Audio');
   fs.mkdirSync(audio, { recursive: true });
