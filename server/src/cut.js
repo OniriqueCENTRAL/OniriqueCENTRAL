@@ -18,6 +18,7 @@ import { testing } from './mail.js';
 import { db, get, all, run, now, setting, setSetting } from './db.js';
 import { push } from './push.js';
 import { platformConfigured, instagramAccess, instagramName } from './social.js';
+import { stockOf, TARGETS } from './cockpit.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS cut_videos (
   id         INTEGER PRIMARY KEY,
@@ -121,9 +122,11 @@ export function remindCut(at = now()) {
     run('UPDATE cut_reminders SET last_day = ? WHERE user_id = ?', day, r.user_id);
     // La vidéo prévue pour aujourd'hui, s'il y en a une : le rappel la nomme et l'ouvre.
     const planned = get('SELECT id, name FROM cut_videos WHERE user_id = ? AND scheduled_day = ? ORDER BY created_at LIMIT 1', r.user_id, day);
+    // Le stock d'avance (vidéos du cloud pas encore postées sur TikTok, d'après le Cockpit) : sous le minimum, le rappel le dit.
+    const stock = stockOf(r.user_id), low = stock < TARGETS.stockMin ? ` Stock bas (${stock}) : monte des vidéos aujourd'hui.` : ` Stock : ${stock} vidéos d'avance.`;
     push(r.user_id, planned
-      ? { title: 'ONIRIQUE CUT', body: `C'est l'heure de poster ton TikTok du jour : « ${planned.name} ».`, url: '/mes-videos?v=' + planned.id }
-      : { title: 'ONIRIQUE CUT', body: "C'est l'heure de poster ton TikTok du jour : tes vidéos t'attendent.", url: '/mes-videos' });
+      ? { title: 'ONIRIQUE CUT', body: `C'est l'heure de poster ton TikTok du jour : « ${planned.name} ».${low}`, url: '/mes-videos?v=' + planned.id }
+      : { title: 'ONIRIQUE CUT', body: `C'est l'heure de poster ton TikTok du jour.${low}`, url: '/mes-videos' });
     sent.push(r.user_id);
   }
   return sent;
@@ -280,7 +283,9 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     res.status(201).json(videoView(get('SELECT * FROM cut_videos WHERE id = ?', id)));
   }));
   app.get('/api/cut/library', requireUser, member, onirique, (req, res) => {
-    res.json({ videos: all('SELECT * FROM cut_videos WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map(videoView) });
+    // Le jour où chaque vidéo est partie sur TikTok, d'après le Cockpit (« J'ai posté sur TikTok »).
+    const posted = new Map(all(`SELECT cut_video_id, MAX(posted_at) AS at FROM cockpit_posts WHERE user_id = ? AND network = 'tiktok' AND cut_video_id IS NOT NULL GROUP BY cut_video_id`, req.user.id).map((p) => [p.cut_video_id, p.at]));
+    res.json({ videos: all('SELECT * FROM cut_videos WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map((v) => ({ ...videoView(v), tiktokAt: posted.get(v.id) || null })), stock: stockOf(req.user.id) });
   });
   app.delete('/api/cut/library/:id', requireUser, member, onirique, (req, res) => {
     const v = ownVideo(req);

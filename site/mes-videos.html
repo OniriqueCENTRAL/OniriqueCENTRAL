@@ -80,6 +80,8 @@ dialog { padding: 0; border: 1px solid var(--line); color: var(--mist); max-widt
 #viewer .meta { margin: 8px 16px 0; font-size: 13px; }
 #viewer .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px 0; }
 #viewer .actions #v-share { grid-column: 1 / -1; padding-block: 16px; font-size: 15px; }
+#viewer .actions #v-posted { grid-column: 1 / -1; }
+.day.posted { left: auto; right: 8px; top: 8px; bottom: auto; background: var(--ok); color: #000; }
 #viewer .extra { display: grid; gap: 10px; padding: 12px 16px 0; }
 .field { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .field input, .field textarea { width: 100%; padding: 10px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist);
@@ -105,6 +107,7 @@ dialog { padding: 0; border: 1px solid var(--line); color: var(--mist); max-widt
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE <span>CUT</span></a>
     <div class="row">
       <button class="round" id="reload" type="button" aria-label="Actualiser" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg></button>
+      <a class="btn btn-ghost" href="cockpit">Cockpit</a>
       <a class="btn btn-ghost" href="cut" id="open-cut">Ouvrir CUT</a>
     </div>
   </div>
@@ -135,6 +138,7 @@ dialog { padding: 0; border: 1px solid var(--line); color: var(--mist); max-widt
     <button class="btn btn-primary" type="button" id="v-share">Envoyer vers TikTok</button>
     <a class="btn btn-ghost" id="v-download" download>Télécharger</a>
     <button class="btn btn-ghost danger" type="button" id="v-delete">Supprimer</button>
+    <button class="btn btn-ghost" type="button" id="v-posted">J’ai posté sur TikTok</button>
   </div>
   <div class="extra">
     <label class="field">Prévue le<input type="date" id="v-day"></label>
@@ -245,13 +249,13 @@ function gate(html) { $("gate").hidden = false; $("gate").innerHTML = html; $("l
 async function load() {
   $("reload").disabled = true;
   try {
-    const { videos } = await api("GET", "/cut/library");
+    const { videos, stock } = await api("GET", "/cut/library");
     loadedAt = Date.now();
     videosNow = videos;
     await syncStore(videos);
     $("gate").hidden = true; $("reload").hidden = false;
     loadReminder();
-    $("status").textContent = videos.length ? "" : "Aucune vidéo pour l’instant. Dans ONIRIQUE CUT, sur ton ordinateur, coche « Garder aussi dans mon cloud CUT » avant d’exporter : la vidéo arrivera ici.";
+    $("status").textContent = videos.length ? "Stock : " + stock + (stock > 1 ? " vidéos" : " vidéo") + " pas encore postée" + (stock > 1 ? "s" : "") + " sur TikTok." + (stock < 2 ? " Monte des vidéos aujourd’hui." : "") : "Aucune vidéo pour l’instant. Dans ONIRIQUE CUT, sur ton ordinateur, coche « Garder aussi dans mon cloud CUT » avant d’exporter : la vidéo arrivera ici.";
     $("list").replaceChildren(...videos.map((v) => card(v, stored.has(v.id))));
     allButton();
     const wanted = Number(new URLSearchParams(location.search).get("v")), open = wanted && videos.find((v) => v.id === wanted);
@@ -317,7 +321,8 @@ function card(v, here) {
   // Pas d’aperçu : la vidéo elle-même montre une de ses images.
   thumb.onerror = () => thumb.replaceWith(el("video", { src: v.url + "#t=1", muted: true, playsInline: true, preload: "metadata" }));
   const button = el("button", { type: "button", className: "vid", onclick: () => openVideo(v) },
-    el("span", { className: "thumb" }, thumb, here ? hereBadge() : null, el("span", { className: "dur", textContent: clock(v.duration) }), dayBadge(v)),
+    el("span", { className: "thumb" }, thumb, here ? hereBadge() : null, el("span", { className: "dur", textContent: clock(v.duration) }), dayBadge(v),
+      v.tiktokAt ? el("span", { className: "day posted", textContent: "Sur TikTok" }) : null),
     el("b", { textContent: v.name }), el("small", { textContent: when(v.createdAt) + " · " + size(v.size) }));
   button.dataset.id = v.id;
   return button;
@@ -379,6 +384,8 @@ function openVideo(v) {
     ? "Dans le menu qui s’ouvre, choisis TikTok : la vidéo arrive dans TikTok, prête à publier." + (ios ? " « Enregistrer la vidéo » la range dans tes Photos." : "")
     : "Télécharge la vidéo, puis dans TikTok touche + et choisis-la dans ta galerie.");
   if (!phone) $("v-hint").append(" Depuis un ordinateur : télécharge-la, puis ", el("a", { href: "https://www.tiktok.com/upload", target: "_blank", rel: "noopener", textContent: "tiktok.com/upload" }), ".");
+  $("v-posted").disabled = false;
+  $("v-posted").textContent = v.tiktokAt ? "Postée sur TikTok le " + new Date(v.tiktokAt).toLocaleDateString("fr-FR") + " · la noter encore" : "J’ai posté sur TikTok";
   $("v-day").value = v.scheduledDay || ""; $("v-caption").value = captionOf(v); $("v-copied").textContent = "";
   try { $("v-tags").value = localStorage.getItem(TAGS) || ""; } catch { /* stockage indisponible */ }
   $("viewer").showModal();
@@ -415,6 +422,18 @@ $("v-share").onclick = async () => {
   await navigator.clipboard.writeText($("v-caption").value).then(() => { $("v-copied").textContent = "Légende copiée : colle-la dans TikTok."; }, () => {});
   try { await navigator.share({ files: [mine.file] }); }
   catch (error) { if (error.name !== "AbortError") $("v-hint").textContent = "Le partage n’a pas marché : télécharge la vidéo, puis choisis-la dans TikTok."; }
+};
+// « J’ai posté sur TikTok » : la publication entre au journal du Cockpit, et la vidéo sort du stock d’avance.
+$("v-posted").onclick = async () => {
+  const v = job && job.v;
+  if (!v) return;
+  $("v-posted").disabled = true;
+  try {
+    await api("POST", "/cockpit/posts", { network: "tiktok", cutVideoId: v.id });
+    v.tiktokAt = Date.now();
+    $("v-posted").textContent = "Notée dans le Cockpit";
+    load(); // le badge « Sur TikTok » et le stock d’avance se mettent à jour
+  } catch (error) { $("v-posted").disabled = false; $("v-hint").textContent = error.message; }
 };
 $("v-delete").onclick = async () => {
   const v = job && job.v;
