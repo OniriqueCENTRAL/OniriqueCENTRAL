@@ -36,6 +36,8 @@ const vision = product('onirique-vision', 'ONIRIQUE VISION', 13900);
 const deesser = product('onirique-de-esser', 'ONIRIQUE DE-ESSER', 7999);
 const multib = product('onirique-multi-b', 'ONIRIQUE MULTI-B', 7499);
 const prisme = product('onirique-prisme', 'ONIRIQUE PRISME', 3999);
+const aether = product('onirique-aether', 'ONIRIQUE AETHER', 8000);
+const brume = product('brumebox', 'BRUMEBOX', 5000);
 const autre = product('onirique-inconnu', 'PLUGIN HORS LISTE', 4999);
 const partenaire = product('onirique-modbox', 'MODBOX D\'UN PARTENAIRE', 7999, 'relic');
 
@@ -47,6 +49,8 @@ assert.equal(saleOf(eq).priceCents, 4499);
 assert.equal(saleOf(deesser).priceCents, 6399);
 assert.equal(saleOf(multib).priceCents, 6374);
 assert.equal(saleOf(prisme).priceCents, 3399);
+assert.equal(saleOf(aether).priceCents, 6400);
+assert.equal(saleOf(brume).priceCents, 4500);
 assert.equal(saleOf(autre), null);
 assert.equal(saleOf(partenaire), null);
 // Après la date : plus rien.
@@ -79,13 +83,13 @@ const site = await call('GET', '/api/site');
 assert.equal(site.popup.id, SOLDES.id);
 assert.equal(site.popup.theme, 'black-friday');
 assert.equal(site.popup.title, "Jusqu'à -30 %");
-// PRISME, le dernier sorti, ouvre la liste ; puis les plus fortes remises (à remise égale, le plus cher d'abord) ;
+// AETHER, le dernier sorti, ouvre la liste ; puis les plus fortes remises (à remise égale, le plus cher d'abord) ;
 // l'abonnement annuel ALL ACCESS la ferme.
 const annuel = Number(run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('ALL ACCESS ONIRIQUE — annuel', 'year', 38499, 1, 'all')").lastInsertRowid);
 run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('ALL ACCESS ONIRIQUE — mensuel', 'month', 3999, 1, 'all')");
 run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('À LA CARTE', 'month', 999, 1, 'pick')");
 const popup = (await call('GET', '/api/site')).popup;
-assert.deepEqual(popup.deals.map((d) => d.slug), ['onirique-prisme', 'vocalbox', 'onirique-vision', null]);
+assert.deepEqual(popup.deals.map((d) => d.slug), ['onirique-aether', 'vocalbox', 'onirique-vision', null]);
 assert.deepEqual([popup.deals[3].name, popup.deals[3].href, popup.deals[3].sale.priceCents], ['ALL ACCESS ONIRIQUE, la première année', '/boutique#plans', 26949]);
 
 // Les abonnements : -30 % la première année en annuel, les 3 premiers mois au mois ; pas la formule à la carte ; plus rien après la date.
